@@ -52,10 +52,12 @@ interface ConversationState {
   messages: Message[];
   rawEvents: RawEvent[];
   isStreaming: boolean;
+  error: string | null;
 
   setConversationId: (id: bigint) => void;
   setAgentType: (type: string) => void;
   setStreaming: (v: boolean) => void;
+  setError: (err: string | null) => void;
   addUserMessage: (content: string) => void;
   startAssistantMessage: () => void;
   processEvent: (event: AgentStreamEvent) => void;
@@ -70,10 +72,12 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   messages: [],
   rawEvents: [],
   isStreaming: false,
+  error: null,
 
   setConversationId: (id) => set({ conversationId: id }),
   setAgentType: (type) => set({ agentType: type }),
   setStreaming: (v) => set({ isStreaming: v }),
+  setError: (err) => set({ error: err }),
 
   addUserMessage: (content) =>
     set((s) => ({
@@ -226,5 +230,5 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }),
 
   reset: () =>
-    set({ conversationId: null, messages: [], rawEvents: [], isStreaming: false }),
+    set({ conversationId: null, messages: [], rawEvents: [], isStreaming: false, error: null }),
 }));

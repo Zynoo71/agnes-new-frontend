@@ -20,6 +20,7 @@ export function useChat() {
     s.addUserMessage(query);
     s.startAssistantMessage();
     s.setStreaming(true);
+    s.setError(null);
 
     try {
       const stream = agentClient.chatStream({
@@ -32,7 +33,9 @@ export function useChat() {
         getState().processEvent(event);
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error("ChatStream error:", err);
+      getState().setError(`ChatStream: ${msg}`);
     } finally {
       getState().setStreaming(false);
     }
@@ -45,6 +48,7 @@ export function useChat() {
     s.resolveHumanReview();
     s.startAssistantMessage();
     s.setStreaming(true);
+    s.setError(null);
 
     try {
       const resumePayload: Record<string, unknown> = { action };
@@ -61,7 +65,9 @@ export function useChat() {
         getState().processEvent(event);
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error("HitlResumeStream error:", err);
+      getState().setError(`HitlResume: ${msg}`);
     } finally {
       getState().setStreaming(false);
     }

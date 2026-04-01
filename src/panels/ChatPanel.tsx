@@ -7,7 +7,7 @@ import { EventStream } from "@/components/EventStream";
 const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
 
 export function ChatPanel() {
-  const { conversationId, agentType, messages, rawEvents, isStreaming, setAgentType } =
+  const { conversationId, agentType, messages, rawEvents, isStreaming, error, setAgentType } =
     useConversationStore();
   const { createConversation, sendMessage, hitlResume } = useChat();
   const [showEvents, setShowEvents] = useState(false);
@@ -116,6 +116,14 @@ export function ChatPanel() {
               <div className="flex justify-start mb-4">
                 <div className="dot-loader flex gap-1 px-4 py-3">
                   <span /><span /><span />
+                </div>
+              </div>
+            )}
+            {error && (
+              <div className="flex justify-start mb-4">
+                <div className="rounded-xl bg-error-light border border-error/20 px-4 py-2.5 text-xs text-error max-w-[85%]">
+                  <p className="font-medium mb-0.5">Request Error</p>
+                  <p className="text-text-secondary">{error}</p>
                 </div>
               </div>
             )}
