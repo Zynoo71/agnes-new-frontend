@@ -6,6 +6,7 @@ export function useChat() {
   const store = useConversationStore();
 
   const createConversation = useCallback(async () => {
+    store.reset();
     const reply = await agentClient.createConversation({});
     store.setConversationId(reply.conversationId);
     return reply.conversationId;

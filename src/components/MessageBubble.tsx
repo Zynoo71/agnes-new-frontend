@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Markdown from "react-markdown";
 import type { Message, ContentBlock, HumanReviewData } from "@/stores/conversationStore";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { NodeSteps } from "./NodeSteps";
@@ -63,9 +64,9 @@ function BlockRenderer({
   switch (block.type) {
     case "text":
       return (
-        <p className="whitespace-pre-wrap text-[14px] leading-[1.7] text-text-primary">
-          {block.content}
-        </p>
+        <div className="prose-agent text-[14px] leading-[1.7] text-text-primary">
+          <Markdown>{block.content}</Markdown>
+        </div>
       );
     case "tool_call":
       return (
