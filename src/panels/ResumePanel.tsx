@@ -12,9 +12,7 @@ export function ResumePanel() {
   const handleResume = async () => {
     const id = Number(convIdInput);
     if (!id || isStreaming) return;
-    setEvents([]);
-    setContent("");
-    setStreaming(true);
+    setEvents([]); setContent(""); setStreaming(true);
     try {
       const stream = agentClient.resumeStream({ conversationId: BigInt(id) });
       for await (const event of stream) {
@@ -28,22 +26,38 @@ export function ResumePanel() {
 
   return (
     <div className="h-full flex">
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-2xl mx-auto space-y-4">
-          <h2 className="text-lg font-semibold">Resume Stream</h2>
-          <p className="text-sm text-text-secondary">Reconnect to an in-progress agent stream. Replays buffered events (60s window) then continues real-time.</p>
-          <div className="flex gap-2">
-            <input value={convIdInput} onChange={(e) => setConvIdInput(e.target.value)} placeholder="Conversation ID"
-              className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
-            <button onClick={handleResume} disabled={isStreaming || !convIdInput}
-              className="rounded-lg bg-accent text-white px-4 py-2 text-sm font-medium hover:bg-accent/90 disabled:opacity-40">
-              {isStreaming ? "Streaming..." : "Resume"}
-            </button>
+      <div className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-xl mx-auto space-y-5">
+          <div>
+            <h2 className="text-base font-semibold text-text-primary">Resume Stream</h2>
+            <p className="text-xs text-text-tertiary mt-0.5">
+              Reconnect to an in-progress agent stream. Replays buffered events (60s window) then continues real-time.
+            </p>
           </div>
-          {content && <div className="rounded-xl border border-border bg-surface p-4 text-sm whitespace-pre-wrap">{content}</div>}
+
+          <div className="rounded-2xl bg-surface border border-border-light p-5 shadow-sm">
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">Conversation ID</label>
+            <div className="flex gap-2">
+              <input value={convIdInput} onChange={(e) => setConvIdInput(e.target.value)} placeholder="Enter conversation ID"
+                className="flex-1 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30 transition-all" />
+              <button onClick={handleResume} disabled={isStreaming || !convIdInput}
+                className="rounded-xl bg-text-primary text-white px-5 py-2.5 text-sm font-medium
+                           hover:bg-text-secondary active:scale-[0.97] disabled:opacity-40 transition-all shadow-sm">
+                {isStreaming ? "Streaming..." : "Resume"}
+              </button>
+            </div>
+          </div>
+
+          {content && (
+            <div className="rounded-2xl bg-surface border border-border-light p-5 text-sm whitespace-pre-wrap
+                            text-text-primary leading-relaxed shadow-sm">
+              {content}
+            </div>
+          )}
         </div>
       </div>
-      {events.length > 0 && <div className="w-96 shrink-0"><EventStream events={events} /></div>}
+      {events.length > 0 && <div className="w-[400px] shrink-0"><EventStream events={events} /></div>}
     </div>
   );
 }

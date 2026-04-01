@@ -12,17 +12,16 @@ export function MessageBubble({ message, onHitlResume, isStreaming }: MessageBub
   const isUser = message.role === "user";
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-5`}>
       <div
-        className={`max-w-[75%] rounded-xl px-4 py-3 ${
+        className={`rounded-2xl ${
           isUser
-            ? "bg-user-bubble text-text-primary"
-            : "bg-assistant-bubble border border-border text-text-primary"
+            ? "bg-user-bubble text-text-primary max-w-[70%] px-4 py-2.5"
+            : "text-text-primary max-w-[85%] py-1"
         }`}
       >
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
-        {/* Render blocks in order */}
         {message.blocks.map((block, i) => (
           <BlockRenderer
             key={i}
@@ -33,12 +32,17 @@ export function MessageBubble({ message, onHitlResume, isStreaming }: MessageBub
         ))}
 
         {message.error && (
-          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md text-xs text-error">
-            <span className="font-medium">⚠️ {message.error.errorType}</span>
-            <p>{message.error.message}</p>
-            {message.error.recoverable && (
-              <span className="text-text-tertiary">(recoverable)</span>
-            )}
+          <div className="mt-3 flex items-start gap-2 p-3 bg-error-light rounded-xl text-xs">
+            <span className="shrink-0 mt-0.5 w-4 h-4 rounded-full bg-error/10 flex items-center justify-center">
+              <span className="text-error text-[10px]">!</span>
+            </span>
+            <div>
+              <p className="font-medium text-error">{message.error.errorType}</p>
+              <p className="text-text-secondary mt-0.5">{message.error.message}</p>
+              {message.error.recoverable && (
+                <span className="text-text-tertiary mt-1 inline-block">Recoverable</span>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -58,11 +62,13 @@ function BlockRenderer({
   switch (block.type) {
     case "text":
       return (
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{block.content}</p>
+        <p className="whitespace-pre-wrap text-[14px] leading-[1.7] text-text-primary">
+          {block.content}
+        </p>
       );
     case "tool_call":
       return (
-        <div className="my-2">
+        <div className="my-3">
           <ToolCallBlock {...block.data} />
         </div>
       );
@@ -87,53 +93,58 @@ function HumanReviewBlock({
   disabled?: boolean;
 }) {
   return (
-    <div className="my-2 rounded-lg border-2 border-yellow-300 bg-yellow-50 p-3 text-sm">
-      <div className="flex items-center gap-2 mb-2 font-medium text-yellow-800">
-        <span>👤</span>
-        <span>Human Review Required</span>
+    <div className="my-3 rounded-xl border border-warning/30 bg-warning-light/50 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-5 h-5 rounded-full bg-warning/20 flex items-center justify-center">
+          <span className="text-warning text-xs">!</span>
+        </div>
+        <span className="text-sm font-semibold text-text-primary">Review Required</span>
       </div>
 
       <details open>
-        <summary className="cursor-pointer text-xs text-yellow-700 hover:text-yellow-900">
-          Review payload
+        <summary className="cursor-pointer text-xs font-medium text-text-secondary hover:text-text-primary transition-colors">
+          Payload
         </summary>
-        <pre className="mt-1 text-xs bg-white/60 rounded p-2 overflow-x-auto whitespace-pre-wrap">
+        <pre className="mt-2 text-xs bg-surface rounded-lg p-3 overflow-x-auto whitespace-pre-wrap
+                        border border-border-light font-mono text-text-secondary leading-relaxed">
           {JSON.stringify(data.payload, null, 2)}
         </pre>
       </details>
 
       {data.resolved ? (
-        <div className="mt-2 text-xs text-green-700 font-medium">✅ Resolved</div>
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-medium">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
+          Resolved
+        </div>
       ) : (
         onResume && (
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={() => onResume("approve")}
-              disabled={disabled}
-              className="rounded-lg bg-green-600 text-white px-3 py-1.5 text-xs font-medium
-                         hover:bg-green-700 disabled:opacity-40 transition-colors"
-            >
-              ✅ Approve
-            </button>
-            <button
-              onClick={() => {
-                const input = prompt("Modify data (JSON or text):");
-                if (input !== null) onResume("modify", input);
-              }}
-              disabled={disabled}
-              className="rounded-lg bg-yellow-600 text-white px-3 py-1.5 text-xs font-medium
-                         hover:bg-yellow-700 disabled:opacity-40 transition-colors"
-            >
-              ✏️ Modify
-            </button>
-            <button
-              onClick={() => onResume("reject")}
-              disabled={disabled}
-              className="rounded-lg bg-red-600 text-white px-3 py-1.5 text-xs font-medium
-                         hover:bg-red-700 disabled:opacity-40 transition-colors"
-            >
-              ❌ Reject
-            </button>
+          <div className="flex gap-2 mt-4">
+            {(["approve", "modify", "reject"] as const).map((action) => (
+              <button
+                key={action}
+                onClick={() => {
+                  if (action === "modify") {
+                    const input = prompt("Modify data (JSON or text):");
+                    if (input !== null) onResume(action, input);
+                  } else {
+                    onResume(action);
+                  }
+                }}
+                disabled={disabled}
+                className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all
+                           active:scale-[0.97] disabled:opacity-40 ${
+                  action === "approve"
+                    ? "bg-success text-white hover:bg-success/90"
+                    : action === "reject"
+                      ? "bg-error text-white hover:bg-error/90"
+                      : "bg-surface border border-border text-text-primary hover:bg-surface-hover"
+                }`}
+              >
+                {action.charAt(0).toUpperCase() + action.slice(1)}
+              </button>
+            ))}
           </div>
         )
       )}

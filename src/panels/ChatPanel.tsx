@@ -36,50 +36,63 @@ export function ChatPanel() {
     <div className="h-full flex">
       <div className="flex-1 flex flex-col">
         {/* Top controls */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-surface">
+        <div className="flex items-center gap-3 px-5 py-2.5 border-b border-border-light bg-surface-alt">
           <button
             onClick={createConversation}
-            className="rounded-lg bg-accent text-white px-3 py-1.5 text-sm font-medium hover:bg-accent/90 transition-colors"
+            className="rounded-lg bg-text-primary text-white px-3.5 py-1.5 text-xs font-medium
+                       hover:bg-text-secondary active:scale-[0.97] transition-all shadow-sm"
           >
-            + New
+            New conversation
           </button>
 
           {conversationId && (
-            <span className="text-xs text-text-tertiary font-mono">
-              conv: {conversationId.toString()}
-            </span>
+            <code className="text-[11px] text-text-tertiary bg-surface-hover px-2 py-0.5 rounded-md">
+              #{conversationId.toString()}
+            </code>
           )}
 
-          <select
-            value={agentType}
-            onChange={(e) => setAgentType(e.target.value)}
-            className="ml-auto rounded-lg border border-border bg-background px-3 py-1.5 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-accent/30"
-          >
-            {AGENT_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center bg-surface-hover rounded-lg p-0.5">
+              {AGENT_TYPES.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setAgentType(t)}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                    agentType === t
+                      ? "bg-surface text-text-primary shadow-sm"
+                      : "text-text-tertiary hover:text-text-secondary"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
 
-          <button
-            onClick={() => setShowEvents(!showEvents)}
-            className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-              showEvents
-                ? "border-accent text-accent bg-accent-light"
-                : "border-border text-text-secondary hover:bg-surface-hover"
-            }`}
-          >
-            Events {rawEvents.length > 0 && `(${rawEvents.length})`}
-          </button>
+            <button
+              onClick={() => setShowEvents(!showEvents)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                showEvents
+                  ? "bg-accent/10 text-accent"
+                  : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
+              }`}
+            >
+              Events{rawEvents.length > 0 ? ` (${rawEvents.length})` : ""}
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-6">
-          <div className="max-w-3xl mx-auto">
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-5 py-8">
             {messages.length === 0 && (
-              <div className="text-center text-text-tertiary mt-32">
-                <p className="text-lg">Agent Debug Console</p>
-                <p className="text-sm mt-1">Create a conversation and start chatting</p>
+              <div className="flex flex-col items-center justify-center pt-32 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mb-4">
+                  <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-text-primary mb-1">Agent Debug Console</h2>
+                <p className="text-sm text-text-tertiary">Create a conversation to start debugging</p>
               </div>
             )}
             {messages.map((msg, i) => (
@@ -90,39 +103,51 @@ export function ChatPanel() {
                 isStreaming={isStreaming}
               />
             ))}
+            {isStreaming && messages.length > 0 && !messages[messages.length - 1].blocks.length && (
+              <div className="flex justify-start mb-4">
+                <div className="dot-loader flex gap-1 px-4 py-3">
+                  <span /><span /><span />
+                </div>
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
         </div>
 
         {/* Input */}
-        <div className="border-t border-border bg-surface p-4">
-          <div className="max-w-3xl mx-auto flex gap-2 items-end">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Send a message..."
-              disabled={isStreaming || !conversationId}
-              rows={1}
-              className="flex-1 resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent
-                         disabled:opacity-50 placeholder:text-text-tertiary"
-            />
-            <button
-              onClick={handleSend}
-              disabled={isStreaming || !conversationId || !input.trim()}
-              className="shrink-0 rounded-xl bg-accent text-white px-4 py-3 text-sm font-medium
-                         hover:bg-accent/90 disabled:opacity-40 transition-colors"
-            >
-              Send
-            </button>
+        <div className="px-5 pb-5 pt-2 bg-gradient-to-t from-background via-background to-transparent">
+          <div className="max-w-2xl mx-auto">
+            <div className="relative rounded-2xl border border-border bg-surface shadow-sm
+                            focus-within:shadow-md focus-within:border-border transition-shadow">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={conversationId ? "Message..." : "Create a conversation first"}
+                disabled={isStreaming || !conversationId}
+                rows={1}
+                className="w-full resize-none bg-transparent px-4 py-3 pr-14 text-sm
+                           focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
+              />
+              <button
+                onClick={handleSend}
+                disabled={isStreaming || !conversationId || !input.trim()}
+                className="absolute right-2 bottom-2 rounded-xl bg-text-primary text-white p-2
+                           hover:bg-text-secondary disabled:opacity-20 disabled:hover:bg-text-primary
+                           active:scale-95 transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Debug panel */}
       {showEvents && (
-        <div className="w-96 shrink-0">
+        <div className="w-[400px] shrink-0">
           <EventStream events={rawEvents} />
         </div>
       )}

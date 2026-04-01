@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { agentClient } from "@/grpc/client";
 
+const inputClass = "rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30 transition-all";
+
 export function HistoryPanel() {
   const [convIdInput, setConvIdInput] = useState("");
   const [history, setHistory] = useState<any>(null);
@@ -23,64 +25,89 @@ export function HistoryPanel() {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-6">
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-lg font-semibold mb-4">Conversation History</h2>
+    <div className="h-full overflow-y-auto p-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-base font-semibold text-text-primary">Conversation History</h2>
+          <p className="text-xs text-text-tertiary mt-0.5">Fetch and inspect conversation turns</p>
+        </div>
+
         <div className="flex gap-2 mb-6">
           <input value={convIdInput} onChange={(e) => setConvIdInput(e.target.value)} placeholder="Conversation ID"
-            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+            className={`flex-1 ${inputClass}`} />
           <button onClick={fetchHistory} disabled={loading}
-            className="rounded-lg bg-accent text-white px-4 py-2 text-sm font-medium hover:bg-accent/90 disabled:opacity-40">
+            className="rounded-xl bg-text-primary text-white px-5 py-2.5 text-sm font-medium
+                       hover:bg-text-secondary active:scale-[0.97] disabled:opacity-40 transition-all shadow-sm">
             {loading ? "Loading..." : "Fetch"}
           </button>
         </div>
-        {error && <div className="text-error text-sm mb-4 p-3 bg-red-50 rounded-lg">{error}</div>}
+
+        {error && <div className="text-xs text-error p-3.5 bg-error-light rounded-xl mb-4">{error}</div>}
+
         {history && (
-          <div>
-            <div className="flex gap-2 mb-4">
-              <span className={`text-xs px-2 py-1 rounded-full ${history.isRunning ? "bg-accent-light text-accent" : "bg-green-50 text-success"}`}>
+          <div className="space-y-4">
+            {/* Status */}
+            <div className="flex gap-2">
+              <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${
+                history.isRunning ? "bg-accent/10 text-accent" : "bg-success-light text-success"
+              }`}>
                 {history.isRunning ? "Running" : "Idle"}
               </span>
               {history.pendingReview && (
-                <span className="text-xs px-2 py-1 rounded-full bg-yellow-50 text-yellow-700">Pending Review</span>
+                <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-warning-light text-warning">
+                  Pending Review
+                </span>
               )}
             </div>
+
+            {/* Interrupt payload */}
             {history.interruptPayload && history.interruptPayload.length > 0 && (
-              <details className="mb-4 rounded-lg border border-border p-3">
-                <summary className="cursor-pointer text-sm font-medium">Interrupt Payload</summary>
-                <pre className="mt-2 text-xs overflow-x-auto whitespace-pre-wrap">
+              <details className="rounded-xl border border-border-light bg-surface p-4 shadow-sm">
+                <summary className="cursor-pointer text-xs font-semibold text-text-primary">Interrupt Payload</summary>
+                <pre className="mt-2 text-[11px] font-mono text-text-secondary overflow-x-auto whitespace-pre-wrap leading-relaxed">
                   {new TextDecoder().decode(history.interruptPayload)}
                 </pre>
               </details>
             )}
-            <div className="space-y-4">
-              {history.turns.map((turn: any, i: number) => (
-                <div key={i} className="rounded-xl border border-border bg-surface p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-mono text-text-tertiary">{turn.requestId}</span>
-                    <span className="text-xs text-text-tertiary">{new Date(Number(turn.createdAt)).toLocaleString()}</span>
-                  </div>
+
+            {/* Turns */}
+            {history.turns.map((turn: any, i: number) => (
+              <div key={i} className="rounded-2xl border border-border-light bg-surface p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-light">
+                  <code className="text-[10px] text-text-tertiary bg-surface-hover px-2 py-0.5 rounded-md">
+                    {turn.requestId}
+                  </code>
+                  <span className="text-[10px] text-text-tertiary">
+                    {new Date(Number(turn.createdAt)).toLocaleString()}
+                  </span>
+                </div>
+                <div className="space-y-3">
                   {turn.user.map((block: any, j: number) => (
-                    <div key={`u-${j}`} className="mb-2">
-                      <span className="text-xs text-text-tertiary">user [{block.type}]</span>
-                      <pre className="text-sm bg-user-bubble rounded p-2 mt-1 whitespace-pre-wrap overflow-x-auto">
+                    <div key={`u-${j}`}>
+                      <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider mb-1">
+                        User &middot; {block.type}
+                      </div>
+                      <pre className="text-[12px] font-mono bg-user-bubble rounded-xl p-3 whitespace-pre-wrap overflow-x-auto
+                                      text-text-secondary leading-relaxed">
                         {JSON.stringify(block.data, null, 2)}
                       </pre>
                     </div>
                   ))}
                   {turn.assistant.map((block: any, j: number) => (
-                    <div key={`a-${j}`} className="mb-2">
-                      <span className="text-xs text-text-tertiary">
-                        assistant [{block.type}]{block.toolCallId && ` tool_call_id=${block.toolCallId}`}
-                      </span>
-                      <pre className="text-sm bg-background rounded p-2 mt-1 whitespace-pre-wrap overflow-x-auto">
+                    <div key={`a-${j}`}>
+                      <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider mb-1">
+                        Assistant &middot; {block.type}
+                        {block.toolCallId && <span className="normal-case tracking-normal"> &middot; {block.toolCallId}</span>}
+                      </div>
+                      <pre className="text-[12px] font-mono bg-background rounded-xl p-3 whitespace-pre-wrap overflow-x-auto
+                                      text-text-secondary leading-relaxed border border-border-light">
                         {JSON.stringify(block.data, null, 2)}
                       </pre>
                     </div>
                   ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
