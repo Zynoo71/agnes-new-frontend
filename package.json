@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "proto:gen": "buf generate ../Kiwi/agnes_core/proto"
+    "proto:gen": "buf generate ../Kiwi/agnes_core/proto",
+    "proxy": "docker compose up envoy"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",
