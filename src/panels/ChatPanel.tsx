@@ -26,7 +26,11 @@ export function ChatPanel() {
   const handleSend = () => {
     const trimmed = input.trim();
     if (!trimmed || isStreaming || !conversationId) return;
-    sendMessage(trimmed);
+    if (hasPendingReview) {
+      hitlResume("modify", trimmed);
+    } else {
+      sendMessage(trimmed);
+    }
     setInput("");
   };
 

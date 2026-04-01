@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { agentClient } from "@/grpc/client";
+import type { ConversationHistoryResponse, ConversationTurn, ContentBlock } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
 
 const inputClass = "rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30 transition-all";
 
 export function HistoryPanel() {
   const [convIdInput, setConvIdInput] = useState("");
-  const [history, setHistory] = useState<any>(null);
+  const [history, setHistory] = useState<ConversationHistoryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const fetchHistory = async () => {
-    const id = Number(convIdInput);
-    if (!id) return;
+    let id: bigint;
+    try { id = BigInt(convIdInput.trim()); } catch { setError("Invalid conversation ID"); return; }
     setLoading(true);
     setError("");
     try {
-      const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
+      const resp = await agentClient.getConversationHistory({ conversationId: id });
       setHistory(resp);
     } catch (err) {
       setError(String(err));
@@ -71,7 +72,7 @@ export function HistoryPanel() {
             )}
 
             {/* Turns */}
-            {history.turns.map((turn: any, i: number) => (
+            {history.turns.map((turn: ConversationTurn, i: number) => (
               <div key={i} className="rounded-2xl border border-border-light bg-surface p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-light">
                   <code className="text-[10px] text-text-tertiary bg-surface-hover px-2 py-0.5 rounded-md">
@@ -82,7 +83,7 @@ export function HistoryPanel() {
                   </span>
                 </div>
                 <div className="space-y-3">
-                  {turn.user.map((block: any, j: number) => (
+                  {turn.user.map((block: ContentBlock, j: number) => (
                     <div key={`u-${j}`}>
                       <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider mb-1">
                         User &middot; {block.type}
@@ -93,7 +94,7 @@ export function HistoryPanel() {
                       </pre>
                     </div>
                   ))}
-                  {turn.assistant.map((block: any, j: number) => (
+                  {turn.assistant.map((block: ContentBlock, j: number) => (
                     <div key={`a-${j}`}>
                       <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider mb-1">
                         Assistant &middot; {block.type}

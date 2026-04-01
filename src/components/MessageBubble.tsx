@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 import type { Message, ContentBlock, HumanReviewData } from "@/stores/conversationStore";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
@@ -271,12 +271,14 @@ function CountdownBadge({ seconds, defaultAction, onTimeout }: {
   onTimeout: () => void;
 }) {
   const [remaining, setRemaining] = useState(seconds);
+  const onTimeoutRef = useRef(onTimeout);
+  onTimeoutRef.current = onTimeout;
 
   useEffect(() => {
-    if (remaining <= 0) { onTimeout(); return; }
+    if (remaining <= 0) { onTimeoutRef.current(); return; }
     const timer = setTimeout(() => setRemaining((r) => r - 1), 1000);
     return () => clearTimeout(timer);
-  }, [remaining, onTimeout]);
+  }, [remaining]);
 
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;

@@ -1,6 +1,14 @@
 import { create } from "zustand";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
+function tryDecodeJson(bytes: Uint8Array): unknown {
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return new TextDecoder().decode(bytes);
+  }
+}
+
 export interface ToolCallData {
   toolCallId: string;
   toolName: string;
@@ -83,10 +91,21 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       ],
     })),
 
-  addRawEvent: (type, data) =>
+  addRawEvent: (type, data) => {
+    // Decode Uint8Array fields to strings for readable JSON display in EventStream
+    let cleaned = data;
+    if (data && typeof data === "object") {
+      cleaned = Object.fromEntries(
+        Object.entries(data as Record<string, unknown>).map(([k, v]) => [
+          k,
+          v instanceof Uint8Array ? tryDecodeJson(v) : v,
+        ])
+      );
+    }
     set((s) => ({
-      rawEvents: [...s.rawEvents, { timestamp: Date.now(), type, data }],
-    })),
+      rawEvents: [...s.rawEvents, { timestamp: Date.now(), type, data: cleaned }],
+    }));
+  },
 
   processEvent: (event) => {
     const store = get();

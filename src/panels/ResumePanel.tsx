@@ -10,11 +10,12 @@ export function ResumePanel() {
   const [content, setContent] = useState("");
 
   const handleResume = async () => {
-    const id = Number(convIdInput);
-    if (!id || isStreaming) return;
+    let id: bigint;
+    try { id = BigInt(convIdInput.trim()); } catch { return; }
+    if (isStreaming) return;
     setEvents([]); setContent(""); setStreaming(true);
     try {
-      const stream = agentClient.resumeStream({ conversationId: BigInt(id) });
+      const stream = agentClient.resumeStream({ conversationId: id });
       for await (const event of stream) {
         const ev = event.event;
         setEvents((prev) => [...prev, { timestamp: Date.now(), type: ev.case ?? "unknown", data: ev.value }]);

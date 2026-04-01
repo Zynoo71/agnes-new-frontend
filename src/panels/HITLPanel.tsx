@@ -14,8 +14,9 @@ export function HITLPanel() {
   const [content, setContent] = useState("");
 
   const handleResume = async () => {
-    const id = Number(convIdInput);
-    if (!id || isStreaming) return;
+    let id: bigint;
+    try { id = BigInt(convIdInput.trim()); } catch { return; }
+    if (isStreaming) return;
     setEvents([]); setContent(""); setStreaming(true);
     try {
       const resumePayload: Record<string, unknown> = { action };
@@ -23,7 +24,7 @@ export function HITLPanel() {
         resumePayload.feedback = feedback.trim();
       }
       const stream = agentClient.hitlResumeStream({
-        conversationId: BigInt(id),
+        conversationId: id,
         resumeData: new TextEncoder().encode(JSON.stringify(resumePayload)),
       });
       for await (const event of stream) {
