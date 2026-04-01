@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "proto:gen": "buf generate ../Kiwi/agnes_core/proto",
-    "proxy": "docker compose up envoy"
+    "proxy": "docker compose up envoy",
+    "start": "docker compose up envoy -d && vite"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",
