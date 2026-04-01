@@ -65,8 +65,8 @@ body {
   background: var(--color-text-tertiary);
 }
 
-/* Focus ring */
-:focus-visible {
+/* Focus ring — only for elements without custom focus styles */
+:focus-visible:not(input):not(textarea):not(select):not(button) {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
