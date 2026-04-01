@@ -1,4 +1,4 @@
-import type { Message } from "@/stores/conversationStore";
+import type { Message, ContentBlock, HumanReviewData } from "@/stores/conversationStore";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { NodeSteps } from "./NodeSteps";
 
@@ -22,26 +22,15 @@ export function MessageBubble({ message, onHitlResume, isStreaming }: MessageBub
       >
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
-        {message.content && (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
-        )}
-
-        {message.toolCalls.length > 0 && (
-          <div className="mt-3 space-y-2">
-            {message.toolCalls.map((tc) => (
-              <ToolCallBlock key={tc.toolCallId} {...tc} />
-            ))}
-          </div>
-        )}
-
-        {message.humanReview && (
-          <HumanReviewBlock
-            payload={message.humanReview.payload}
-            resolved={message.humanReview.resolved}
-            onResume={onHitlResume}
-            disabled={isStreaming}
+        {/* Render blocks in order */}
+        {message.blocks.map((block, i) => (
+          <BlockRenderer
+            key={i}
+            block={block}
+            onHitlResume={onHitlResume}
+            isStreaming={isStreaming}
           />
-        )}
+        ))}
 
         {message.error && (
           <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md text-xs text-error">
@@ -57,19 +46,48 @@ export function MessageBubble({ message, onHitlResume, isStreaming }: MessageBub
   );
 }
 
+function BlockRenderer({
+  block,
+  onHitlResume,
+  isStreaming,
+}: {
+  block: ContentBlock;
+  onHitlResume?: (action: "approve" | "modify" | "reject", data?: string) => void;
+  isStreaming?: boolean;
+}) {
+  switch (block.type) {
+    case "text":
+      return (
+        <p className="whitespace-pre-wrap text-sm leading-relaxed">{block.content}</p>
+      );
+    case "tool_call":
+      return (
+        <div className="my-2">
+          <ToolCallBlock {...block.data} />
+        </div>
+      );
+    case "human_review":
+      return (
+        <HumanReviewBlock
+          data={block.data}
+          onResume={onHitlResume}
+          disabled={isStreaming}
+        />
+      );
+  }
+}
+
 function HumanReviewBlock({
-  payload,
-  resolved,
+  data,
   onResume,
   disabled,
 }: {
-  payload: Record<string, unknown>;
-  resolved: boolean;
+  data: HumanReviewData;
   onResume?: (action: "approve" | "modify" | "reject", data?: string) => void;
   disabled?: boolean;
 }) {
   return (
-    <div className="mt-3 rounded-lg border-2 border-yellow-300 bg-yellow-50 p-3 text-sm">
+    <div className="my-2 rounded-lg border-2 border-yellow-300 bg-yellow-50 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2 font-medium text-yellow-800">
         <span>👤</span>
         <span>Human Review Required</span>
@@ -80,11 +98,11 @@ function HumanReviewBlock({
           Review payload
         </summary>
         <pre className="mt-1 text-xs bg-white/60 rounded p-2 overflow-x-auto whitespace-pre-wrap">
-          {JSON.stringify(payload, null, 2)}
+          {JSON.stringify(data.payload, null, 2)}
         </pre>
       </details>
 
-      {resolved ? (
+      {data.resolved ? (
         <div className="mt-2 text-xs text-green-700 font-medium">✅ Resolved</div>
       ) : (
         onResume && (
@@ -99,8 +117,8 @@ function HumanReviewBlock({
             </button>
             <button
               onClick={() => {
-                const data = prompt("Modify data (JSON or text):");
-                if (data !== null) onResume("modify", data);
+                const input = prompt("Modify data (JSON or text):");
+                if (input !== null) onResume("modify", input);
               }}
               disabled={disabled}
               className="rounded-lg bg-yellow-600 text-white px-3 py-1.5 text-xs font-medium

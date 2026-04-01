@@ -18,14 +18,18 @@ export interface HumanReviewData {
   resolved: boolean;
 }
 
+// Ordered content blocks — rendered in sequence
+export type ContentBlock =
+  | { type: "text"; content: string }
+  | { type: "tool_call"; data: ToolCallData }
+  | { type: "human_review"; data: HumanReviewData };
+
 export interface Message {
   role: "user" | "assistant";
-  content: string;
+  blocks: ContentBlock[];
   reasoningContent: string;
-  toolCalls: ToolCallData[];
   nodes: NodeData[];
   error?: { errorType: string; message: string; recoverable: boolean };
-  humanReview?: HumanReviewData;
 }
 
 export interface RawEvent {
@@ -67,7 +71,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     set((s) => ({
       messages: [
         ...s.messages,
-        { role: "user", content, reasoningContent: "", toolCalls: [], nodes: [] },
+        { role: "user", blocks: [{ type: "text", content }], reasoningContent: "", nodes: [] },
       ],
     })),
 
@@ -75,7 +79,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     set((s) => ({
       messages: [
         ...s.messages,
-        { role: "assistant", content: "", reasoningContent: "", toolCalls: [], nodes: [] },
+        { role: "assistant", blocks: [], reasoningContent: "", nodes: [] },
       ],
     })),
 
@@ -93,13 +97,27 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       const last = messages[messages.length - 1];
       if (!last || last.role !== "assistant") return s;
 
-      const updated = { ...last };
+      const updated = { ...last, blocks: [...last.blocks] };
 
       switch (event.event.case) {
         case "messageDelta": {
           const delta = event.event.value;
-          updated.content += delta.content;
-          updated.reasoningContent += delta.reasoningContent;
+          if (delta.content) {
+            const lastBlock = updated.blocks[updated.blocks.length - 1];
+            if (lastBlock && lastBlock.type === "text") {
+              // Append to existing text block
+              updated.blocks[updated.blocks.length - 1] = {
+                type: "text",
+                content: lastBlock.content + delta.content,
+              };
+            } else {
+              // New text block
+              updated.blocks.push({ type: "text", content: delta.content });
+            }
+          }
+          if (delta.reasoningContent) {
+            updated.reasoningContent += delta.reasoningContent;
+          }
           break;
         }
         case "toolCallStart": {
@@ -108,10 +126,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
           try {
             input = JSON.parse(new TextDecoder().decode(tc.toolInput));
           } catch {}
-          updated.toolCalls = [
-            ...updated.toolCalls,
-            { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
-          ];
+          updated.blocks.push({
+            type: "tool_call",
+            data: { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
+          });
           break;
         }
         case "toolCallResult": {
@@ -120,8 +138,11 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
           try {
             result = JSON.parse(new TextDecoder().decode(tr.toolResult));
           } catch {}
-          updated.toolCalls = updated.toolCalls.map((tc) =>
-            tc.toolCallId === tr.toolCallId ? { ...tc, toolResult: result } : tc
+          // Find and update the matching tool_call block
+          updated.blocks = updated.blocks.map((block) =>
+            block.type === "tool_call" && block.data.toolCallId === tr.toolCallId
+              ? { type: "tool_call", data: { ...block.data, toolResult: result } }
+              : block
           );
           break;
         }
@@ -153,7 +174,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
             try {
               payload = JSON.parse(new TextDecoder().decode(custom.payload));
             } catch {}
-            updated.humanReview = { payload, resolved: false };
+            updated.blocks.push({
+              type: "human_review",
+              data: { payload, resolved: false },
+            });
           }
           break;
         }
@@ -168,11 +192,17 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     set((s) => {
       const messages = [...s.messages];
       const last = messages[messages.length - 1];
-      if (!last || !last.humanReview) return s;
-      messages[messages.length - 1] = {
-        ...last,
-        humanReview: { ...last.humanReview, resolved: true },
-      };
+      if (!last) return s;
+      // Find the last unresolved human_review block and mark it resolved
+      const blocks = [...last.blocks];
+      for (let i = blocks.length - 1; i >= 0; i--) {
+        const block = blocks[i];
+        if (block.type === "human_review" && !block.data.resolved) {
+          blocks[i] = { type: "human_review", data: { ...block.data, resolved: true } };
+          break;
+        }
+      }
+      messages[messages.length - 1] = { ...last, blocks };
       return { messages };
     }),
 
