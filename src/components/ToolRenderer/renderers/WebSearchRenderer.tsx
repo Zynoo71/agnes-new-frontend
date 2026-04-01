@@ -39,12 +39,12 @@ function SearchResults({ result }: { result: Record<string, unknown> }) {
             className="block p-2.5 bg-background hover:bg-surface-hover rounded-lg transition-colors group"
           >
             <p className="text-xs font-medium text-accent group-hover:underline">{r.title as string}</p>
-            {r.url && (
-              <p className="text-[10px] text-text-tertiary mt-0.5 truncate">{r.url as string}</p>
-            )}
-            {r.snippet && (
-              <p className="text-xs text-text-secondary mt-1 line-clamp-2">{r.snippet as string}</p>
-            )}
+            {r.url ? (
+              <p className="text-[10px] text-text-tertiary mt-0.5 truncate">{String(r.url)}</p>
+            ) : null}
+            {r.snippet ? (
+              <p className="text-xs text-text-secondary mt-1 line-clamp-2">{String(r.snippet)}</p>
+            ) : null}
           </a>
         ))}
       </div>

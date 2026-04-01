@@ -4,6 +4,7 @@ import { DefaultJsonRenderer } from "./DefaultJsonRenderer";
 
 // Import all renderers to trigger registration
 import "./renderers/WebSearchRenderer";
+import "./renderers/LoadSkillRenderer";
 
 export function ToolCallBlock({ toolName, toolInput, toolResult, toolCallId }: ToolCallData) {
   const Renderer = getToolRenderer(toolName) ?? DefaultJsonRenderer;
