@@ -39,10 +39,10 @@ export function ChatPanel() {
         <div className="flex items-center gap-3 px-5 py-2.5 border-b border-border-light bg-surface-alt">
           <button
             onClick={createConversation}
-            className="rounded-lg bg-text-primary text-white px-3.5 py-1.5 text-xs font-medium
-                       hover:bg-text-secondary active:scale-[0.97] transition-all shadow-sm"
+            className="rounded-lg bg-accent text-white px-3.5 py-1.5 text-xs font-medium
+                       hover:bg-accent-hover active:scale-[0.97] transition-all shadow-sm"
           >
-            New conversation
+            New Conversation
           </button>
 
           {conversationId && (
@@ -57,7 +57,7 @@ export function ChatPanel() {
                 <button
                   key={t}
                   onClick={() => setAgentType(t)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all capitalize ${
                     agentType === t
                       ? "bg-surface text-text-primary shadow-sm"
                       : "text-text-tertiary hover:text-text-secondary"
