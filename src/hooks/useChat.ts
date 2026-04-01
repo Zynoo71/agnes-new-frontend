@@ -39,7 +39,7 @@ export function useChat() {
   );
 
   const hitlResume = useCallback(
-    async (action: "approve" | "modify" | "reject", data?: string) => {
+    async (action: "approve" | "modify", feedback?: string) => {
       if (!store.conversationId) return;
 
       store.resolveHumanReview();
@@ -48,12 +48,8 @@ export function useChat() {
 
       try {
         const resumePayload: Record<string, unknown> = { action };
-        if (action === "modify" && data) {
-          try {
-            Object.assign(resumePayload, JSON.parse(data));
-          } catch {
-            resumePayload.data = data;
-          }
+        if (action === "modify" && feedback) {
+          resumePayload.feedback = feedback;
         }
 
         const stream = agentClient.hitlResumeStream({

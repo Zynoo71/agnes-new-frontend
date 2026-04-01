@@ -7,8 +7,8 @@ const inputClass = "w-full rounded-xl border border-border bg-surface px-3.5 py-
 
 export function HITLPanel() {
   const [convIdInput, setConvIdInput] = useState("");
-  const [action, setAction] = useState<"approve" | "modify" | "reject">("approve");
-  const [modifyData, setModifyData] = useState("");
+  const [action, setAction] = useState<"approve" | "modify">("approve");
+  const [feedback, setFeedback] = useState("");
   const [events, setEvents] = useState<RawEvent[]>([]);
   const [isStreaming, setStreaming] = useState(false);
   const [content, setContent] = useState("");
@@ -19,8 +19,8 @@ export function HITLPanel() {
     setEvents([]); setContent(""); setStreaming(true);
     try {
       const resumePayload: Record<string, unknown> = { action };
-      if (action === "modify" && modifyData) {
-        try { Object.assign(resumePayload, JSON.parse(modifyData)); } catch { resumePayload.data = modifyData; }
+      if (action === "modify" && feedback.trim()) {
+        resumePayload.feedback = feedback.trim();
       }
       const stream = agentClient.hitlResumeStream({
         conversationId: BigInt(id),
@@ -41,7 +41,7 @@ export function HITLPanel() {
         <div className="max-w-xl mx-auto space-y-5">
           <div>
             <h2 className="text-base font-semibold text-text-primary">Human-in-the-Loop</h2>
-            <p className="text-xs text-text-tertiary mt-0.5">Resume an interrupted agent with a review decision</p>
+            <p className="text-xs text-text-tertiary mt-0.5">Resume an interrupted agent with approve or modify</p>
           </div>
 
           <div className="space-y-4 rounded-2xl bg-surface border border-border-light p-5 shadow-sm">
@@ -54,7 +54,7 @@ export function HITLPanel() {
             <div>
               <label className="block text-xs font-medium text-text-secondary mb-1.5">Action</label>
               <div className="flex items-center bg-surface-hover rounded-xl p-0.5">
-                {(["approve", "modify", "reject"] as const).map((a) => (
+                {(["approve", "modify"] as const).map((a) => (
                   <button key={a} onClick={() => setAction(a)}
                     className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
                       action === a
@@ -69,10 +69,10 @@ export function HITLPanel() {
 
             {action === "modify" && (
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1.5">Modify Data</label>
-                <textarea value={modifyData} onChange={(e) => setModifyData(e.target.value)}
-                  placeholder='{"key": "value"}' rows={4}
-                  className={`${inputClass} font-mono`} />
+                <label className="block text-xs font-medium text-text-secondary mb-1.5">Feedback</label>
+                <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Enter your feedback or modifications..." rows={4}
+                  className={inputClass} />
               </div>
             )}
           </div>

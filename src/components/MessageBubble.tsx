@@ -1,10 +1,11 @@
+import { useState, useEffect } from "react";
 import type { Message, ContentBlock, HumanReviewData } from "@/stores/conversationStore";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { NodeSteps } from "./NodeSteps";
 
 interface MessageBubbleProps {
   message: Message;
-  onHitlResume?: (action: "approve" | "modify" | "reject", data?: string) => void;
+  onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
   isStreaming?: boolean;
 }
 
@@ -56,7 +57,7 @@ function BlockRenderer({
   isStreaming,
 }: {
   block: ContentBlock;
-  onHitlResume?: (action: "approve" | "modify" | "reject", data?: string) => void;
+  onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
   isStreaming?: boolean;
 }) {
   switch (block.type) {
@@ -83,34 +84,72 @@ function BlockRenderer({
   }
 }
 
+// ── Review type display config ──
+const REVIEW_TYPE_CONFIG: Record<string, { title: string; description: string }> = {
+  plan: { title: "Plan Review", description: "Review the proposed research plan before execution" },
+  clarification: { title: "Clarification Needed", description: "The agent needs more information to proceed" },
+};
+
 function HumanReviewBlock({
   data,
   onResume,
   disabled,
 }: {
   data: HumanReviewData;
-  onResume?: (action: "approve" | "modify" | "reject", data?: string) => void;
+  onResume?: (action: "approve" | "modify", feedback?: string) => void;
   disabled?: boolean;
 }) {
+  const [feedback, setFeedback] = useState("");
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const reviewType = data.payload.review_type as string | undefined;
+  const reviewData = data.payload.data as Record<string, unknown> | undefined;
+  const timeoutSeconds = data.payload.timeout_seconds as number | undefined;
+  const defaultAction = (data.payload.default_action as string) ?? "approve";
+  const config = REVIEW_TYPE_CONFIG[reviewType ?? ""] ?? {
+    title: "Review Required",
+    description: "The agent is waiting for your decision",
+  };
+
   return (
     <div className="my-3 rounded-xl border border-warning/30 bg-warning-light/50 p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-5 h-5 rounded-full bg-warning/20 flex items-center justify-center">
-          <span className="text-warning text-xs">!</span>
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-full bg-warning/20 flex items-center justify-center shrink-0">
+            <span className="text-warning text-xs font-bold">?</span>
+          </div>
+          <div>
+            <span className="text-sm font-semibold text-text-primary">{config.title}</span>
+            <p className="text-[11px] text-text-tertiary mt-0.5">{config.description}</p>
+          </div>
         </div>
-        <span className="text-sm font-semibold text-text-primary">Review Required</span>
+        {timeoutSeconds && !data.resolved && (
+          <CountdownBadge seconds={timeoutSeconds} defaultAction={defaultAction} onTimeout={() => onResume?.(defaultAction as "approve")} />
+        )}
       </div>
 
-      <details open>
-        <summary className="cursor-pointer text-xs font-medium text-text-secondary hover:text-text-primary transition-colors">
-          Payload
-        </summary>
-        <pre className="mt-2 text-xs bg-surface rounded-lg p-3 overflow-x-auto whitespace-pre-wrap
-                        border border-border-light font-mono text-text-secondary leading-relaxed">
-          {JSON.stringify(data.payload, null, 2)}
-        </pre>
-      </details>
+      {/* Review content */}
+      {reviewData && (
+        <div className="mb-3">
+          <ReviewDataDisplay reviewType={reviewType} data={reviewData} />
+        </div>
+      )}
 
+      {/* Raw payload fallback */}
+      {!reviewData && (
+        <details>
+          <summary className="cursor-pointer text-xs font-medium text-text-secondary hover:text-text-primary transition-colors">
+            Raw payload
+          </summary>
+          <pre className="mt-2 text-xs bg-surface rounded-lg p-3 overflow-x-auto whitespace-pre-wrap
+                          border border-border-light font-mono text-text-secondary leading-relaxed">
+            {JSON.stringify(data.payload, null, 2)}
+          </pre>
+        </details>
+      )}
+
+      {/* Actions */}
       {data.resolved ? (
         <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-medium">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -120,34 +159,130 @@ function HumanReviewBlock({
         </div>
       ) : (
         onResume && (
-          <div className="flex gap-2 mt-4">
-            {(["approve", "modify", "reject"] as const).map((action) => (
-              <button
-                key={action}
-                onClick={() => {
-                  if (action === "modify") {
-                    const input = prompt("Modify data (JSON or text):");
-                    if (input !== null) onResume(action, input);
-                  } else {
-                    onResume(action);
-                  }
-                }}
-                disabled={disabled}
-                className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all
-                           active:scale-[0.97] disabled:opacity-40 ${
-                  action === "approve"
-                    ? "bg-success text-white hover:bg-success/90"
-                    : action === "reject"
-                      ? "bg-error text-white hover:bg-error/90"
-                      : "bg-surface border border-border text-text-primary hover:bg-surface-hover"
-                }`}
-              >
-                {action.charAt(0).toUpperCase() + action.slice(1)}
-              </button>
-            ))}
+          <div className="mt-4 space-y-3">
+            {/* Feedback input for modify */}
+            {showFeedback && (
+              <div>
+                <textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Enter your feedback or modifications..."
+                  rows={3}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30
+                             placeholder:text-text-tertiary"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => { if (feedback.trim()) onResume("modify", feedback.trim()); }}
+                    disabled={disabled || !feedback.trim()}
+                    className="rounded-lg bg-accent text-white px-3.5 py-1.5 text-xs font-medium
+                               hover:bg-accent-hover active:scale-[0.97] disabled:opacity-40 transition-all"
+                  >
+                    Send Feedback
+                  </button>
+                  <button
+                    onClick={() => { setShowFeedback(false); setFeedback(""); }}
+                    className="rounded-lg px-3.5 py-1.5 text-xs font-medium text-text-tertiary
+                               hover:text-text-secondary hover:bg-surface-hover transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            {!showFeedback && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onResume("approve")}
+                  disabled={disabled}
+                  className="rounded-lg bg-success text-white px-4 py-1.5 text-xs font-medium
+                             hover:bg-success/90 active:scale-[0.97] disabled:opacity-40 transition-all"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => setShowFeedback(true)}
+                  disabled={disabled}
+                  className="rounded-lg bg-surface border border-border text-text-primary px-4 py-1.5 text-xs font-medium
+                             hover:bg-surface-hover active:scale-[0.97] disabled:opacity-40 transition-all"
+                >
+                  Modify
+                </button>
+              </div>
+            )}
+
+            <p className="text-[11px] text-text-tertiary">
+              You can also type directly in the chat input to provide feedback
+            </p>
           </div>
         )
       )}
     </div>
+  );
+}
+
+// ── Review data renderer ──
+function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Record<string, unknown> }) {
+  if (reviewType === "plan" && data.plan) {
+    const plan = data.plan as string[];
+    return (
+      <div className="space-y-1.5">
+        {(Array.isArray(plan) ? plan : [plan]).map((item, i) => (
+          <div key={i} className="flex items-start gap-2 text-sm">
+            <span className="text-text-tertiary text-xs mt-0.5 shrink-0 w-5 text-right">{i + 1}.</span>
+            <span className="text-text-primary">{String(item)}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (reviewType === "clarification" && data.question) {
+    const originalQuery = data.original_query as string | undefined;
+    return (
+      <div className="rounded-lg bg-surface border border-border-light p-3">
+        <p className="text-sm text-text-primary">{String(data.question)}</p>
+        {originalQuery && (
+          <p className="text-xs text-text-tertiary mt-2">
+            Original query: <span className="text-text-secondary">{originalQuery}</span>
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback: JSON
+  return (
+    <pre className="text-xs bg-surface rounded-lg p-3 overflow-x-auto whitespace-pre-wrap
+                    border border-border-light font-mono text-text-secondary leading-relaxed">
+      {JSON.stringify(data, null, 2)}
+    </pre>
+  );
+}
+
+// ── Countdown badge ──
+function CountdownBadge({ seconds, defaultAction, onTimeout }: {
+  seconds: number;
+  defaultAction: string;
+  onTimeout: () => void;
+}) {
+  const [remaining, setRemaining] = useState(seconds);
+
+  useEffect(() => {
+    if (remaining <= 0) { onTimeout(); return; }
+    const timer = setTimeout(() => setRemaining((r) => r - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [remaining, onTimeout]);
+
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+
+  return (
+    <span className="text-[10px] font-mono text-warning bg-warning/10 px-2 py-0.5 rounded-full shrink-0">
+      {mins}:{secs.toString().padStart(2, "0")} → {defaultAction}
+    </span>
   );
 }

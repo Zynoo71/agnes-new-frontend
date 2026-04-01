@@ -14,6 +14,11 @@ export function ChatPanel() {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Detect pending HITL review — ChatStream auto-converts typed messages to modify resume
+  const hasPendingReview = messages.some(
+    (m) => m.blocks.some((b) => b.type === "human_review" && !b.data.resolved)
+  );
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -123,7 +128,7 @@ export function ChatPanel() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={conversationId ? "Message..." : "Create a conversation first"}
+                placeholder={!conversationId ? "Create a conversation first" : hasPendingReview ? "Type feedback to modify, or use the buttons above..." : "Message..."}
                 disabled={isStreaming || !conversationId}
                 rows={1}
                 className="w-full resize-none bg-transparent px-4 py-3 pr-14 text-sm
