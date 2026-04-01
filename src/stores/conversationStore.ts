@@ -13,6 +13,11 @@ export interface NodeData {
   status: "running" | "done";
 }
 
+export interface HumanReviewData {
+  payload: Record<string, unknown>;
+  resolved: boolean;
+}
+
 export interface Message {
   role: "user" | "assistant";
   content: string;
@@ -20,6 +25,7 @@ export interface Message {
   toolCalls: ToolCallData[];
   nodes: NodeData[];
   error?: { errorType: string; message: string; recoverable: boolean };
+  humanReview?: HumanReviewData;
 }
 
 export interface RawEvent {
@@ -42,6 +48,7 @@ interface ConversationState {
   startAssistantMessage: () => void;
   processEvent: (event: AgentStreamEvent) => void;
   addRawEvent: (type: string, data: unknown) => void;
+  resolveHumanReview: () => void;
   reset: () => void;
 }
 
@@ -139,12 +146,35 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
           };
           break;
         }
+        case "custom": {
+          const custom = event.event.value;
+          if (custom.type === "human_review") {
+            let payload: Record<string, unknown> = {};
+            try {
+              payload = JSON.parse(new TextDecoder().decode(custom.payload));
+            } catch {}
+            updated.humanReview = { payload, resolved: false };
+          }
+          break;
+        }
       }
 
       messages[messages.length - 1] = updated;
       return { messages };
     });
   },
+
+  resolveHumanReview: () =>
+    set((s) => {
+      const messages = [...s.messages];
+      const last = messages[messages.length - 1];
+      if (!last || !last.humanReview) return s;
+      messages[messages.length - 1] = {
+        ...last,
+        humanReview: { ...last.humanReview, resolved: true },
+      };
+      return { messages };
+    }),
 
   reset: () =>
     set({ conversationId: null, messages: [], rawEvents: [], isStreaming: false }),

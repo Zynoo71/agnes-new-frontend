@@ -38,5 +38,40 @@ export function useChat() {
     [store]
   );
 
-  return { createConversation, sendMessage };
+  const hitlResume = useCallback(
+    async (action: "approve" | "modify" | "reject", data?: string) => {
+      if (!store.conversationId) return;
+
+      store.resolveHumanReview();
+      store.startAssistantMessage();
+      store.setStreaming(true);
+
+      try {
+        const resumePayload: Record<string, unknown> = { action };
+        if (action === "modify" && data) {
+          try {
+            Object.assign(resumePayload, JSON.parse(data));
+          } catch {
+            resumePayload.data = data;
+          }
+        }
+
+        const stream = agentClient.hitlResumeStream({
+          conversationId: store.conversationId,
+          resumeData: new TextEncoder().encode(JSON.stringify(resumePayload)),
+        });
+
+        for await (const event of stream) {
+          store.processEvent(event);
+        }
+      } catch (err) {
+        console.error("HitlResumeStream error:", err);
+      } finally {
+        store.setStreaming(false);
+      }
+    },
+    [store]
+  );
+
+  return { createConversation, sendMessage, hitlResume };
 }

@@ -9,7 +9,7 @@ const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
 export function ChatPanel() {
   const { conversationId, agentType, messages, rawEvents, isStreaming, setAgentType } =
     useConversationStore();
-  const { createConversation, sendMessage } = useChat();
+  const { createConversation, sendMessage, hitlResume } = useChat();
   const [showEvents, setShowEvents] = useState(false);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -83,7 +83,12 @@ export function ChatPanel() {
               </div>
             )}
             {messages.map((msg, i) => (
-              <MessageBubble key={i} message={msg} />
+              <MessageBubble
+                key={i}
+                message={msg}
+                onHitlResume={hitlResume}
+                isStreaming={isStreaming}
+              />
             ))}
             <div ref={bottomRef} />
           </div>
