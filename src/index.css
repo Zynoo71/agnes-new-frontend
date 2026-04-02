@@ -190,30 +190,3 @@ textarea {
 }
 .prose-agent strong { font-weight: 600; }
 .prose-agent em { font-style: italic; }
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  @theme {
-    --color-background: #1a1a1a;
-    --color-surface: #252525;
-    --color-surface-hover: #2f2f2f;
-    --color-surface-alt: #202020;
-    --color-border: #3a3a3a;
-    --color-border-light: #333333;
-    --color-text-primary: #e5e5e5;
-    --color-text-secondary: #a0a0a0;
-    --color-text-tertiary: #6a6a6a;
-    --color-accent-hover: #d4743d;
-    --color-accent-light: #3d2518;
-    --color-accent-subtle: #352015;
-    --color-user-bubble: #2f2c28;
-    --color-assistant-bubble: #252525;
-    --color-error: #f28b82;
-    --color-error-light: #3c2020;
-    --color-success: #81c995;
-    --color-success-light: #1e3028;
-    --color-warning: #fdd663;
-    --color-warning-light: #3e3520;
-    --color-console-bg: #161616;
-  }
-}

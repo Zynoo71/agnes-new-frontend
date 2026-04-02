@@ -42,7 +42,7 @@ export function Sidebar({ onNewChat, onSelectConversation }: SidebarProps) {
 
   return (
     <aside
-      className="shrink-0 bg-[#f0ece7] dark:bg-[#1e1e1e] border-r border-border-light flex flex-col h-full transition-[width] duration-200 ease-in-out"
+      className="shrink-0 bg-[#f0ece7] border-r border-border-light flex flex-col h-full transition-[width] duration-200 ease-in-out"
       style={{ width: collapsed ? 56 : 260 }}
     >
       {/* Header: collapse toggle */}
