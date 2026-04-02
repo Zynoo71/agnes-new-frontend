@@ -9,7 +9,7 @@ const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
 export function ChatPanel() {
   const { conversationId, agentType, messages, rawEvents, isStreaming, error, setAgentType } =
     useConversationStore();
-  const { createConversation, sendMessage, hitlResume, cancelStream } = useChat();
+  const { createConversation, sendMessage, hitlResume, editResend, regenerate, cancelStream } = useChat();
   const [showEvents, setShowEvents] = useState(false);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -108,7 +108,10 @@ export function ChatPanel() {
               <MessageBubble
                 key={i}
                 message={msg}
+                isLast={i === messages.length - 1}
                 onHitlResume={hitlResume}
+                onEditResend={editResend}
+                onRegenerate={regenerate}
                 isStreaming={isStreaming}
               />
             ))}

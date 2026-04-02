@@ -6,15 +6,45 @@ import { NodeSteps } from "./NodeSteps";
 
 interface MessageBubbleProps {
   message: Message;
+  isLast?: boolean;
   onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onEditResend?: (newQuery: string) => void;
+  onRegenerate?: () => void;
   isStreaming?: boolean;
 }
 
-export function MessageBubble({ message, onHitlResume, isStreaming }: MessageBubbleProps) {
+export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState("");
+
+  const canEdit = isUser && isLast && onEditResend && !isStreaming;
+  const canRegenerate = !isUser && isLast && onRegenerate && !isStreaming;
+
+  const handleStartEdit = () => {
+    const text = message.blocks
+      .filter((b): b is { type: "text"; content: string } => b.type === "text")
+      .map((b) => b.content)
+      .join("\n");
+    setEditText(text);
+    setEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    const trimmed = editText.trim();
+    if (trimmed && onEditResend) {
+      onEditResend(trimmed);
+      setEditing(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
+    setEditText("");
+  };
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-5`}>
+    <div className={`group flex ${isUser ? "justify-end" : "justify-start"} mb-5`}>
       <div
         className={`rounded-2xl ${
           isUser
@@ -24,14 +54,43 @@ export function MessageBubble({ message, onHitlResume, isStreaming }: MessageBub
       >
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
-        {message.blocks.map((block, i) => (
-          <BlockRenderer
-            key={i}
-            block={block}
-            onHitlResume={onHitlResume}
-            isStreaming={isStreaming}
-          />
-        ))}
+        {editing ? (
+          <div className="space-y-2">
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="w-full min-w-[300px] rounded-lg border border-border bg-surface px-3 py-2 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30"
+              rows={3}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editText.trim()}
+                className="rounded-lg bg-accent text-white px-3 py-1.5 text-xs font-medium
+                           hover:bg-accent-hover active:scale-[0.97] disabled:opacity-40 transition-all"
+              >
+                Save & Resend
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-text-tertiary
+                           hover:text-text-secondary hover:bg-surface-hover transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          message.blocks.map((block, i) => (
+            <BlockRenderer
+              key={i}
+              block={block}
+              onHitlResume={onHitlResume}
+              isStreaming={isStreaming}
+            />
+          ))
+        )}
 
         {message.error && (
           <div className="mt-3 flex items-start gap-2 p-3 bg-error-light rounded-xl text-xs">
@@ -46,6 +105,29 @@ export function MessageBubble({ message, onHitlResume, isStreaming }: MessageBub
               )}
             </div>
           </div>
+        )}
+
+        {/* Action buttons */}
+        {canEdit && !editing && (
+          <button
+            onClick={handleStartEdit}
+            className="mt-1.5 text-[11px] text-text-tertiary hover:text-text-secondary
+                       opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            Edit
+          </button>
+        )}
+        {canRegenerate && (
+          <button
+            onClick={onRegenerate}
+            className="mt-1.5 text-[11px] text-text-tertiary hover:text-text-secondary
+                       opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+            </svg>
+            Regenerate
+          </button>
         )}
       </div>
     </div>
