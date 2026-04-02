@@ -52,6 +52,7 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation,
   const { conversations, conversationId } = useConversationStore();
   const [collapsed, setCollapsed] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const groups = groupByDate(conversations);
 
@@ -123,7 +124,11 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation,
             {group.items.map((conv) => {
               const isActive = conversationId !== null && String(conversationId) === conv.id;
               return (
-                <div key={conv.id} className="group/conv relative mb-0.5">
+                <div
+                  key={conv.id}
+                  className={`group/conv relative mb-0.5 transition-all duration-200
+                    ${deletingId === conv.id ? "opacity-0 -translate-x-4 max-h-0 overflow-hidden" : "opacity-100 translate-x-0 max-h-20"}`}
+                >
                   <button
                     onClick={() => onSelectConversation(BigInt(conv.id))}
                     className={`w-full text-left rounded-lg transition-all relative
@@ -139,15 +144,19 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation,
                     {collapsed ? (
                       <span className="text-xs font-medium">{conv.title?.[0] ?? "?"}</span>
                     ) : confirmDeleteId === conv.id ? (
-                      /* Inline confirm — replaces title */
-                      <div className="flex items-center gap-2">
+                      /* Inline confirm — replaces title with fade-in */
+                      <div className="flex items-center gap-2 animate-message-in">
                         <span className="text-[12px] text-error font-medium">Delete?</span>
                         <button
                           ref={confirmRef}
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDeleteConversation(conv.id);
                             setConfirmDeleteId(null);
+                            setDeletingId(conv.id);
+                            setTimeout(() => {
+                              onDeleteConversation(conv.id);
+                              setDeletingId(null);
+                            }, 200);
                           }}
                           className="text-[11px] font-medium text-white bg-error px-2 py-0.5 rounded-md
                                      hover:bg-error/80 transition-all"
