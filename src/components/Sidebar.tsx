@@ -6,6 +6,7 @@ import type { ConvMeta } from "@/db";
 interface SidebarProps {
   onNewChat: () => void;
   onSelectConversation: (id: bigint) => void;
+  onDeleteConversation: (id: string) => void;
   mode: Mode;
   onModeChange: (mode: Mode) => void;
 }
@@ -47,7 +48,7 @@ const MODE_ICONS: Record<string, JSX.Element> = {
   ping: <path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />,
 };
 
-export function Sidebar({ onNewChat, onSelectConversation, mode, onModeChange }: SidebarProps) {
+export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation, mode, onModeChange }: SidebarProps) {
   const { conversations, conversationId } = useConversationStore();
   const [collapsed, setCollapsed] = useState(false);
   const groups = groupByDate(conversations);
@@ -108,36 +109,51 @@ export function Sidebar({ onNewChat, onSelectConversation, mode, onModeChange }:
             {group.items.map((conv) => {
               const isActive = conversationId !== null && String(conversationId) === conv.id;
               return (
-                <button
-                  key={conv.id}
-                  onClick={() => onSelectConversation(BigInt(conv.id))}
-                  className={`w-full text-left rounded-lg mb-0.5 transition-all relative
-                    ${collapsed ? "p-2 flex items-center justify-center" : "px-3 py-2"}
-                    ${isActive
-                      ? "bg-accent/10 text-text-primary"
-                      : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
-                    }`}
-                >
-                  <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all
-                    ${isActive ? "h-5 bg-accent" : "h-0 bg-transparent"}`} />
+                <div key={conv.id} className="group/conv relative mb-0.5">
+                  <button
+                    onClick={() => onSelectConversation(BigInt(conv.id))}
+                    className={`w-full text-left rounded-lg transition-all relative
+                      ${collapsed ? "p-2 flex items-center justify-center" : "px-3 py-2 pr-8"}
+                      ${isActive
+                        ? "bg-accent/10 text-text-primary"
+                        : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+                      }`}
+                  >
+                    <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all
+                      ${isActive ? "h-5 bg-accent" : "h-0 bg-transparent"}`} />
 
-                  {collapsed ? (
-                    <span className="text-xs font-medium">{conv.title?.[0] ?? "?"}</span>
-                  ) : (
-                    <>
-                      <div className="truncate text-[13px] font-medium leading-snug">{conv.title}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full capitalize
-                          ${AGENT_BADGE_COLORS[conv.agentType] ?? "bg-surface-hover text-text-tertiary"}`}>
-                          {conv.agentType}
-                        </span>
-                        <span className="text-[10px] text-text-tertiary">
-                          {new Date(conv.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
-                    </>
+                    {collapsed ? (
+                      <span className="text-xs font-medium">{conv.title?.[0] ?? "?"}</span>
+                    ) : (
+                      <>
+                        <div className="truncate text-[13px] font-medium leading-snug">{conv.title}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full capitalize
+                            ${AGENT_BADGE_COLORS[conv.agentType] ?? "bg-surface-hover text-text-tertiary"}`}>
+                            {conv.agentType}
+                          </span>
+                          <span className="text-[10px] text-text-tertiary">
+                            {new Date(conv.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </button>
+                  {/* Delete button — hover visible */}
+                  {!collapsed && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDeleteConversation(conv.id); }}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center
+                                 text-text-tertiary hover:text-error hover:bg-error-light
+                                 opacity-0 group-hover/conv:opacity-100 transition-all"
+                      title="Delete"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>

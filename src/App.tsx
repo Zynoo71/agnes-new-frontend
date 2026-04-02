@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useChat } from "@/hooks/useChat";
+import { deleteConversation as dbDelete } from "@/db";
 import { Sidebar } from "@/components/Sidebar";
 import { ChatPanel } from "@/panels/ChatPanel";
 import { PixaPanel } from "@/panels/PixaPanel";
@@ -49,11 +50,22 @@ export default function App() {
     await selectConversation(id);
   };
 
+  const handleDeleteConversation = (id: string) => {
+    dbDelete(id);
+    loadConversations();
+    // If deleting the active conversation, reset to empty state
+    const s = useConversationStore.getState();
+    if (s.conversationId !== null && String(s.conversationId) === id) {
+      s.reset();
+    }
+  };
+
   return (
     <div className="h-screen flex bg-background">
       <Sidebar
         onNewChat={handleNewChat}
         onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
         mode={mode}
         onModeChange={setMode}
       />
