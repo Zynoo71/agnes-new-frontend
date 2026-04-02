@@ -1,7 +1,9 @@
 import { useCallback, useRef } from "react";
 import { agentClient } from "@/grpc/client";
-import { useConversationStore } from "@/stores/conversationStore";
+import { useConversationStore, type ContentBlock } from "@/stores/conversationStore";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
+import { addConversation as dbAdd, updateConversation as dbUpdate } from "@/db";
+import type { Message } from "@/stores/conversationStore";
 
 const getState = () => useConversationStore.getState();
 
@@ -42,6 +44,9 @@ export function useChat() {
     getState().reset();
     const reply = await agentClient.createConversation({});
     getState().setConversationId(reply.conversationId);
+    const idNum = Number(reply.conversationId);
+    dbAdd(idNum, getState().agentType);
+    getState().loadConversations();
     return reply.conversationId;
   }, []);
 
@@ -58,6 +63,15 @@ export function useChat() {
       { signal },
     );
     await runStream(stream, signal);
+
+    // Update title from first user message
+    const msgs = getState().messages;
+    const userMsgs = msgs.filter((m) => m.role === "user");
+    if (userMsgs.length === 1 && s.conversationId) {
+      const title = query.length > 50 ? query.slice(0, 50) + "..." : query;
+      dbUpdate(Number(s.conversationId), { title });
+      getState().loadConversations();
+    }
   }, []);
 
   const hitlResume = useCallback(async (action: "approve" | "modify", feedback?: string) => {
@@ -125,5 +139,60 @@ export function useChat() {
     }
   }, []);
 
-  return { createConversation, sendMessage, hitlResume, editResend, regenerate, cancelStream };
+  const selectConversation = useCallback(async (id: bigint) => {
+    const s = getState();
+    if (s.isStreaming) return;
+    s.reset();
+    s.setConversationId(id);
+
+    try {
+      const resp = await agentClient.getConversationHistory({ conversationId: id });
+      const messages: Message[] = [];
+      for (const turn of resp.turns) {
+        // User message
+        const userText = turn.user
+          .filter((b) => b.type === "text")
+          .map((b) => (b.data as Record<string, unknown>)?.content ?? JSON.stringify(b.data))
+          .join("\n");
+        if (userText) {
+          messages.push({ role: "user", blocks: [{ type: "text", content: userText }], reasoningContent: "", nodes: [] });
+        }
+        // Assistant message
+        const assistantBlocks: ContentBlock[] = [];
+        for (const block of turn.assistant) {
+          if (block.type === "text") {
+            const content = (block.data as Record<string, unknown>)?.content as string ?? JSON.stringify(block.data);
+            assistantBlocks.push({ type: "text", content });
+          } else if (block.type === "tool_call") {
+            const data = block.data as Record<string, unknown>;
+            assistantBlocks.push({
+              type: "tool_call",
+              data: {
+                toolCallId: block.toolCallId || "",
+                toolName: (data?.name as string) ?? "",
+                toolInput: (data?.args as Record<string, unknown>) ?? {},
+              },
+            });
+          } else if (block.type === "tool_result") {
+            const data = block.data as Record<string, unknown>;
+            const existing = assistantBlocks.find(
+              (b) => b.type === "tool_call" && b.data.toolCallId === block.toolCallId,
+            );
+            if (existing && existing.type === "tool_call") {
+              existing.data.toolResult = (data?.content as Record<string, unknown>) ?? data ?? {};
+            }
+          }
+        }
+        if (assistantBlocks.length > 0) {
+          messages.push({ role: "assistant", blocks: assistantBlocks, reasoningContent: "", nodes: [] });
+        }
+      }
+      getState().setMessages(messages);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      getState().setError(`Load history: ${msg}`);
+    }
+  }, []);
+
+  return { createConversation, sendMessage, hitlResume, editResend, regenerate, cancelStream, selectConversation };
 }

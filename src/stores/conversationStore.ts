@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
+import { listConversations as dbList, type ConvMeta } from "@/db";
 
 function tryDecodeJson(bytes: Uint8Array): unknown {
   try {
@@ -65,6 +66,9 @@ interface ConversationState {
   resolveHumanReview: () => void;
   removeLastRound: () => void;
   removeLastAssistantMessage: () => void;
+  conversations: ConvMeta[];
+  loadConversations: () => void;
+  setMessages: (messages: Message[]) => void;
   reset: () => void;
 }
 
@@ -75,6 +79,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   rawEvents: [],
   isStreaming: false,
   error: null,
+  conversations: [],
 
   setConversationId: (id) => set({ conversationId: id }),
   setAgentType: (type) => set({ agentType: type }),
@@ -245,6 +250,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
       return { messages };
     }),
+
+  loadConversations: () => set({ conversations: dbList() }),
+
+  setMessages: (messages) => set({ messages }),
 
   reset: () =>
     set({ conversationId: null, messages: [], rawEvents: [], isStreaming: false, error: null }),
