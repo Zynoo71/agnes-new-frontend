@@ -141,8 +141,8 @@ export function useChat() {
   const selectConversation = useCallback(async (id: bigint) => {
     const s = getState();
     if (s.isStreaming) return;
-    s.reset();
     s.setConversationId(id);
+    s.setError(null);
 
     try {
       const resp = await agentClient.getConversationHistory({ conversationId: id });

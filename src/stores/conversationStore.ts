@@ -257,7 +257,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
   loadConversations: () => set({ conversations: dbList() }),
 
-  setMessages: (messages) => set({ messages }),
+  setMessages: (messages) => set({ messages, rawEvents: [] }),
 
   reset: () =>
     set({ conversationId: null, messages: [], rawEvents: [], isStreaming: false, error: null }),
