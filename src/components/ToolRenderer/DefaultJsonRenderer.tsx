@@ -1,5 +1,24 @@
 import type { ToolRenderProps } from "./registry";
 
+/** Recursively parse JSON string values so they display as objects, not escaped strings. */
+function deepParseJson(obj: unknown): unknown {
+  if (typeof obj === "string") {
+    try {
+      const parsed = JSON.parse(obj);
+      return typeof parsed === "object" && parsed !== null ? deepParseJson(parsed) : parsed;
+    } catch {
+      return obj;
+    }
+  }
+  if (Array.isArray(obj)) return obj.map(deepParseJson);
+  if (obj && typeof obj === "object") {
+    return Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [k, deepParseJson(v)])
+    );
+  }
+  return obj;
+}
+
 export function DefaultJsonRenderer({ toolName, toolInput, toolResult }: ToolRenderProps) {
   return (
     <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 text-sm shadow-sm">
@@ -24,7 +43,7 @@ export function DefaultJsonRenderer({ toolName, toolInput, toolResult }: ToolRen
         </summary>
         <pre className="mt-1.5 text-[11px] bg-background rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap
                         font-mono text-text-secondary leading-relaxed border border-border-light">
-          {JSON.stringify(toolInput, null, 2)}
+          {JSON.stringify(deepParseJson(toolInput), null, 2)}
         </pre>
       </details>
       {toolResult && (
@@ -34,7 +53,7 @@ export function DefaultJsonRenderer({ toolName, toolInput, toolResult }: ToolRen
           </summary>
           <pre className="mt-1.5 text-[11px] bg-background rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap
                           font-mono text-text-secondary leading-relaxed border border-border-light">
-            {JSON.stringify(toolResult, null, 2)}
+            {JSON.stringify(deepParseJson(toolResult), null, 2)}
           </pre>
         </details>
       )}
