@@ -74,7 +74,7 @@ interface ConversationState {
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
   conversationId: null,
-  agentType: "search",
+  agentType: "super",
   messages: [],
   rawEvents: [],
   isStreaming: false,
@@ -145,8 +145,12 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
               updated.blocks.push({ type: "text", content: delta.content });
             }
           }
-          if (delta.reasoningContent) {
-            updated.reasoningContent += delta.reasoningContent;
+          break;
+        }
+        case "reasoningDelta": {
+          const delta = event.event.value;
+          if (delta.content) {
+            updated.reasoningContent += delta.content;
           }
           break;
         }

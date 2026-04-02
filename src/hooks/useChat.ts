@@ -158,10 +158,14 @@ export function useChat() {
         }
         // Assistant message
         const assistantBlocks: ContentBlock[] = [];
+        let reasoning = "";
         for (const block of turn.assistant) {
           if (block.type === "text") {
             const content = (block.data as Record<string, unknown>)?.content as string ?? JSON.stringify(block.data);
             assistantBlocks.push({ type: "text", content });
+          } else if (block.type === "reasoning") {
+            const content = (block.data as Record<string, unknown>)?.content as string ?? "";
+            reasoning += content;
           } else if (block.type === "tool_call") {
             const data = block.data as Record<string, unknown>;
             assistantBlocks.push({
@@ -182,8 +186,8 @@ export function useChat() {
             }
           }
         }
-        if (assistantBlocks.length > 0) {
-          messages.push({ role: "assistant", blocks: assistantBlocks, reasoningContent: "", nodes: [] });
+        if (assistantBlocks.length > 0 || reasoning) {
+          messages.push({ role: "assistant", blocks: assistantBlocks, reasoningContent: reasoning, nodes: [] });
         }
       }
       getState().setMessages(messages);

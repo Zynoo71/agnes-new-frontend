@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file common/v1/agent_stream.proto.
  */
 export const file_common_v1_agent_stream: GenFile = /*@__PURE__*/
-  fileDesc("Chxjb21tb24vdjEvYWdlbnRfc3RyZWFtLnByb3RvEgljb21tb24udjEi0QMKEEFnZW50U3RyZWFtRXZlbnQSEgoKbWVzc2FnZV9pZBgBIAEoCRIsCgthZ2VudF9zdGFydBgKIAEoCzIVLmNvbW1vbi52MS5BZ2VudFN0YXJ0SAASKAoJYWdlbnRfZW5kGAsgASgLMhMuY29tbW9uLnYxLkFnZW50RW5kSAASLAoLYWdlbnRfZXJyb3IYDCABKAsyFS5jb21tb24udjEuQWdlbnRFcnJvckgAEioKCm5vZGVfc3RhcnQYDSABKAsyFC5jb21tb24udjEuTm9kZVN0YXJ0SAASJgoIbm9kZV9lbmQYDiABKAsyEi5jb21tb24udjEuTm9kZUVuZEgAEjAKDW1lc3NhZ2VfZGVsdGEYDyABKAsyFy5jb21tb24udjEuTWVzc2FnZURlbHRhSAASMwoPdG9vbF9jYWxsX3N0YXJ0GBAgASgLMhguY29tbW9uLnYxLlRvb2xDYWxsU3RhcnRIABI1ChB0b29sX2NhbGxfcmVzdWx0GBEgASgLMhkuY29tbW9uLnYxLlRvb2xDYWxsUmVzdWx0SAASKAoGY3VzdG9tGGQgASgLMhYuY29tbW9uLnYxLkN1c3RvbUV2ZW50SABCBwoFZXZlbnQiDAoKQWdlbnRTdGFydCIKCghBZ2VudEVuZCJGCgpBZ2VudEVycm9yEhIKCmVycm9yX3R5cGUYASABKAkSDwoHbWVzc2FnZRgCIAEoCRITCgtyZWNvdmVyYWJsZRgDIAEoCCIZCglOb2RlU3RhcnQSDAoEbm9kZRgBIAEoCSIXCgdOb2RlRW5kEgwKBG5vZGUYASABKAkiOgoMTWVzc2FnZURlbHRhEg8KB2NvbnRlbnQYASABKAkSGQoRcmVhc29uaW5nX2NvbnRlbnQYAiABKAkiTAoNVG9vbENhbGxTdGFydBIRCgl0b29sX25hbWUYASABKAkSEgoKdG9vbF9pbnB1dBgCIAEoDBIUCgx0b29sX2NhbGxfaWQYAyABKAkiTgoOVG9vbENhbGxSZXN1bHQSEQoJdG9vbF9uYW1lGAEgASgJEhMKC3Rvb2xfcmVzdWx0GAIgASgMEhQKDHRvb2xfY2FsbF9pZBgDIAEoCSIsCgtDdXN0b21FdmVudBIMCgR0eXBlGAEgASgJEg8KB3BheWxvYWQYAiABKAxCJ1olYWduZXMvcHJvdG8vZ2VuL2dvL2NvbW1vbi92MTtjb21tb252MWIGcHJvdG8z");
+  fileDesc("Chxjb21tb24vdjEvYWdlbnRfc3RyZWFtLnByb3RvEgljb21tb24udjEivQQKEEFnZW50U3RyZWFtRXZlbnQSEgoKbWVzc2FnZV9pZBgBIAEoCRIsCgthZ2VudF9zdGFydBgKIAEoCzIVLmNvbW1vbi52MS5BZ2VudFN0YXJ0SAASKAoJYWdlbnRfZW5kGAsgASgLMhMuY29tbW9uLnYxLkFnZW50RW5kSAASLAoLYWdlbnRfZXJyb3IYDCABKAsyFS5jb21tb24udjEuQWdlbnRFcnJvckgAEjQKD2FnZW50X2NhbmNlbGxlZBgSIAEoCzIZLmNvbW1vbi52MS5BZ2VudENhbmNlbGxlZEgAEioKCm5vZGVfc3RhcnQYDSABKAsyFC5jb21tb24udjEuTm9kZVN0YXJ0SAASJgoIbm9kZV9lbmQYDiABKAsyEi5jb21tb24udjEuTm9kZUVuZEgAEjAKDW1lc3NhZ2VfZGVsdGEYDyABKAsyFy5jb21tb24udjEuTWVzc2FnZURlbHRhSAASNAoPcmVhc29uaW5nX2RlbHRhGBMgASgLMhkuY29tbW9uLnYxLlJlYXNvbmluZ0RlbHRhSAASMwoPdG9vbF9jYWxsX3N0YXJ0GBAgASgLMhguY29tbW9uLnYxLlRvb2xDYWxsU3RhcnRIABI1ChB0b29sX2NhbGxfcmVzdWx0GBEgASgLMhkuY29tbW9uLnYxLlRvb2xDYWxsUmVzdWx0SAASKAoGY3VzdG9tGGQgASgLMhYuY29tbW9uLnYxLkN1c3RvbUV2ZW50SABCBwoFZXZlbnQiDAoKQWdlbnRTdGFydCIKCghBZ2VudEVuZCIQCg5BZ2VudENhbmNlbGxlZCJGCgpBZ2VudEVycm9yEhIKCmVycm9yX3R5cGUYASABKAkSDwoHbWVzc2FnZRgCIAEoCRITCgtyZWNvdmVyYWJsZRgDIAEoCCIZCglOb2RlU3RhcnQSDAoEbm9kZRgBIAEoCSIXCgdOb2RlRW5kEgwKBG5vZGUYASABKAkiHwoMTWVzc2FnZURlbHRhEg8KB2NvbnRlbnQYASABKAkiIQoOUmVhc29uaW5nRGVsdGESDwoHY29udGVudBgBIAEoCSJMCg1Ub29sQ2FsbFN0YXJ0EhEKCXRvb2xfbmFtZRgBIAEoCRISCgp0b29sX2lucHV0GAIgASgMEhQKDHRvb2xfY2FsbF9pZBgDIAEoCSJOCg5Ub29sQ2FsbFJlc3VsdBIRCgl0b29sX25hbWUYASABKAkSEwoLdG9vbF9yZXN1bHQYAiABKAwSFAoMdG9vbF9jYWxsX2lkGAMgASgJIiwKC0N1c3RvbUV2ZW50EgwKBHR5cGUYASABKAkSDwoHcGF5bG9hZBgCIAEoDEInWiVhZ25lcy9wcm90by9nZW4vZ28vY29tbW9uL3YxO2NvbW1vbnYxYgZwcm90bzM");
 
 /**
  * AgentStreamEvent 是所有 Agent 流式 RPC 的统一输出格式。
@@ -54,6 +54,12 @@ export type AgentStreamEvent = Message<"common.v1.AgentStreamEvent"> & {
     case: "agentError";
   } | {
     /**
+     * @generated from field: common.v1.AgentCancelled agent_cancelled = 18;
+     */
+    value: AgentCancelled;
+    case: "agentCancelled";
+  } | {
+    /**
      * @generated from field: common.v1.NodeStart node_start = 13;
      */
     value: NodeStart;
@@ -70,6 +76,12 @@ export type AgentStreamEvent = Message<"common.v1.AgentStreamEvent"> & {
      */
     value: MessageDelta;
     case: "messageDelta";
+  } | {
+    /**
+     * @generated from field: common.v1.ReasoningDelta reasoning_delta = 19;
+     */
+    value: ReasoningDelta;
+    case: "reasoningDelta";
   } | {
     /**
      * @generated from field: common.v1.ToolCallStart tool_call_start = 16;
@@ -125,6 +137,19 @@ export const AgentEndSchema: GenMessage<AgentEnd> = /*@__PURE__*/
   messageDesc(file_common_v1_agent_stream, 2);
 
 /**
+ * @generated from message common.v1.AgentCancelled
+ */
+export type AgentCancelled = Message<"common.v1.AgentCancelled"> & {
+};
+
+/**
+ * Describes the message common.v1.AgentCancelled.
+ * Use `create(AgentCancelledSchema)` to create a new message.
+ */
+export const AgentCancelledSchema: GenMessage<AgentCancelled> = /*@__PURE__*/
+  messageDesc(file_common_v1_agent_stream, 3);
+
+/**
  * @generated from message common.v1.AgentError
  */
 export type AgentError = Message<"common.v1.AgentError"> & {
@@ -149,7 +174,7 @@ export type AgentError = Message<"common.v1.AgentError"> & {
  * Use `create(AgentErrorSchema)` to create a new message.
  */
 export const AgentErrorSchema: GenMessage<AgentError> = /*@__PURE__*/
-  messageDesc(file_common_v1_agent_stream, 3);
+  messageDesc(file_common_v1_agent_stream, 4);
 
 /**
  * @generated from message common.v1.NodeStart
@@ -166,7 +191,7 @@ export type NodeStart = Message<"common.v1.NodeStart"> & {
  * Use `create(NodeStartSchema)` to create a new message.
  */
 export const NodeStartSchema: GenMessage<NodeStart> = /*@__PURE__*/
-  messageDesc(file_common_v1_agent_stream, 4);
+  messageDesc(file_common_v1_agent_stream, 5);
 
 /**
  * @generated from message common.v1.NodeEnd
@@ -183,7 +208,7 @@ export type NodeEnd = Message<"common.v1.NodeEnd"> & {
  * Use `create(NodeEndSchema)` to create a new message.
  */
 export const NodeEndSchema: GenMessage<NodeEnd> = /*@__PURE__*/
-  messageDesc(file_common_v1_agent_stream, 5);
+  messageDesc(file_common_v1_agent_stream, 6);
 
 /**
  * @generated from message common.v1.MessageDelta
@@ -193,11 +218,6 @@ export type MessageDelta = Message<"common.v1.MessageDelta"> & {
    * @generated from field: string content = 1;
    */
   content: string;
-
-  /**
-   * @generated from field: string reasoning_content = 2;
-   */
-  reasoningContent: string;
 };
 
 /**
@@ -205,7 +225,24 @@ export type MessageDelta = Message<"common.v1.MessageDelta"> & {
  * Use `create(MessageDeltaSchema)` to create a new message.
  */
 export const MessageDeltaSchema: GenMessage<MessageDelta> = /*@__PURE__*/
-  messageDesc(file_common_v1_agent_stream, 6);
+  messageDesc(file_common_v1_agent_stream, 7);
+
+/**
+ * @generated from message common.v1.ReasoningDelta
+ */
+export type ReasoningDelta = Message<"common.v1.ReasoningDelta"> & {
+  /**
+   * @generated from field: string content = 1;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message common.v1.ReasoningDelta.
+ * Use `create(ReasoningDeltaSchema)` to create a new message.
+ */
+export const ReasoningDeltaSchema: GenMessage<ReasoningDelta> = /*@__PURE__*/
+  messageDesc(file_common_v1_agent_stream, 8);
 
 /**
  * @generated from message common.v1.ToolCallStart
@@ -236,7 +273,7 @@ export type ToolCallStart = Message<"common.v1.ToolCallStart"> & {
  * Use `create(ToolCallStartSchema)` to create a new message.
  */
 export const ToolCallStartSchema: GenMessage<ToolCallStart> = /*@__PURE__*/
-  messageDesc(file_common_v1_agent_stream, 7);
+  messageDesc(file_common_v1_agent_stream, 9);
 
 /**
  * @generated from message common.v1.ToolCallResult
@@ -267,7 +304,7 @@ export type ToolCallResult = Message<"common.v1.ToolCallResult"> & {
  * Use `create(ToolCallResultSchema)` to create a new message.
  */
 export const ToolCallResultSchema: GenMessage<ToolCallResult> = /*@__PURE__*/
-  messageDesc(file_common_v1_agent_stream, 8);
+  messageDesc(file_common_v1_agent_stream, 10);
 
 /**
  * @generated from message common.v1.CustomEvent
@@ -291,5 +328,5 @@ export type CustomEvent = Message<"common.v1.CustomEvent"> & {
  * Use `create(CustomEventSchema)` to create a new message.
  */
 export const CustomEventSchema: GenMessage<CustomEvent> = /*@__PURE__*/
-  messageDesc(file_common_v1_agent_stream, 9);
+  messageDesc(file_common_v1_agent_stream, 11);
 
