@@ -111,8 +111,7 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
         {canEdit && !editing && (
           <button
             onClick={handleStartEdit}
-            className="mt-1.5 text-[11px] text-text-tertiary hover:text-text-secondary
-                       opacity-0 group-hover:opacity-100 transition-opacity"
+            className="mt-1.5 text-[11px] text-text-tertiary hover:text-text-secondary transition-colors"
           >
             Edit
           </button>
@@ -120,8 +119,7 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
         {canRegenerate && (
           <button
             onClick={onRegenerate}
-            className="mt-1.5 text-[11px] text-text-tertiary hover:text-text-secondary
-                       opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+            className="mt-1.5 text-[11px] text-text-tertiary hover:text-text-secondary transition-colors flex items-center gap-1"
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
