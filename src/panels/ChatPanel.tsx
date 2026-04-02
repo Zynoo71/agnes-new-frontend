@@ -9,7 +9,7 @@ const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
 export function ChatPanel() {
   const { conversationId, agentType, messages, rawEvents, isStreaming, error, setAgentType } =
     useConversationStore();
-  const { createConversation, sendMessage, hitlResume } = useChat();
+  const { createConversation, sendMessage, hitlResume, cancelStream } = useChat();
   const [showEvents, setShowEvents] = useState(false);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -141,22 +141,35 @@ export function ChatPanel() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={!conversationId ? "Create a conversation first" : hasPendingReview ? "Type feedback to modify, or use the buttons above..." : "Message..."}
-                disabled={isStreaming || !conversationId}
+                disabled={!conversationId}
                 rows={1}
                 className="w-full resize-none bg-transparent px-4 py-3 pr-14 text-sm
                            focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
               />
-              <button
-                onClick={handleSend}
-                disabled={isStreaming || !conversationId || !input.trim()}
-                className="absolute right-2 bottom-2 rounded-xl bg-text-primary text-white p-2
-                           hover:bg-text-secondary disabled:opacity-20 disabled:hover:bg-text-primary
-                           active:scale-95 transition-all"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
-                </svg>
-              </button>
+              {isStreaming ? (
+                <button
+                  onClick={cancelStream}
+                  className="absolute right-2 bottom-2 rounded-xl bg-error text-white p-2
+                             hover:bg-error/80 active:scale-95 transition-all"
+                  title="Stop generating"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSend}
+                  disabled={!conversationId || !input.trim()}
+                  className="absolute right-2 bottom-2 rounded-xl bg-text-primary text-white p-2
+                             hover:bg-text-secondary disabled:opacity-20 disabled:hover:bg-text-primary
+                             active:scale-95 transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>
