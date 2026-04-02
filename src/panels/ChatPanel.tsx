@@ -9,7 +9,7 @@ const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
 export function ChatPanel() {
   const { conversationId, agentType, messages, rawEvents, isStreaming, error, setAgentType } =
     useConversationStore();
-  const { createConversation, sendMessage, hitlResume, editResend, regenerate, cancelStream } = useChat();
+  const { sendMessage, hitlResume, editResend, regenerate, cancelStream } = useChat();
   const [showEvents, setShowEvents] = useState(false);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -46,14 +46,6 @@ export function ChatPanel() {
       <div className="flex-1 flex flex-col">
         {/* Top controls */}
         <div className="flex items-center gap-3 px-5 py-2.5 border-b border-border-light bg-surface-alt">
-          <button
-            onClick={createConversation}
-            className="rounded-lg bg-accent text-white px-3.5 py-1.5 text-xs font-medium
-                       hover:bg-accent-hover active:scale-[0.97] transition-all shadow-sm"
-          >
-            New Conversation
-          </button>
-
           {conversationId && (
             <code className="text-[11px] text-text-tertiary bg-surface-hover px-2 py-0.5 rounded-md">
               #{conversationId.toString()}
