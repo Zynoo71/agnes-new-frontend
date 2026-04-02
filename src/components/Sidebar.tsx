@@ -138,6 +138,29 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation,
 
                     {collapsed ? (
                       <span className="text-xs font-medium">{conv.title?.[0] ?? "?"}</span>
+                    ) : confirmDeleteId === conv.id ? (
+                      /* Inline confirm — replaces title */
+                      <div className="flex items-center gap-2">
+                        <span className="text-[12px] text-error font-medium">Delete?</span>
+                        <button
+                          ref={confirmRef}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteConversation(conv.id);
+                            setConfirmDeleteId(null);
+                          }}
+                          className="text-[11px] font-medium text-white bg-error px-2 py-0.5 rounded-md
+                                     hover:bg-error/80 transition-all"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                          className="text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors"
+                        >
+                          No
+                        </button>
+                      </div>
                     ) : (
                       <>
                         <div className="truncate text-[13px] font-medium leading-snug">{conv.title}</div>
@@ -153,21 +176,8 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation,
                       </>
                     )}
                   </button>
-                  {/* Delete button — hover visible, with inline confirm */}
-                  {!collapsed && confirmDeleteId === conv.id ? (
-                    <button
-                      ref={confirmRef}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteConversation(conv.id);
-                        setConfirmDeleteId(null);
-                      }}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md
-                                 text-[10px] font-medium text-error bg-error-light hover:bg-error/20 transition-all"
-                    >
-                      Delete?
-                    </button>
-                  ) : !collapsed && (
+                  {/* Delete icon — hover visible, only when not confirming */}
+                  {!collapsed && confirmDeleteId !== conv.id && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(conv.id); }}
                       className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center
