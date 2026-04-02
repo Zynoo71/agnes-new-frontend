@@ -1,11 +1,43 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { agentClient } from "@/grpc/client";
 import { useConversationStore } from "@/stores/conversationStore";
+import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
-// Read latest state inside async callbacks to avoid stale closures
 const getState = () => useConversationStore.getState();
 
 export function useChat() {
+  const abortRef = useRef<AbortController | null>(null);
+
+  /** Shared streaming loop — iterates events, handles errors, resets streaming flag. */
+  const runStream = async (
+    iter: AsyncIterable<AgentStreamEvent>,
+    signal: AbortSignal,
+  ) => {
+    try {
+      for await (const event of iter) {
+        if (signal.aborted) break;
+        getState().processEvent(event);
+      }
+    } catch (err) {
+      if (signal.aborted) return; // user-initiated cancel, not an error
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Stream error:", err);
+      getState().setError(msg);
+    } finally {
+      getState().setStreaming(false);
+    }
+  };
+
+  /** Prepare state for a new streaming call and return an AbortSignal. */
+  const beginStream = (): AbortSignal => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    getState().setStreaming(true);
+    getState().setError(null);
+    return ac.signal;
+  };
+
   const createConversation = useCallback(async () => {
     getState().reset();
     const reply = await agentClient.createConversation({});
@@ -19,26 +51,13 @@ export function useChat() {
 
     s.addUserMessage(query);
     s.startAssistantMessage();
-    s.setStreaming(true);
-    s.setError(null);
+    const signal = beginStream();
 
-    try {
-      const stream = agentClient.chatStream({
-        conversationId: s.conversationId,
-        query,
-        agentType: s.agentType,
-      });
-
-      for await (const event of stream) {
-        getState().processEvent(event);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("ChatStream error:", err);
-      getState().setError(`ChatStream: ${msg}`);
-    } finally {
-      getState().setStreaming(false);
-    }
+    const stream = agentClient.chatStream(
+      { conversationId: s.conversationId, query, agentType: s.agentType },
+      { signal },
+    );
+    await runStream(stream, signal);
   }, []);
 
   const hitlResume = useCallback(async (action: "approve" | "modify", feedback?: string) => {
@@ -47,31 +66,64 @@ export function useChat() {
 
     s.resolveHumanReview();
     s.startAssistantMessage();
-    s.setStreaming(true);
-    s.setError(null);
+    const signal = beginStream();
 
-    try {
-      const resumePayload: Record<string, unknown> = { action };
-      if (action === "modify" && feedback) {
-        resumePayload.feedback = feedback;
-      }
+    const resumePayload: Record<string, unknown> = { action };
+    if (action === "modify" && feedback) resumePayload.feedback = feedback;
 
-      const stream = agentClient.hitlResumeStream({
+    const stream = agentClient.hitlResumeStream(
+      {
         conversationId: s.conversationId,
         resumeData: new TextEncoder().encode(JSON.stringify(resumePayload)),
-      });
+      },
+      { signal },
+    );
+    await runStream(stream, signal);
+  }, []);
 
-      for await (const event of stream) {
-        getState().processEvent(event);
+  const editResend = useCallback(async (newQuery: string) => {
+    const s = getState();
+    if (!s.conversationId) return;
+
+    s.removeLastRound();
+    s.addUserMessage(newQuery);
+    s.startAssistantMessage();
+    const signal = beginStream();
+
+    const stream = agentClient.editResendStream(
+      { conversationId: s.conversationId, query: newQuery },
+      { signal },
+    );
+    await runStream(stream, signal);
+  }, []);
+
+  const regenerate = useCallback(async () => {
+    const s = getState();
+    if (!s.conversationId) return;
+
+    s.removeLastAssistantMessage();
+    s.startAssistantMessage();
+    const signal = beginStream();
+
+    const stream = agentClient.regenerateStream(
+      { conversationId: s.conversationId },
+      { signal },
+    );
+    await runStream(stream, signal);
+  }, []);
+
+  const cancelStream = useCallback(async () => {
+    const s = getState();
+    abortRef.current?.abort();
+    abortRef.current = null;
+    if (s.conversationId) {
+      try {
+        await agentClient.cancelStream({ conversationId: s.conversationId });
+      } catch (err) {
+        console.error("CancelStream RPC error:", err);
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("HitlResumeStream error:", err);
-      getState().setError(`HitlResume: ${msg}`);
-    } finally {
-      getState().setStreaming(false);
     }
   }, []);
 
-  return { createConversation, sendMessage, hitlResume };
+  return { createConversation, sendMessage, hitlResume, editResend, regenerate, cancelStream };
 }
