@@ -15,7 +15,7 @@ const SUGGESTIONS = [
 export function ChatPanel() {
   const { conversationId, agentType, messages, rawEvents, isStreaming, error, setAgentType } =
     useConversationStore();
-  const { sendMessage, hitlResume, editResend, regenerate, cancelStream } = useChat();
+  const { createConversation, sendMessage, hitlResume, editResend, regenerate, cancelStream } = useChat();
   const [showEvents, setShowEvents] = useState(false);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -43,15 +43,18 @@ export function ChatPanel() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSend = (text?: string) => {
+  const handleSend = async (text?: string) => {
     const trimmed = (text ?? input).trim();
-    if (!trimmed || isStreaming || !conversationId) return;
+    if (!trimmed || isStreaming) return;
+    setInput("");
+    if (!conversationId) {
+      await createConversation();
+    }
     if (hasPendingReview) {
       hitlResume("modify", trimmed);
     } else {
       sendMessage(trimmed);
     }
-    setInput("");
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -81,8 +84,7 @@ export function ChatPanel() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={!conversationId ? "Create a conversation first" : hasPendingReview ? "Type feedback to modify..." : "Ask Agnes anything..."}
-          disabled={!conversationId}
+          placeholder={hasPendingReview ? "Type feedback to modify..." : "Ask Agnes anything..."}
           rows={1}
           className="flex-1 resize-none bg-transparent py-3.5 pr-14 text-sm
                      focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
@@ -102,7 +104,7 @@ export function ChatPanel() {
       ) : (
         <button
           onClick={() => handleSend()}
-          disabled={!conversationId || !hasInput}
+          disabled={!hasInput}
           className={`absolute right-2.5 bottom-2.5 rounded-xl p-2 active:scale-95 transition-all
             ${hasInput
               ? "bg-accent text-white hover:bg-accent-hover"
@@ -178,7 +180,7 @@ export function ChatPanel() {
                     <button
                       key={s}
                       onClick={() => handleSend(s)}
-                      disabled={!conversationId}
+                      disabled={isStreaming}
                       className="text-xs px-4 py-2 bg-surface border border-border rounded-full text-text-secondary
                                  hover:bg-surface-hover hover:text-text-primary hover:border-border
                                  disabled:opacity-40 transition-all"
