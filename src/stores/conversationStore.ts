@@ -63,6 +63,8 @@ interface ConversationState {
   processEvent: (event: AgentStreamEvent) => void;
   addRawEvent: (type: string, data: unknown) => void;
   resolveHumanReview: () => void;
+  removeLastRound: () => void;
+  removeLastAssistantMessage: () => void;
   reset: () => void;
 }
 
@@ -226,6 +228,21 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         }
       }
       messages[messages.length - 1] = { ...last, blocks };
+      return { messages };
+    }),
+
+  removeLastRound: () =>
+    set((s) => {
+      const messages = [...s.messages];
+      if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
+      if (messages.length > 0 && messages[messages.length - 1].role === "user") messages.pop();
+      return { messages };
+    }),
+
+  removeLastAssistantMessage: () =>
+    set((s) => {
+      const messages = [...s.messages];
+      if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
       return { messages };
     }),
 
