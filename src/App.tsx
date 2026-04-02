@@ -51,7 +51,6 @@ export default function App() {
   };
 
   const handleDeleteConversation = (id: string) => {
-    if (!window.confirm("Delete this conversation?")) return;
     dbDelete(id);
     loadConversations();
     const s = useConversationStore.getState();

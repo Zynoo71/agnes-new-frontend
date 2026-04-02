@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useConversationStore } from "@/stores/conversationStore";
 import { MODES, type Mode } from "@/App";
 import type { ConvMeta } from "@/db";
@@ -51,7 +51,21 @@ const MODE_ICONS: Record<string, JSX.Element> = {
 export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation, mode, onModeChange }: SidebarProps) {
   const { conversations, conversationId } = useConversationStore();
   const [collapsed, setCollapsed] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
   const groups = groupByDate(conversations);
+
+  // Click outside cancels confirm
+  useEffect(() => {
+    if (!confirmDeleteId) return;
+    const handler = (e: MouseEvent) => {
+      if (confirmRef.current && !confirmRef.current.contains(e.target as Node)) {
+        setConfirmDeleteId(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [confirmDeleteId]);
 
   return (
     <aside
@@ -139,10 +153,23 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation,
                       </>
                     )}
                   </button>
-                  {/* Delete button — hover visible */}
-                  {!collapsed && (
+                  {/* Delete button — hover visible, with inline confirm */}
+                  {!collapsed && confirmDeleteId === conv.id ? (
                     <button
-                      onClick={(e) => { e.stopPropagation(); onDeleteConversation(conv.id); }}
+                      ref={confirmRef}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteConversation(conv.id);
+                        setConfirmDeleteId(null);
+                      }}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md
+                                 text-[10px] font-medium text-error bg-error-light hover:bg-error/20 transition-all"
+                    >
+                      Delete?
+                    </button>
+                  ) : !collapsed && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(conv.id); }}
                       className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center
                                  text-text-tertiary hover:text-error hover:bg-error-light
                                  opacity-0 group-hover/conv:opacity-100 transition-all"
