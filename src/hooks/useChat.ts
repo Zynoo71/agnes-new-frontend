@@ -148,9 +148,9 @@ export function useChat() {
       const resp = await agentClient.getConversationHistory({ conversationId: id });
       const messages: Message[] = [];
       for (const turn of resp.turns) {
-        // User message
+        // User message — server uses type "human" for user content blocks
         const userText = turn.user
-          .filter((b) => b.type === "text")
+          .filter((b) => b.type === "human" || b.type === "text")
           .map((b) => (b.data as Record<string, unknown>)?.content ?? JSON.stringify(b.data))
           .join("\n");
         if (userText) {
