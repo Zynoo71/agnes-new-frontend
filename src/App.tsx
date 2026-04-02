@@ -51,9 +51,9 @@ export default function App() {
   };
 
   const handleDeleteConversation = (id: string) => {
+    if (!window.confirm("Delete this conversation?")) return;
     dbDelete(id);
     loadConversations();
-    // If deleting the active conversation, reset to empty state
     const s = useConversationStore.getState();
     if (s.conversationId !== null && String(s.conversationId) === id) {
       s.reset();
