@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
+import { listConversations as dbList, type ConvMeta } from "@/db";
 
 function tryDecodeJson(bytes: Uint8Array): unknown {
   try {
@@ -63,16 +64,22 @@ interface ConversationState {
   processEvent: (event: AgentStreamEvent) => void;
   addRawEvent: (type: string, data: unknown) => void;
   resolveHumanReview: () => void;
+  removeLastRound: () => void;
+  removeLastAssistantMessage: () => void;
+  conversations: ConvMeta[];
+  loadConversations: () => void;
+  setMessages: (messages: Message[]) => void;
   reset: () => void;
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
   conversationId: null,
-  agentType: "search",
+  agentType: "super",
   messages: [],
   rawEvents: [],
   isStreaming: false,
   error: null,
+  conversations: [],
 
   setConversationId: (id) => set({ conversationId: id }),
   setAgentType: (type) => set({ agentType: type }),
@@ -138,8 +145,12 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
               updated.blocks.push({ type: "text", content: delta.content });
             }
           }
-          if (delta.reasoningContent) {
-            updated.reasoningContent += delta.reasoningContent;
+          break;
+        }
+        case "reasoningDelta": {
+          const delta = event.event.value;
+          if (delta.content) {
+            updated.reasoningContent += delta.content;
           }
           break;
         }
@@ -228,6 +239,25 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       messages[messages.length - 1] = { ...last, blocks };
       return { messages };
     }),
+
+  removeLastRound: () =>
+    set((s) => {
+      const messages = [...s.messages];
+      if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
+      if (messages.length > 0 && messages[messages.length - 1].role === "user") messages.pop();
+      return { messages };
+    }),
+
+  removeLastAssistantMessage: () =>
+    set((s) => {
+      const messages = [...s.messages];
+      if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
+      return { messages };
+    }),
+
+  loadConversations: () => set({ conversations: dbList() }),
+
+  setMessages: (messages) => set({ messages }),
 
   reset: () =>
     set({ conversationId: null, messages: [], rawEvents: [], isStreaming: false, error: null }),

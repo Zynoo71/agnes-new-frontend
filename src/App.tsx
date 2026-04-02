@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useConversationStore } from "@/stores/conversationStore";
+import { useChat } from "@/hooks/useChat";
+import { Sidebar } from "@/components/Sidebar";
 import { ChatPanel } from "@/panels/ChatPanel";
 import { PixaPanel } from "@/panels/PixaPanel";
 import { HistoryPanel } from "@/panels/HistoryPanel";
@@ -30,46 +33,66 @@ export default function App() {
   const [mode, setMode] = useState<Mode>("chat");
   const Panel = PANELS[mode];
   const currentMode = MODES.find((m) => m.value === mode)!;
+  const { createConversation, selectConversation } = useChat();
+  const loadConversations = useConversationStore((s) => s.loadConversations);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const handleNewChat = async () => {
+    setMode("chat");
+    await createConversation();
+  };
+
+  const handleSelectConversation = async (id: bigint) => {
+    setMode("chat");
+    await selectConversation(id);
+  };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="flex items-center gap-5 px-6 py-3.5 bg-surface border-b border-border-light shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
-            <span className="text-white text-xs font-bold tracking-tight">A</span>
+    <div className="h-screen flex bg-background">
+      <Sidebar onNewChat={handleNewChat} onSelectConversation={handleSelectConversation} />
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="flex items-center gap-5 px-6 py-3.5 bg-surface border-b border-border-light shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
+              <span className="text-white text-xs font-bold tracking-tight">A</span>
+            </div>
+            <span className="text-sm font-semibold text-text-primary tracking-tight">
+              Agent Debug
+            </span>
           </div>
-          <span className="text-sm font-semibold text-text-primary tracking-tight">
-            Agent Debug
-          </span>
-        </div>
 
-        <div className="h-4 w-px bg-border" />
+          <div className="h-4 w-px bg-border" />
 
-        <div className="relative">
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as Mode)}
-            className="appearance-none rounded-lg bg-surface-hover pl-3 pr-8 py-1.5 text-sm font-medium
-                       text-text-primary cursor-pointer border-none
-                       hover:bg-border-light focus:outline-none focus:ring-2 focus:ring-accent/20"
-          >
-            {MODES.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
-          <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
+          <div className="relative">
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as Mode)}
+              className="appearance-none rounded-lg bg-surface-hover pl-3 pr-8 py-1.5 text-sm font-medium
+                         text-text-primary cursor-pointer border-none
+                         hover:bg-border-light focus:outline-none focus:ring-2 focus:ring-accent/20"
+            >
+              {MODES.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+            <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
 
-        <span className="text-xs text-text-tertiary">{currentMode.desc}</span>
-      </header>
+          <span className="text-xs text-text-tertiary">{currentMode.desc}</span>
+        </header>
 
-      {/* Content */}
-      <main className="flex-1 overflow-hidden">
-        <Panel />
-      </main>
+        {/* Content */}
+        <main className="flex-1 overflow-hidden">
+          <Panel />
+        </main>
+      </div>
     </div>
   );
 }
