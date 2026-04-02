@@ -1,7 +1,7 @@
 import initSqlJs, { type Database } from "sql.js";
 
 export interface ConvMeta {
-  id: number;
+  id: string;  // stored as TEXT to preserve BigInt precision
   title: string;
   agentType: string;
   createdAt: string;
@@ -64,17 +64,16 @@ export async function initDb(): Promise<void> {
 
   db.run(`
     CREATE TABLE IF NOT EXISTS conversations (
-      id         INTEGER PRIMARY KEY,
+      id         TEXT PRIMARY KEY,
       title      TEXT NOT NULL DEFAULT 'New Conversation',
       agent_type TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
   `);
-  schedulePersist();
 }
 
-export function addConversation(id: number, agentType: string): void {
+export function addConversation(id: string, agentType: string): void {
   if (!db) return;
   const now = new Date().toISOString();
   db.run(
@@ -84,7 +83,7 @@ export function addConversation(id: number, agentType: string): void {
   schedulePersist();
 }
 
-export function updateConversation(id: number, fields: Partial<Pick<ConvMeta, "title" | "agentType">>): void {
+export function updateConversation(id: string, fields: Partial<Pick<ConvMeta, "title" | "agentType">>): void {
   if (!db) return;
   const sets: string[] = ["updated_at = ?"];
   const vals: (string | number)[] = [new Date().toISOString()];
@@ -100,7 +99,7 @@ export function listConversations(): ConvMeta[] {
   const rows = db.exec("SELECT id, title, agent_type, created_at, updated_at FROM conversations ORDER BY updated_at DESC");
   if (!rows.length) return [];
   return rows[0].values.map((r) => ({
-    id: r[0] as number,
+    id: String(r[0]),
     title: r[1] as string,
     agentType: r[2] as string,
     createdAt: r[3] as string,
@@ -108,7 +107,7 @@ export function listConversations(): ConvMeta[] {
   }));
 }
 
-export function deleteConversation(id: number): void {
+export function deleteConversation(id: string): void {
   if (!db) return;
   db.run("DELETE FROM conversations WHERE id = ?", [id]);
   schedulePersist();

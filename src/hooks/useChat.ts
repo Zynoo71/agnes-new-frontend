@@ -44,8 +44,7 @@ export function useChat() {
     getState().reset();
     const reply = await agentClient.createConversation({});
     getState().setConversationId(reply.conversationId);
-    const idNum = Number(reply.conversationId);
-    dbAdd(idNum, getState().agentType);
+    dbAdd(String(reply.conversationId), getState().agentType);
     getState().loadConversations();
     return reply.conversationId;
   }, []);
@@ -69,7 +68,7 @@ export function useChat() {
     const userMsgs = msgs.filter((m) => m.role === "user");
     if (userMsgs.length === 1 && s.conversationId) {
       const title = query.length > 50 ? query.slice(0, 50) + "..." : query;
-      dbUpdate(Number(s.conversationId), { title });
+      dbUpdate(String(s.conversationId), { title });
       getState().loadConversations();
     }
   }, []);

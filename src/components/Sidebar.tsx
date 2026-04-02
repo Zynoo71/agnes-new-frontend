@@ -62,7 +62,7 @@ export function Sidebar({ onNewChat, onSelectConversation }: SidebarProps) {
               {group.label}
             </div>
             {group.items.map((conv) => {
-              const isActive = conversationId !== null && Number(conversationId) === conv.id;
+              const isActive = conversationId !== null && String(conversationId) === conv.id;
               return (
                 <button
                   key={conv.id}
