@@ -96,17 +96,22 @@ export function ChatPanel() {
                 <p className="text-sm text-text-tertiary">Create a conversation to start debugging</p>
               </div>
             )}
-            {messages.map((msg, i) => (
-              <MessageBubble
-                key={i}
-                message={msg}
-                isLast={i === messages.length - 1}
-                onHitlResume={hitlResume}
-                onEditResend={editResend}
-                onRegenerate={regenerate}
-                isStreaming={isStreaming}
-              />
-            ))}
+            {messages.map((msg, i) => {
+              const lastUserIdx = messages.findLastIndex((m) => m.role === "user");
+              const lastAssistantIdx = messages.findLastIndex((m) => m.role === "assistant");
+              const isLastOfRole = msg.role === "user" ? i === lastUserIdx : i === lastAssistantIdx;
+              return (
+                <MessageBubble
+                  key={i}
+                  message={msg}
+                  isLast={isLastOfRole}
+                  onHitlResume={hitlResume}
+                  onEditResend={editResend}
+                  onRegenerate={regenerate}
+                  isStreaming={isStreaming}
+                />
+              );
+            })}
             {isStreaming && messages.length > 0 && !messages[messages.length - 1].blocks.length && (
               <div className="flex justify-start mb-4">
                 <div className="dot-loader flex gap-1 px-4 py-3">
