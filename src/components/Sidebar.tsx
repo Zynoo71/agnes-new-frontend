@@ -143,46 +143,48 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation,
 
                     {collapsed ? (
                       <span className="text-xs font-medium">{conv.title?.[0] ?? "?"}</span>
-                    ) : confirmDeleteId === conv.id ? (
-                      /* Inline confirm — replaces title with fade-in */
-                      <div className="flex items-center gap-2 animate-message-in">
-                        <span className="text-[12px] text-error font-medium">Delete?</span>
-                        <button
-                          ref={confirmRef}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmDeleteId(null);
-                            setDeletingId(conv.id);
-                            setTimeout(() => {
-                              onDeleteConversation(conv.id);
-                              setDeletingId(null);
-                            }, 200);
-                          }}
-                          className="text-[11px] font-medium text-white bg-error px-2 py-0.5 rounded-md
-                                     hover:bg-error/80 transition-all"
-                        >
-                          Yes
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
-                          className="text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors"
-                        >
-                          No
-                        </button>
-                      </div>
                     ) : (
-                      <>
-                        <div className="truncate text-[13px] font-medium leading-snug">{conv.title}</div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full capitalize
-                            ${AGENT_BADGE_COLORS[conv.agentType] ?? "bg-surface-hover text-text-tertiary"}`}>
-                            {conv.agentType}
-                          </span>
-                          <span className="text-[10px] text-text-tertiary">
-                            {new Date(conv.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
+                      <div className="relative w-full overflow-hidden">
+                        {/* Normal title — fades out when confirming */}
+                        <div className={`transition-all duration-150 ${confirmDeleteId === conv.id ? "opacity-0 scale-95 h-0" : "opacity-100 scale-100"}`}>
+                          <div className="truncate text-[13px] font-medium leading-snug">{conv.title}</div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full capitalize
+                              ${AGENT_BADGE_COLORS[conv.agentType] ?? "bg-surface-hover text-text-tertiary"}`}>
+                              {conv.agentType}
+                            </span>
+                            <span className="text-[10px] text-text-tertiary">
+                              {new Date(conv.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
                         </div>
-                      </>
+                        {/* Confirm row — fades in when confirming */}
+                        <div className={`flex items-center gap-2 transition-all duration-150 ${confirmDeleteId === conv.id ? "opacity-100 scale-100" : "opacity-0 scale-95 h-0 pointer-events-none"}`}>
+                          <span className="text-[12px] text-error font-medium">Delete?</span>
+                          <button
+                            ref={confirmDeleteId === conv.id ? confirmRef : undefined}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteId(null);
+                              setDeletingId(conv.id);
+                              setTimeout(() => {
+                                onDeleteConversation(conv.id);
+                                setDeletingId(null);
+                              }, 200);
+                            }}
+                            className="text-[11px] font-medium text-white bg-error px-2 py-0.5 rounded-md
+                                       hover:bg-error/80 transition-all"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                            className="text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors"
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </button>
                   {/* Delete icon — hover visible, only when not confirming */}
