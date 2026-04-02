@@ -57,14 +57,9 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <header className="flex items-center gap-5 px-6 py-3.5 bg-surface border-b border-border-light shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
-              <span className="text-white text-xs font-bold tracking-tight">A</span>
-            </div>
-            <span className="text-sm font-semibold text-text-primary tracking-tight">
-              Agent Debug
-            </span>
-          </div>
+          <span className="text-sm font-semibold text-text-primary tracking-tight">
+            Agnes
+          </span>
 
           <div className="h-4 w-px bg-border" />
 
