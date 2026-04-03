@@ -1,10 +1,9 @@
-import { registerToolRenderer, type ToolRenderProps } from "../registry";
+import type { ToolRenderProps } from "../registry";
 
-function ExecuteRenderer({ toolInput, toolResult }: ToolRenderProps) {
+export function ExecuteRenderer({ toolInput, toolResult }: ToolRenderProps) {
   const command = (toolInput.command as string) ?? (toolResult?.command as string) ?? "";
   const description = (toolInput.description as string) ?? (toolResult?.description as string) ?? "";
   const isError = toolResult && !!toolResult["error"];
-  const exitCode = toolResult?.exit_code as number | undefined;
 
   return (
     <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 text-sm shadow-sm">
@@ -35,4 +34,3 @@ function ExecuteRenderer({ toolInput, toolResult }: ToolRenderProps) {
   );
 }
 
-registerToolRenderer("execute", ExecuteRenderer);

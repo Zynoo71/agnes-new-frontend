@@ -1,12 +1,59 @@
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
 import { useConversationStore, type ContentBlock, type Message } from "@/stores/conversationStore";
+import { useConversationListStore } from "@/stores/conversationListStore";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
-import { addConversation as dbAdd, updateConversation as dbUpdate } from "@/db";
 
 const getState = () => useConversationStore.getState();
 
-/** Parse server history turns into client Message array. */
+// ── Module-level singleton abort management ──
+// Shared across all useChat() call sites — fixes the multi-instance bug.
+
+const abortMap = new Map<string, AbortController>();
+
+function beginStream(convId: string): AbortSignal {
+  abortMap.get(convId)?.abort();
+  const ac = new AbortController();
+  abortMap.set(convId, ac);
+  getState().addStreamingConv(convId);
+  getState().setStreaming(true);
+  getState().setError(null);
+  return ac.signal;
+}
+
+async function runStream(
+  iter: AsyncIterable<AgentStreamEvent>,
+  signal: AbortSignal,
+  convId: string,
+) {
+  try {
+    for await (const event of iter) {
+      if (signal.aborted) break;
+      getState().processEventForConv(convId, event);
+    }
+  } catch (err) {
+    if (signal.aborted) return;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Stream error:", err);
+    if (getState().conversationId === convId) {
+      getState().setError(msg);
+    }
+  } finally {
+    // Only clean up if our controller is still the active one
+    if (abortMap.get(convId)?.signal === signal) {
+      getState().removeStreamingConv(convId);
+      abortMap.delete(convId);
+    }
+  }
+}
+
+// ── History parsing ──
+
+let messageIdCounter = 0;
+function nextHistoryId(): string {
+  return `hist-${Date.now()}-${++messageIdCounter}`;
+}
+
 function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): Message[] {
   const messages: Message[] = [];
   for (const turn of turns) {
@@ -16,7 +63,7 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       .map((b) => (b.data as Record<string, unknown>)?.content ?? JSON.stringify(b.data))
       .join("\n");
     if (userText) {
-      messages.push({ role: "user", blocks: [{ type: "text", content: userText }], nodes: [] });
+      messages.push({ id: nextHistoryId(), role: "user", blocks: [{ type: "text", content: userText }], nodes: [], workers: {} });
     }
     const assistantBlocks: ContentBlock[] = [];
     const aBlocks = turn.assistant as { type: string; data: unknown; toolCallId?: string }[];
@@ -43,9 +90,7 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
           (b) => b.type === "tool_call" && b.data.toolCallId === block.toolCallId,
         );
         if (existing && existing.type === "tool_call") {
-          // tool_result data is the full artifact: { tool_name, content/results/error/... }
           existing.data.toolResult = data;
-          // Backfill toolName from result if missing on the tool_call
           if (!existing.data.toolName && typeof data.tool_name === "string") {
             existing.data.toolName = data.tool_name;
           }
@@ -53,84 +98,46 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       }
     }
     if (assistantBlocks.length > 0) {
-      messages.push({ role: "assistant", blocks: assistantBlocks, nodes: [] });
+      messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers: {} });
     }
   }
   return messages;
 }
 
+// ── Hook ──
+
 export function useChat() {
-  const abortMapRef = useRef<Map<string, AbortController>>(new Map());
-
-  const runStream = async (
-    iter: AsyncIterable<AgentStreamEvent>,
-    signal: AbortSignal,
-    convId: string,
-  ) => {
-    try {
-      for await (const event of iter) {
-        if (signal.aborted) break;
-        getState().processEventForConv(convId, event);
-      }
-    } catch (err) {
-      if (signal.aborted) return;
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("Stream error:", err);
-      if (String(getState().conversationId) === convId) {
-        getState().setError(msg);
-      }
-    } finally {
-      // Only clean up if our controller is still the active one (not replaced by resume/reconnect)
-      if (abortMapRef.current.get(convId)?.signal === signal) {
-        getState().removeStreamingConv(convId);
-        abortMapRef.current.delete(convId);
-      }
-    }
-  };
-
-  const beginStream = (convId: string): AbortSignal => {
-    abortMapRef.current.get(convId)?.abort();
-    const ac = new AbortController();
-    abortMapRef.current.set(convId, ac);
-    getState().addStreamingConv(convId);
-    getState().setStreaming(true);
-    getState().setError(null);
-    return ac.signal;
-  };
-
-  const loadHistory = async (id: bigint): Promise<void> => {
-    const resp = await agentClient.getConversationHistory({ conversationId: id });
+  const loadHistory = async (id: string): Promise<void> => {
+    const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
     getState().setMessages(parseHistoryTurns(resp.turns));
   };
 
   const createConversation = useCallback(async () => {
     getState().reset();
     const reply = await agentClient.createConversation({});
-    getState().setConversationId(reply.conversationId);
-    dbAdd(String(reply.conversationId), getState().agentType);
-    getState().loadConversations();
-    return reply.conversationId;
+    const id = String(reply.conversationId);
+    getState().setConversationId(id);
+    useConversationListStore.getState().add(id, getState().agentType);
+    return id;
   }, []);
 
   const sendMessage = useCallback(async (query: string) => {
     const s = getState();
     if (!s.conversationId) return;
-    const convId = String(s.conversationId);
+    const convId = s.conversationId;
     const isFirstMessage = s.messages.every((m) => m.role !== "user");
 
     s.addUserMessage(query);
     s.startAssistantMessage();
     const signal = beginStream(convId);
 
-    // Update title before streaming — user may switch conversations during the stream
     if (isFirstMessage) {
       const title = query.length > 50 ? query.slice(0, 50) + "..." : query;
-      dbUpdate(convId, { title });
-      getState().loadConversations();
+      useConversationListStore.getState().update(convId, { title });
     }
 
     const stream = agentClient.chatStream(
-      { conversationId: s.conversationId, query, agentType: s.agentType },
+      { conversationId: BigInt(convId), query, agentType: s.agentType },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -139,7 +146,7 @@ export function useChat() {
   const hitlResume = useCallback(async (action: "approve" | "modify", feedback?: string) => {
     const s = getState();
     if (!s.conversationId) return;
-    const convId = String(s.conversationId);
+    const convId = s.conversationId;
 
     s.resolveHumanReview();
     s.startAssistantMessage();
@@ -150,7 +157,7 @@ export function useChat() {
 
     const stream = agentClient.hitlResumeStream(
       {
-        conversationId: s.conversationId,
+        conversationId: BigInt(convId),
         resumeData: new TextEncoder().encode(JSON.stringify(resumePayload)),
       },
       { signal },
@@ -161,7 +168,7 @@ export function useChat() {
   const editResend = useCallback(async (newQuery: string) => {
     const s = getState();
     if (!s.conversationId) return;
-    const convId = String(s.conversationId);
+    const convId = s.conversationId;
 
     s.removeLastRound();
     s.addUserMessage(newQuery);
@@ -169,7 +176,7 @@ export function useChat() {
     const signal = beginStream(convId);
 
     const stream = agentClient.editResendStream(
-      { conversationId: s.conversationId, query: newQuery },
+      { conversationId: BigInt(convId), query: newQuery },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -178,14 +185,14 @@ export function useChat() {
   const regenerate = useCallback(async () => {
     const s = getState();
     if (!s.conversationId) return;
-    const convId = String(s.conversationId);
+    const convId = s.conversationId;
 
     s.removeLastAssistantMessage();
     s.startAssistantMessage();
     const signal = beginStream(convId);
 
     const stream = agentClient.regenerateStream(
-      { conversationId: s.conversationId },
+      { conversationId: BigInt(convId) },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -194,33 +201,29 @@ export function useChat() {
   const cancelStream = useCallback(async () => {
     const s = getState();
     if (!s.conversationId) return;
-    const convId = String(s.conversationId);
+    const convId = s.conversationId;
 
-    abortMapRef.current.get(convId)?.abort();
-    abortMapRef.current.delete(convId);
+    abortMap.get(convId)?.abort();
 
     try {
-      await agentClient.cancelStream({ conversationId: s.conversationId });
+      await agentClient.cancelStream({ conversationId: BigInt(convId) });
     } catch (err) {
       console.error("CancelStream RPC error:", err);
     }
   }, []);
 
-  const selectConversation = useCallback(async (id: bigint) => {
+  const selectConversation = useCallback(async (id: string) => {
     const s = getState();
-    const targetId = String(id);
+    if (s.conversationId === id) return;
 
-    if (String(s.conversationId) === targetId) return;
-
-    // Abort any existing resume stream for the target BEFORE loading history,
-    // so stale events can't leak in during the async loadHistory call.
-    abortMapRef.current.get(targetId)?.abort();
-    abortMapRef.current.delete(targetId);
+    // Abort any existing resume stream for the target
+    abortMap.get(id)?.abort();
+    abortMap.delete(id);
 
     s.setConversationId(id);
     s.setError(null);
 
-    const isTargetStreaming = s.streamingConvIds.has(targetId);
+    const isTargetStreaming = s.streamingConvIds.has(id);
 
     try {
       await loadHistory(id);
@@ -231,12 +234,10 @@ export function useChat() {
     }
 
     if (isTargetStreaming) {
-      // History excludes the current RUNNING request — always add an empty
-      // assistant message for resume events to target.
       getState().startAssistantMessage();
-      const signal = beginStream(targetId);
-      const stream = agentClient.resumeStream({ conversationId: id }, { signal });
-      runStream(stream, signal, targetId);
+      const signal = beginStream(id);
+      const stream = agentClient.resumeStream({ conversationId: BigInt(id) }, { signal });
+      runStream(stream, signal, id);
     } else {
       getState().setStreaming(false);
     }

@@ -1,18 +1,33 @@
 import type { FC } from "react";
+import { WebSearchRenderer } from "./renderers/WebSearchRenderer";
+import { ImageSearchRenderer } from "./renderers/ImageSearchRenderer";
+import { LoadSkillRenderer } from "./renderers/LoadSkillRenderer";
+import { FileToolRenderer } from "./renderers/FileToolRenderer";
+import { ExecuteRenderer } from "./renderers/ExecuteRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
   toolInput: Record<string, unknown>;
   toolResult?: Record<string, unknown>;
   toolCallId: string;
+  /** True when subsequent content (text/tool_call) has arrived after this block. */
+  autoCollapse?: boolean;
 }
 
-const registry = new Map<string, FC<ToolRenderProps>>();
-
-export function registerToolRenderer(toolName: string, component: FC<ToolRenderProps>) {
-  registry.set(toolName, component);
-}
+/** Explicit tool name → renderer mapping. Add new renderers here. */
+const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
+  web_search: WebSearchRenderer,
+  image_search: ImageSearchRenderer,
+  load_skill: LoadSkillRenderer,
+  read_file: FileToolRenderer,
+  write_file: FileToolRenderer,
+  edit_file: FileToolRenderer,
+  list_files: FileToolRenderer,
+  grep: FileToolRenderer,
+  glob: FileToolRenderer,
+  execute: ExecuteRenderer,
+};
 
 export function getToolRenderer(toolName: string): FC<ToolRenderProps> | undefined {
-  return registry.get(toolName);
+  return TOOL_RENDERERS[toolName];
 }

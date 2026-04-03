@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
-import { listConversations as dbList, type ConvMeta } from "@/db";
+import { pickWorkerCharacter, type WorkerCharacter } from "@/workerCharacters";
+
+// ── Helpers ──
+
+let messageIdCounter = 0;
+function nextMessageId(): string {
+  return `msg-${Date.now()}-${++messageIdCounter}`;
+}
 
 function tryDecodeJson(bytes: Uint8Array): unknown {
   try {
@@ -9,6 +16,8 @@ function tryDecodeJson(bytes: Uint8Array): unknown {
     return new TextDecoder().decode(bytes);
   }
 }
+
+// ── Types ──
 
 export interface ToolCallData {
   toolCallId: string;
@@ -27,6 +36,24 @@ export interface HumanReviewData {
   resolved: boolean;
 }
 
+export interface WorkerToolCall {
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  toolResult?: Record<string, unknown>;
+}
+
+export interface WorkerState {
+  workerId: string;
+  description: string;
+  status: "running" | "done" | "error";
+  character: WorkerCharacter;
+  characterIndex: number;
+  text: string;
+  toolCalls: WorkerToolCall[];
+  summary?: string;
+  error?: string;
+}
+
 export type ContentBlock =
   | { type: "text"; content: string }
   | { type: "reasoning"; content: string }
@@ -34,9 +61,11 @@ export type ContentBlock =
   | { type: "human_review"; data: HumanReviewData };
 
 export interface Message {
+  id: string;
   role: "user" | "assistant";
   blocks: ContentBlock[];
   nodes: NodeData[];
+  workers: Record<string, WorkerState>;
   error?: { errorType: string; message: string; recoverable: boolean };
 }
 
@@ -45,6 +74,10 @@ export interface RawEvent {
   type: string;
   data: unknown;
 }
+
+// ── Event processing (pure functions) ──
+
+const MAX_RAW_EVENTS = 500;
 
 function appendOrPushBlock(
   blocks: ContentBlock[],
@@ -64,7 +97,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
   const last = msgs[msgs.length - 1];
   if (!last || last.role !== "assistant") return msgs;
 
-  const updated = { ...last, blocks: [...last.blocks] };
+  const updated = { ...last, blocks: [...last.blocks], workers: { ...last.workers } };
 
   switch (event.event.case) {
     case "messageDelta": {
@@ -119,12 +152,104 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
     }
     case "custom": {
       const custom = event.event.value;
+      const payload = (tryDecodeJson(custom.payload) ?? {}) as Record<string, unknown>;
+
       if (custom.type === "human_review") {
-        const payload = (tryDecodeJson(custom.payload) ?? {}) as Record<string, unknown>;
         updated.blocks.push({
           type: "human_review",
           data: { payload, resolved: false },
         });
+        break;
+      }
+
+      // Worker events — route by worker_id
+      const workerId = payload.worker_id as string | undefined;
+      if (workerId) {
+        updated.workers = { ...updated.workers };
+
+        switch (custom.type) {
+          case "worker_start": {
+            const usedIndices = new Set(
+              Object.values(updated.workers).map((w) => w.characterIndex),
+            );
+            const { index, character } = pickWorkerCharacter(usedIndices);
+            updated.workers[workerId] = {
+              workerId,
+              description: (payload.description as string) ?? "",
+              status: "running",
+              character,
+              characterIndex: index,
+              text: "",
+              toolCalls: [],
+            };
+            break;
+          }
+          case "message_delta": {
+            const w = updated.workers[workerId];
+            if (w) {
+              updated.workers[workerId] = {
+                ...w,
+                text: w.text + ((payload.content as string) ?? ""),
+              };
+            }
+            break;
+          }
+          case "tool_call_start": {
+            const w = updated.workers[workerId];
+            if (w) {
+              updated.workers[workerId] = {
+                ...w,
+                toolCalls: [
+                  ...w.toolCalls,
+                  {
+                    toolName: (payload.tool_name as string) ?? "",
+                    toolInput: (payload.tool_input as Record<string, unknown>) ?? {},
+                  },
+                ],
+              };
+            }
+            break;
+          }
+          case "tool_call_result": {
+            const w = updated.workers[workerId];
+            if (w) {
+              const toolCalls = [...w.toolCalls];
+              for (let i = toolCalls.length - 1; i >= 0; i--) {
+                if (
+                  toolCalls[i].toolName === (payload.tool_name as string) &&
+                  !toolCalls[i].toolResult
+                ) {
+                  toolCalls[i] = { ...toolCalls[i], toolResult: payload.tool_result as Record<string, unknown> };
+                  break;
+                }
+              }
+              updated.workers[workerId] = { ...w, toolCalls };
+            }
+            break;
+          }
+          case "worker_end": {
+            const w = updated.workers[workerId];
+            if (w) {
+              updated.workers[workerId] = {
+                ...w,
+                status: "done",
+                summary: (payload.summary as string) ?? "",
+              };
+            }
+            break;
+          }
+          case "worker_error": {
+            const w = updated.workers[workerId];
+            if (w) {
+              updated.workers[workerId] = {
+                ...w,
+                status: "error",
+                error: (payload.error as string) ?? "Unknown error",
+              };
+            }
+            break;
+          }
+        }
       }
       break;
     }
@@ -147,8 +272,19 @@ export function buildRawEvent(event: AgentStreamEvent): RawEvent {
   return { timestamp: Date.now(), type: event.event.case ?? "unknown", data: cleaned };
 }
 
+function pushRawEvent(events: RawEvent[], event: RawEvent): RawEvent[] {
+  if (events.length >= MAX_RAW_EVENTS) {
+    // Drop oldest 20% when hitting the cap
+    const trimmed = events.slice(Math.floor(MAX_RAW_EVENTS * 0.2));
+    return [...trimmed, event];
+  }
+  return [...events, event];
+}
+
+// ── Store ──
+
 interface ConversationStore {
-  conversationId: bigint | null;
+  conversationId: string | null;
   agentType: string;
   messages: Message[];
   rawEvents: RawEvent[];
@@ -156,7 +292,7 @@ interface ConversationStore {
   error: string | null;
   streamingConvIds: Set<string>;
 
-  setConversationId: (id: bigint) => void;
+  setConversationId: (id: string) => void;
   setAgentType: (type: string) => void;
   setStreaming: (v: boolean) => void;
   setError: (err: string | null) => void;
@@ -165,8 +301,6 @@ interface ConversationStore {
   resolveHumanReview: () => void;
   removeLastRound: () => void;
   removeLastAssistantMessage: () => void;
-  conversations: ConvMeta[];
-  loadConversations: () => void;
   setMessages: (messages: Message[]) => void;
   reset: () => void;
 
@@ -182,7 +316,6 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   rawEvents: [],
   isStreaming: false,
   error: null,
-  conversations: [],
   streamingConvIds: new Set(),
 
   setConversationId: (id) => set({ conversationId: id }),
@@ -194,7 +327,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
     set((s) => ({
       messages: [
         ...s.messages,
-        { role: "user", blocks: [{ type: "text", content }], nodes: [] },
+        { id: nextMessageId(), role: "user", blocks: [{ type: "text", content }], nodes: [], workers: {} },
       ],
     })),
 
@@ -202,7 +335,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
     set((s) => ({
       messages: [
         ...s.messages,
-        { role: "assistant", blocks: [], nodes: [] },
+        { id: nextMessageId(), role: "assistant", blocks: [], nodes: [], workers: {} },
       ],
     })),
 
@@ -217,7 +350,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
     set((s) => {
       const ids = new Set(s.streamingConvIds);
       ids.delete(convId);
-      const isActiveConv = String(s.conversationId) === convId;
+      const isActiveConv = s.conversationId === convId;
       return {
         streamingConvIds: ids,
         ...(isActiveConv ? { isStreaming: false } : {}),
@@ -226,11 +359,11 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
 
   processEventForConv: (convId, event) => {
     const s = get();
-    if (String(s.conversationId) !== convId) return; // drop events for non-active conversations
+    if (s.conversationId !== convId) return;
     const rawEvent = buildRawEvent(event);
     set((prev) => ({
       messages: applyStreamEvent(prev.messages, event),
-      rawEvents: [...prev.rawEvents, rawEvent],
+      rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
     }));
   },
 
@@ -265,8 +398,6 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
       if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
       return { messages };
     }),
-
-  loadConversations: () => set({ conversations: dbList() }),
 
   setMessages: (messages) => set({ messages, rawEvents: [] }),
 

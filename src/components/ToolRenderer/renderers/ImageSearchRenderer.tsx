@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { registerToolRenderer, type ToolRenderProps } from "../registry";
+import type { ToolRenderProps } from "../registry";
 
 function ImageItem({ url, title }: { url: string; title: string }) {
   const [failed, setFailed] = useState(false);
@@ -14,8 +14,8 @@ function ImageItem({ url, title }: { url: string; title: string }) {
   );
 }
 
-function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
-  const query = (toolInput.query as string) ?? "";
+export function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
+  const query = (toolInput.query as string) ?? (toolResult?.query as string) ?? "";
 
   return (
     <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 text-sm shadow-sm">
@@ -27,10 +27,15 @@ function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
         </div>
         <span className="text-xs font-semibold text-text-primary tracking-tight shrink-0">Image Search</span>
         {query && (
-          <span className="text-[11px] text-text-secondary truncate min-w-0">{query}</span>
+          <span className="text-[11px] text-text-secondary truncate min-w-0 flex-1">&ldquo;{query}&rdquo;</span>
         )}
         {!toolResult && (
           <span className="text-[10px] text-text-tertiary animate-gentle-pulse ml-auto shrink-0">Searching...</span>
+        )}
+        {toolResult && Array.isArray(toolResult.results) && (
+          <span className="text-[10px] text-text-tertiary ml-auto shrink-0">
+            {toolResult.results.length} images
+          </span>
         )}
       </div>
       {toolResult && Array.isArray(toolResult.results) && (
@@ -44,4 +49,3 @@ function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
   );
 }
 
-registerToolRenderer("image_search", ImageSearchRenderer);
