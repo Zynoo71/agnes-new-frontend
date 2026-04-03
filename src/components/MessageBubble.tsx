@@ -137,18 +137,32 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
       <div className="max-w-[85%] py-1 flex-1 min-w-0">
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
-        {message.reasoningContent && (
-          <ReasoningBlock content={message.reasoningContent} isStreaming={isStreaming && isLast} />
-        )}
-
-        {message.blocks.map((block, i) => (
-          <BlockRenderer
-            key={i}
-            block={block}
-            onHitlResume={onHitlResume}
-            isStreaming={isStreaming}
-          />
-        ))}
+        {(() => {
+          let hasSeenToolCall = false;
+          return message.blocks.map((block, i) => {
+            if (block.type === "tool_call") hasSeenToolCall = true;
+            const prev = message.blocks[i - 1];
+            const needsDivider =
+              hasSeenToolCall && block.type === "text" && prev != null && prev.type !== "text";
+            // Auto-collapse reasoning when subsequent content has arrived
+            const shouldAutoCollapse =
+              block.type === "reasoning" &&
+              message.blocks.slice(i + 1).some((b) => b.type === "text" || b.type === "tool_call");
+            return (
+              <div key={i}>
+                {needsDivider && (
+                  <hr className="my-4 border-t border-border-light" />
+                )}
+                <BlockRenderer
+                  block={block}
+                  onHitlResume={onHitlResume}
+                  isStreaming={isStreaming && isLast}
+                  autoCollapse={shouldAutoCollapse}
+                />
+              </div>
+            );
+          });
+        })()}
 
         {message.error && (
           <div className="mt-3 flex items-start gap-2 p-3 bg-error-light rounded-xl text-xs">
@@ -204,10 +218,12 @@ function BlockRenderer({
   block,
   onHitlResume,
   isStreaming,
+  autoCollapse,
 }: {
   block: ContentBlock;
   onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
   isStreaming?: boolean;
+  autoCollapse?: boolean;
 }) {
   switch (block.type) {
     case "text":
@@ -231,6 +247,8 @@ function BlockRenderer({
           >{block.content}</Markdown>
         </div>
       );
+    case "reasoning":
+      return <ReasoningBlock content={block.content} isStreaming={isStreaming} autoCollapse={autoCollapse} />;
     case "tool_call":
       return (
         <div className="my-3">
@@ -249,14 +267,32 @@ function BlockRenderer({
 }
 
 // ── Reasoning block with smooth transition ──
-function ReasoningBlock({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
+const AUTO_COLLAPSE_DELAY = 2000;
+
+function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: string; isStreaming?: boolean; autoCollapse?: boolean }) {
   const [open, setOpen] = useState(!!isStreaming);
   const [userToggled, setUserToggled] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
 
   useEffect(() => {
     if (userToggled) return;
+    if (autoCollapse) {
+      // Delay-collapse after message content starts arriving
+      const timer = setTimeout(() => setOpen(false), AUTO_COLLAPSE_DELAY);
+      return () => clearTimeout(timer);
+    }
     setOpen(!!isStreaming);
-  }, [isStreaming, userToggled]);
+  }, [isStreaming, userToggled, autoCollapse]);
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setHeight(entry.contentRect.height);
+    });
+    observer.observe(contentRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleToggle = () => {
     setUserToggled(true);
@@ -279,10 +315,10 @@ function ReasoningBlock({ content, isStreaming }: { content: string; isStreaming
       </button>
       <div
         className="overflow-hidden transition-all duration-200 ease-in-out"
-        style={{ maxHeight: open ? "500px" : "0px", opacity: open ? 1 : 0 }}
+        style={{ maxHeight: open ? `${height + 16}px` : "0px", opacity: open ? 1 : 0 }}
       >
-        <div className="mt-1.5 pl-4 border-l-2 border-border-light text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
-          {content}
+        <div ref={contentRef} className="mt-1.5 pl-4 border-l-2 border-border-light prose-reasoning text-xs text-text-secondary leading-relaxed break-words overflow-hidden">
+          <Markdown remarkPlugins={[remarkCjkFriendly]}>{content}</Markdown>
         </div>
       </div>
     </div>

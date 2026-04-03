@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useConversationStore } from "@/stores/conversationStore";
+import { useShallow } from "zustand/shallow";
 import { MODES, type Mode } from "@/App";
 import type { ConvMeta } from "@/db";
 
@@ -49,7 +50,9 @@ const MODE_ICONS: Record<string, JSX.Element> = {
 };
 
 export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation, mode, onModeChange }: SidebarProps) {
-  const { conversations, conversationId } = useConversationStore();
+  const { conversations, conversationId, streamingConvIds } = useConversationStore(
+    useShallow((s) => ({ conversations: s.conversations, conversationId: s.conversationId, streamingConvIds: s.streamingConvIds })),
+  );
   const [collapsed, setCollapsed] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -123,6 +126,7 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation,
             )}
             {group.items.map((conv) => {
               const isActive = conversationId !== null && String(conversationId) === conv.id;
+              const isConvStreaming = streamingConvIds.has(conv.id);
               return (
                 <div
                   key={conv.id}
@@ -153,6 +157,12 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation,
                               ${AGENT_BADGE_COLORS[conv.agentType] ?? "bg-surface-hover text-text-tertiary"}`}>
                               {conv.agentType}
                             </span>
+                            {isConvStreaming && !isActive && (
+                              <span className="flex items-center gap-1 text-[10px] text-accent">
+                                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                                Running
+                              </span>
+                            )}
                             <span className="text-[10px] text-text-tertiary">
                               {new Date(conv.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </span>

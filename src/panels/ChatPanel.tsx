@@ -21,6 +21,7 @@ export function ChatPanel() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const isNearBottomRef = useRef(true);
 
   const hasPendingReview = messages.some(
     (m) => m.blocks.some((b) => b.type === "human_review" && !b.data.resolved)
@@ -29,17 +30,27 @@ export function ChatPanel() {
   const isEmpty = messages.length === 0;
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!isNearBottomRef.current) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    if (isStreaming) {
+      // During streaming: instant scroll to avoid animation stacking
+      el.scrollTop = el.scrollHeight;
+    } else {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isStreaming]);
 
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceFromBottom < 100;
     setShowScrollBtn(distanceFromBottom > 200);
   }, []);
 
   const scrollToBottom = () => {
+    isNearBottomRef.current = true;
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -198,22 +209,21 @@ export function ChatPanel() {
               </div>
             ) : (
               <>
-                {messages.map((msg, i) => {
+                {(() => {
                   const lastUserIdx = messages.findLastIndex((m) => m.role === "user");
                   const lastAssistantIdx = messages.findLastIndex((m) => m.role === "assistant");
-                  const isLastOfRole = msg.role === "user" ? i === lastUserIdx : i === lastAssistantIdx;
-                  return (
+                  return messages.map((msg, i) => (
                     <MessageBubble
                       key={i}
                       message={msg}
-                      isLast={isLastOfRole}
+                      isLast={msg.role === "user" ? i === lastUserIdx : i === lastAssistantIdx}
                       onHitlResume={hitlResume}
                       onEditResend={editResend}
                       onRegenerate={regenerate}
                       isStreaming={isStreaming}
                     />
-                  );
-                })}
+                  ));
+                })()}
                 {isStreaming && messages.length > 0 && !messages[messages.length - 1].blocks.length && (
                   <div className="flex justify-start mb-4 ml-10">
                     <div className="dot-loader flex gap-1 px-4 py-3">

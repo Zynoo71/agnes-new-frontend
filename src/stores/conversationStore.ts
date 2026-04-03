@@ -27,16 +27,15 @@ export interface HumanReviewData {
   resolved: boolean;
 }
 
-// Ordered content blocks — rendered in sequence
 export type ContentBlock =
   | { type: "text"; content: string }
+  | { type: "reasoning"; content: string }
   | { type: "tool_call"; data: ToolCallData }
   | { type: "human_review"; data: HumanReviewData };
 
 export interface Message {
   role: "user" | "assistant";
   blocks: ContentBlock[];
-  reasoningContent: string;
   nodes: NodeData[];
   error?: { errorType: string; message: string; recoverable: boolean };
 }
@@ -47,13 +46,115 @@ export interface RawEvent {
   data: unknown;
 }
 
-interface ConversationState {
+function appendOrPushBlock(
+  blocks: ContentBlock[],
+  blockType: "text" | "reasoning",
+  content: string,
+): void {
+  const last = blocks[blocks.length - 1];
+  if (last && last.type === blockType) {
+    blocks[blocks.length - 1] = { type: blockType, content: last.content + content };
+  } else {
+    blocks.push({ type: blockType, content });
+  }
+}
+
+export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): Message[] {
+  const msgs = [...messages];
+  const last = msgs[msgs.length - 1];
+  if (!last || last.role !== "assistant") return msgs;
+
+  const updated = { ...last, blocks: [...last.blocks] };
+
+  switch (event.event.case) {
+    case "messageDelta": {
+      const delta = event.event.value;
+      if (delta.content) appendOrPushBlock(updated.blocks, "text", delta.content);
+      break;
+    }
+    case "reasoningDelta": {
+      const delta = event.event.value;
+      if (delta.content) appendOrPushBlock(updated.blocks, "reasoning", delta.content);
+      break;
+    }
+    case "toolCallStart": {
+      const tc = event.event.value;
+      const input = (tryDecodeJson(tc.toolInput) ?? {}) as Record<string, unknown>;
+      updated.blocks.push({
+        type: "tool_call",
+        data: { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
+      });
+      break;
+    }
+    case "toolCallResult": {
+      const tr = event.event.value;
+      const result = (tryDecodeJson(tr.toolResult) ?? {}) as Record<string, unknown>;
+      updated.blocks = updated.blocks.map((block) =>
+        block.type === "tool_call" && block.data.toolCallId === tr.toolCallId
+          ? { type: "tool_call", data: { ...block.data, toolResult: result } }
+          : block
+      );
+      break;
+    }
+    case "nodeStart": {
+      const ns = event.event.value;
+      updated.nodes = [...updated.nodes, { node: ns.node, status: "running" }];
+      break;
+    }
+    case "nodeEnd": {
+      const ne = event.event.value;
+      updated.nodes = updated.nodes.map((n) =>
+        n.node === ne.node ? { ...n, status: "done" } : n
+      );
+      break;
+    }
+    case "agentError": {
+      const err = event.event.value;
+      updated.error = {
+        errorType: err.errorType,
+        message: err.message,
+        recoverable: err.recoverable,
+      };
+      break;
+    }
+    case "custom": {
+      const custom = event.event.value;
+      if (custom.type === "human_review") {
+        const payload = (tryDecodeJson(custom.payload) ?? {}) as Record<string, unknown>;
+        updated.blocks.push({
+          type: "human_review",
+          data: { payload, resolved: false },
+        });
+      }
+      break;
+    }
+  }
+
+  msgs[msgs.length - 1] = updated;
+  return msgs;
+}
+
+export function buildRawEvent(event: AgentStreamEvent): RawEvent {
+  let cleaned: unknown = event.event.value;
+  if (cleaned && typeof cleaned === "object") {
+    cleaned = Object.fromEntries(
+      Object.entries(cleaned as Record<string, unknown>).map(([k, v]) => [
+        k,
+        v instanceof Uint8Array ? tryDecodeJson(v) : v,
+      ])
+    );
+  }
+  return { timestamp: Date.now(), type: event.event.case ?? "unknown", data: cleaned };
+}
+
+interface ConversationStore {
   conversationId: bigint | null;
   agentType: string;
   messages: Message[];
   rawEvents: RawEvent[];
   isStreaming: boolean;
   error: string | null;
+  streamingConvIds: Set<string>;
 
   setConversationId: (id: bigint) => void;
   setAgentType: (type: string) => void;
@@ -61,8 +162,6 @@ interface ConversationState {
   setError: (err: string | null) => void;
   addUserMessage: (content: string) => void;
   startAssistantMessage: () => void;
-  processEvent: (event: AgentStreamEvent) => void;
-  addRawEvent: (type: string, data: unknown) => void;
   resolveHumanReview: () => void;
   removeLastRound: () => void;
   removeLastAssistantMessage: () => void;
@@ -70,9 +169,13 @@ interface ConversationState {
   loadConversations: () => void;
   setMessages: (messages: Message[]) => void;
   reset: () => void;
+
+  addStreamingConv: (convId: string) => void;
+  removeStreamingConv: (convId: string) => void;
+  processEventForConv: (convId: string, event: AgentStreamEvent) => void;
 }
 
-export const useConversationStore = create<ConversationState>((set, get) => ({
+export const useConversationStore = create<ConversationStore>((set, get) => ({
   conversationId: null,
   agentType: "super",
   messages: [],
@@ -80,6 +183,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   isStreaming: false,
   error: null,
   conversations: [],
+  streamingConvIds: new Set(),
 
   setConversationId: (id) => set({ conversationId: id }),
   setAgentType: (type) => set({ agentType: type }),
@@ -90,7 +194,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     set((s) => ({
       messages: [
         ...s.messages,
-        { role: "user", blocks: [{ type: "text", content }], reasoningContent: "", nodes: [] },
+        { role: "user", blocks: [{ type: "text", content }], nodes: [] },
       ],
     })),
 
@@ -98,128 +202,36 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     set((s) => ({
       messages: [
         ...s.messages,
-        { role: "assistant", blocks: [], reasoningContent: "", nodes: [] },
+        { role: "assistant", blocks: [], nodes: [] },
       ],
     })),
 
-  addRawEvent: (type, data) => {
-    // Decode Uint8Array fields to strings for readable JSON display in EventStream
-    let cleaned = data;
-    if (data && typeof data === "object") {
-      cleaned = Object.fromEntries(
-        Object.entries(data as Record<string, unknown>).map(([k, v]) => [
-          k,
-          v instanceof Uint8Array ? tryDecodeJson(v) : v,
-        ])
-      );
-    }
-    set((s) => ({
-      rawEvents: [...s.rawEvents, { timestamp: Date.now(), type, data: cleaned }],
-    }));
-  },
-
-  processEvent: (event) => {
-    const store = get();
-    store.addRawEvent(event.event.case ?? "unknown", event.event.value);
-
+  addStreamingConv: (convId) =>
     set((s) => {
-      const messages = [...s.messages];
-      const last = messages[messages.length - 1];
-      if (!last || last.role !== "assistant") return s;
+      const ids = new Set(s.streamingConvIds);
+      ids.add(convId);
+      return { streamingConvIds: ids };
+    }),
 
-      const updated = { ...last, blocks: [...last.blocks] };
+  removeStreamingConv: (convId) =>
+    set((s) => {
+      const ids = new Set(s.streamingConvIds);
+      ids.delete(convId);
+      const isActiveConv = String(s.conversationId) === convId;
+      return {
+        streamingConvIds: ids,
+        ...(isActiveConv ? { isStreaming: false } : {}),
+      };
+    }),
 
-      switch (event.event.case) {
-        case "messageDelta": {
-          const delta = event.event.value;
-          if (delta.content) {
-            const lastBlock = updated.blocks[updated.blocks.length - 1];
-            if (lastBlock && lastBlock.type === "text") {
-              // Append to existing text block
-              updated.blocks[updated.blocks.length - 1] = {
-                type: "text",
-                content: lastBlock.content + delta.content,
-              };
-            } else {
-              // New text block
-              updated.blocks.push({ type: "text", content: delta.content });
-            }
-          }
-          break;
-        }
-        case "reasoningDelta": {
-          const delta = event.event.value;
-          if (delta.content) {
-            updated.reasoningContent += delta.content;
-          }
-          break;
-        }
-        case "toolCallStart": {
-          const tc = event.event.value;
-          let input: Record<string, unknown> = {};
-          try {
-            input = JSON.parse(new TextDecoder().decode(tc.toolInput));
-          } catch {}
-          updated.blocks.push({
-            type: "tool_call",
-            data: { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
-          });
-          break;
-        }
-        case "toolCallResult": {
-          const tr = event.event.value;
-          let result: Record<string, unknown> = {};
-          try {
-            result = JSON.parse(new TextDecoder().decode(tr.toolResult));
-          } catch {}
-          // Find and update the matching tool_call block
-          updated.blocks = updated.blocks.map((block) =>
-            block.type === "tool_call" && block.data.toolCallId === tr.toolCallId
-              ? { type: "tool_call", data: { ...block.data, toolResult: result } }
-              : block
-          );
-          break;
-        }
-        case "nodeStart": {
-          const ns = event.event.value;
-          updated.nodes = [...updated.nodes, { node: ns.node, status: "running" }];
-          break;
-        }
-        case "nodeEnd": {
-          const ne = event.event.value;
-          updated.nodes = updated.nodes.map((n) =>
-            n.node === ne.node ? { ...n, status: "done" } : n
-          );
-          break;
-        }
-        case "agentError": {
-          const err = event.event.value;
-          updated.error = {
-            errorType: err.errorType,
-            message: err.message,
-            recoverable: err.recoverable,
-          };
-          break;
-        }
-        case "custom": {
-          const custom = event.event.value;
-          if (custom.type === "human_review") {
-            let payload: Record<string, unknown> = {};
-            try {
-              payload = JSON.parse(new TextDecoder().decode(custom.payload));
-            } catch {}
-            updated.blocks.push({
-              type: "human_review",
-              data: { payload, resolved: false },
-            });
-          }
-          break;
-        }
-      }
-
-      messages[messages.length - 1] = updated;
-      return { messages };
-    });
+  processEventForConv: (convId, event) => {
+    const s = get();
+    if (String(s.conversationId) !== convId) return; // drop events for non-active conversations
+    const rawEvent = buildRawEvent(event);
+    set((prev) => ({
+      messages: applyStreamEvent(prev.messages, event),
+      rawEvents: [...prev.rawEvents, rawEvent],
+    }));
   },
 
   resolveHumanReview: () =>
@@ -227,7 +239,6 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       const messages = [...s.messages];
       const last = messages[messages.length - 1];
       if (!last) return s;
-      // Find the last unresolved human_review block and mark it resolved
       const blocks = [...last.blocks];
       for (let i = blocks.length - 1; i >= 0; i--) {
         const block = blocks[i];
