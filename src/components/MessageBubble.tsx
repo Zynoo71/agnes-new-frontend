@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Markdown from "react-markdown";
 import remarkCjkFriendly from "remark-cjk-friendly";
-import type { Message, ContentBlock, HumanReviewData } from "@/stores/conversationStore";
+import type { Message, ContentBlock, HumanReviewData, ToolCallData } from "@/stores/conversationStore";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
+import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
 
@@ -138,16 +139,53 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
         {(() => {
-          let hasSeenToolCall = false;
+          const spawnToolCalls: ToolCallData[] = message.blocks
+            .filter((b): b is { type: "tool_call"; data: ToolCallData } =>
+              b.type === "tool_call" && b.data.toolName === "spawn_worker")
+            .map((b) => b.data);
+
+          const nonSpawnBlocks = message.blocks.filter(
+            (b) => !(b.type === "tool_call" && b.data.toolName === "spawn_worker"),
+          );
+
+          // Precompute: has any tool_call appeared before index i?
+          const toolSeenBefore: boolean[] = [];
+          let seen = false;
+          for (const block of message.blocks) {
+            toolSeenBefore.push(seen);
+            const isSpawn = block.type === "tool_call" && block.data.toolName === "spawn_worker";
+            if (block.type === "tool_call" || isSpawn) seen = true;
+          }
+
+          // Index of the first spawn_worker block (render AgentSwarmPanel only once)
+          const firstSpawnIdx = message.blocks.findIndex(
+            (b) => b.type === "tool_call" && b.data.toolName === "spawn_worker",
+          );
+
           return message.blocks.map((block, i) => {
-            if (block.type === "tool_call") hasSeenToolCall = true;
-            const prev = message.blocks[i - 1];
+            const isSpawn = block.type === "tool_call" && block.data.toolName === "spawn_worker";
+
+            if (isSpawn) {
+              if (i !== firstSpawnIdx) return null;
+              return (
+                <AgentSwarmPanel
+                  key={`swarm-${i}`}
+                  liveWorkers={message.workers}
+                  spawnToolCalls={spawnToolCalls}
+                />
+              );
+            }
+
+            const idxInNonSpawn = nonSpawnBlocks.indexOf(block);
+            const prevNonSpawn = idxInNonSpawn > 0 ? nonSpawnBlocks[idxInNonSpawn - 1] : undefined;
             const needsDivider =
-              hasSeenToolCall && block.type === "text" && prev != null && prev.type !== "text";
-            // Auto-collapse reasoning when subsequent content has arrived
+              toolSeenBefore[i] &&
+              block.type === "text" &&
+              prevNonSpawn != null &&
+              prevNonSpawn.type !== "text";
             const shouldAutoCollapse =
-              block.type === "reasoning" &&
-              message.blocks.slice(i + 1).some((b) => b.type === "text" || b.type === "tool_call");
+              (block.type === "reasoning" || block.type === "tool_call") &&
+              nonSpawnBlocks.slice(idxInNonSpawn + 1).some((b) => b.type === "text" || b.type === "tool_call");
             return (
               <div key={i}>
                 {needsDivider && (
@@ -252,7 +290,7 @@ function BlockRenderer({
     case "tool_call":
       return (
         <div className="my-3">
-          <ToolCallBlock {...block.data} />
+          <ToolCallBlock {...block.data} autoCollapse={autoCollapse} />
         </div>
       );
     case "human_review":
@@ -270,20 +308,21 @@ function BlockRenderer({
 const AUTO_COLLAPSE_DELAY = 2000;
 
 function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: string; isStreaming?: boolean; autoCollapse?: boolean }) {
-  const [open, setOpen] = useState(!!isStreaming);
   const [userToggled, setUserToggled] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [delayCollapsed, setDelayCollapsed] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
 
+  // Auto-open is derived: open while streaming, unless delay-collapsed
+  const autoOpen = !delayCollapsed && !!isStreaming;
+  const open = userToggled ? manualOpen : autoOpen;
+
   useEffect(() => {
-    if (userToggled) return;
-    if (autoCollapse) {
-      // Delay-collapse after message content starts arriving
-      const timer = setTimeout(() => setOpen(false), AUTO_COLLAPSE_DELAY);
-      return () => clearTimeout(timer);
-    }
-    setOpen(!!isStreaming);
-  }, [isStreaming, userToggled, autoCollapse]);
+    if (userToggled || !autoCollapse) return;
+    const timer = setTimeout(() => setDelayCollapsed(true), AUTO_COLLAPSE_DELAY);
+    return () => clearTimeout(timer);
+  }, [autoCollapse, userToggled]);
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -296,7 +335,7 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
 
   const handleToggle = () => {
     setUserToggled(true);
-    setOpen(!open);
+    setManualOpen(!open);
   };
 
   return (
@@ -512,7 +551,7 @@ function CountdownBadge({ seconds, defaultAction, onTimeout }: {
 }) {
   const [remaining, setRemaining] = useState(seconds);
   const onTimeoutRef = useRef(onTimeout);
-  onTimeoutRef.current = onTimeout;
+  useEffect(() => { onTimeoutRef.current = onTimeout; });
 
   useEffect(() => {
     if (remaining <= 0) { onTimeoutRef.current(); return; }

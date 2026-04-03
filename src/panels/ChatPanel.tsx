@@ -1,10 +1,42 @@
 import { useState, useEffect, useRef, useCallback, type KeyboardEvent } from "react";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useChat } from "@/hooks/useChat";
+import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
 import { MessageBubble } from "@/components/MessageBubble";
 import { EventStream } from "@/components/EventStream";
 
 const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
+
+const HEALTH_CONFIG = {
+  ok: { dot: "bg-green-500", color: "#22c55e", label: "Connected" },
+  error: { dot: "bg-red-500", color: "#ef4444", label: "Disconnected" },
+  checking: { dot: "bg-yellow-500", color: "#eab308", label: "Connecting" },
+} as const;
+
+function HealthBadge({ info }: { info: HealthInfo }) {
+  const c = HEALTH_CONFIG[info.status];
+  return (
+    <div
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+        info.status === "ok"
+          ? "bg-green-50 text-green-700"
+          : info.status === "error"
+            ? "bg-red-50 text-red-700"
+            : "bg-yellow-50 text-yellow-700"
+      }`}
+      title={info.latencyMs != null ? `Latency: ${info.latencyMs}ms` : c.label}
+    >
+      <span
+        className={`w-1.5 h-1.5 rounded-full shrink-0 health-dot ${c.dot}`}
+        style={{ "--breathing-color": c.color } as React.CSSProperties}
+      />
+      <span>{c.label}</span>
+      {info.latencyMs != null && (
+        <span className="font-mono opacity-60">{info.latencyMs}ms</span>
+      )}
+    </div>
+  );
+}
 
 const SUGGESTIONS = [
   "Search the latest AI news",
@@ -22,6 +54,8 @@ export function ChatPanel() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const isNearBottomRef = useRef(true);
+
+  const health = useHealthCheck();
 
   const hasPendingReview = messages.some(
     (m) => m.blocks.some((b) => b.type === "human_review" && !b.data.resolved)
@@ -135,6 +169,8 @@ export function ChatPanel() {
       <div className="flex-1 flex flex-col">
         {/* Top controls */}
         <div className="flex items-center gap-3 px-5 py-2.5 border-b border-border-light bg-surface-alt">
+          <HealthBadge info={health} />
+
           {conversationId && (
             <code className="text-[11px] text-text-tertiary bg-surface-hover px-2 py-0.5 rounded-md">
               #{conversationId.toString()}
@@ -214,7 +250,7 @@ export function ChatPanel() {
                   const lastAssistantIdx = messages.findLastIndex((m) => m.role === "assistant");
                   return messages.map((msg, i) => (
                     <MessageBubble
-                      key={i}
+                      key={msg.id}
                       message={msg}
                       isLast={msg.role === "user" ? i === lastUserIdx : i === lastAssistantIdx}
                       onHitlResume={hitlResume}

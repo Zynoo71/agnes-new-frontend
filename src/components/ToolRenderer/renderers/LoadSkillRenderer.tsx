@@ -1,6 +1,6 @@
-import { registerToolRenderer, type ToolRenderProps } from "../registry";
+import type { ToolRenderProps } from "../registry";
 
-function LoadSkillRenderer({ toolInput, toolResult }: ToolRenderProps) {
+export function LoadSkillRenderer({ toolInput, toolResult }: ToolRenderProps) {
   const skillName = String(toolInput.skill_name ?? toolInput.skillName ?? "");
   const reference = toolInput.reference as string | undefined;
 
@@ -53,4 +53,3 @@ function LoadSkillRenderer({ toolInput, toolResult }: ToolRenderProps) {
   );
 }
 
-registerToolRenderer("load_skill", LoadSkillRenderer);

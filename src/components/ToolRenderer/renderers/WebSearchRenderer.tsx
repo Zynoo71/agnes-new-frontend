@@ -1,30 +1,30 @@
-import { useState, useEffect, useRef } from "react";
-import { registerToolRenderer, type ToolRenderProps } from "../registry";
+import { useState, useEffect } from "react";
+import type { ToolRenderProps } from "../registry";
 
 const AUTO_COLLAPSE_MS = 3000;
 
-function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
+export function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
   const query = (toolInput.query as string) ?? (toolInput.search_query as string) ?? "";
-  const [expanded, setExpanded] = useState(!toolResult);
-  const hasAutoCollapsed = useRef(false);
+  const [userToggled, setUserToggled] = useState(false);
+  const [delayCollapsed, setDelayCollapsed] = useState(false);
 
-  // When result arrives: show expanded briefly, then auto-collapse
+  // Auto-expand when result arrives, then collapse after delay
+  const autoExpanded = toolResult ? !delayCollapsed : true;
+  const [manualExpanded, setManualExpanded] = useState(false);
+  const expanded = userToggled ? manualExpanded : autoExpanded;
+
   useEffect(() => {
-    if (!toolResult || hasAutoCollapsed.current) return;
-    setExpanded(true);
-    const timer = setTimeout(() => {
-      hasAutoCollapsed.current = true;
-      setExpanded(false);
-    }, AUTO_COLLAPSE_MS);
+    if (!toolResult || userToggled) return;
+    const timer = setTimeout(() => setDelayCollapsed(true), AUTO_COLLAPSE_MS);
     return () => clearTimeout(timer);
-  }, [toolResult]);
+  }, [toolResult, userToggled]);
 
   const resultCount = Array.isArray(toolResult?.results) ? toolResult.results.length : 0;
 
   return (
     <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 text-sm shadow-sm">
       <button
-        onClick={() => toolResult && setExpanded(!expanded)}
+        onClick={() => { if (toolResult) { setUserToggled(true); setManualExpanded(!expanded); } }}
         className="flex items-center gap-2 w-full text-left"
       >
         <div className="w-5 h-5 rounded-md bg-blue-50 flex items-center justify-center">
@@ -53,8 +53,8 @@ function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
         <div className="mt-2 space-y-1.5">
           {toolResult.results.map((r: Record<string, unknown>, i: number) => (
             <div key={i} className="p-2 bg-background rounded-lg">
-              <p className="text-xs font-medium text-text-primary">{r.title as string}</p>
-              {r.snippet && (
+              <p className="text-xs font-medium text-text-primary">{String(r.title)}</p>
+              {r.snippet != null && (
                 <p className="text-[11px] text-text-secondary mt-0.5 line-clamp-2">{String(r.snippet)}</p>
               )}
             </div>
@@ -65,4 +65,3 @@ function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
   );
 }
 
-registerToolRenderer("web_search", WebSearchRenderer);
