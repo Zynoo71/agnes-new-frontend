@@ -289,12 +289,14 @@ interface ConversationStore {
   messages: Message[];
   rawEvents: RawEvent[];
   isStreaming: boolean;
+  isLoadingHistory: boolean;
   error: string | null;
   streamingConvIds: Set<string>;
 
   setConversationId: (id: string) => void;
   setAgentType: (type: string) => void;
   setStreaming: (v: boolean) => void;
+  setLoadingHistory: (v: boolean) => void;
   setError: (err: string | null) => void;
   addUserMessage: (content: string) => void;
   startAssistantMessage: () => void;
@@ -315,12 +317,14 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   messages: [],
   rawEvents: [],
   isStreaming: false,
+  isLoadingHistory: false,
   error: null,
   streamingConvIds: new Set(),
 
   setConversationId: (id) => set({ conversationId: id }),
   setAgentType: (type) => set({ agentType: type }),
   setStreaming: (v) => set({ isStreaming: v }),
+  setLoadingHistory: (v) => set({ isLoadingHistory: v }),
   setError: (err) => set({ error: err }),
 
   addUserMessage: (content) =>
@@ -402,5 +406,5 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   setMessages: (messages) => set({ messages, rawEvents: [] }),
 
   reset: () =>
-    set({ conversationId: null, messages: [], rawEvents: [], isStreaming: false, error: null }),
+    set({ conversationId: null, messages: [], rawEvents: [], isStreaming: false, isLoadingHistory: false, error: null }),
 }));

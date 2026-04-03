@@ -222,6 +222,7 @@ export function useChat() {
 
     s.setConversationId(id);
     s.setError(null);
+    s.setLoadingHistory(true);
 
     const isTargetStreaming = s.streamingConvIds.has(id);
 
@@ -230,8 +231,11 @@ export function useChat() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       getState().setError(`Load history: ${msg}`);
+      getState().setLoadingHistory(false);
       return;
     }
+
+    getState().setLoadingHistory(false);
 
     if (isTargetStreaming) {
       getState().startAssistantMessage();
