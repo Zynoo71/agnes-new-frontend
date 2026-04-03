@@ -3,6 +3,7 @@ import Markdown from "react-markdown";
 import remarkCjkFriendly from "remark-cjk-friendly";
 import type { Message, ContentBlock, HumanReviewData } from "@/stores/conversationStore";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
+import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
 
 interface MessageBubbleProps {
@@ -14,11 +15,27 @@ interface MessageBubbleProps {
   isStreaming?: boolean;
 }
 
+// ── Avatars ──
+function AssistantAvatar() {
+  return (
+    <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center shrink-0">
+      <span className="text-white text-[11px] font-bold">A</span>
+    </div>
+  );
+}
+
+function UserAvatar() {
+  return (
+    <div className="w-7 h-7 rounded-full bg-border flex items-center justify-center shrink-0">
+      <span className="text-text-secondary text-[11px] font-bold">U</span>
+    </div>
+  );
+}
+
 export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
-
   const [copied, setCopied] = useState(false);
 
   const canEdit = isUser && isLast && onEditResend && !isStreaming;
@@ -57,58 +74,95 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
     setEditText("");
   };
 
-  return (
-    <div className={`group flex ${isUser ? "justify-end" : "justify-start"} mb-5`}>
-      <div
-        className={`rounded-2xl ${
-          isUser
-            ? "bg-user-bubble text-text-primary max-w-[70%] px-4 py-2.5"
-            : "text-text-primary max-w-[85%] py-1"
-        }`}
-      >
-        {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
-
-        {!isUser && message.reasoningContent && (
-          <ReasoningBlock content={message.reasoningContent} isStreaming={isStreaming && isLast} />
-        )}
-
-        {editing ? (
-          <div className="space-y-2">
-            <textarea
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              className="w-full min-w-[300px] rounded-lg border border-border bg-surface px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30"
-              rows={3}
-            />
-            <div className="flex gap-2">
+  if (isUser) {
+    return (
+      <div className="animate-message-in group flex justify-end gap-2.5 mb-5">
+        <div className="max-w-[70%]">
+          <div className="bg-user-bubble text-text-primary rounded-2xl px-4 py-2.5">
+            {editing ? (
+              <div className="space-y-2">
+                <textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="w-full min-w-[300px] rounded-lg border border-border bg-surface px-3 py-2 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30"
+                  rows={3}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={!editText.trim()}
+                    className="rounded-lg bg-accent text-white px-3 py-1.5 text-xs font-medium
+                               hover:bg-accent-hover active:scale-[0.97] disabled:opacity-40 transition-all"
+                  >
+                    Save & Resend
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-text-tertiary
+                               hover:text-text-secondary hover:bg-surface-hover transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              message.blocks.map((block, i) => (
+                <BlockRenderer key={i} block={block} />
+              ))
+            )}
+          </div>
+          {canEdit && !editing && (
+            <div className="flex justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                onClick={handleSaveEdit}
-                disabled={!editText.trim()}
-                className="rounded-lg bg-accent text-white px-3 py-1.5 text-xs font-medium
-                           hover:bg-accent-hover active:scale-[0.97] disabled:opacity-40 transition-all"
+                onClick={handleStartEdit}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-text-tertiary hover:text-text-secondary hover:bg-surface-hover transition-all"
+                title="Edit"
               >
-                Save & Resend
-              </button>
-              <button
-                onClick={handleCancelEdit}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium text-text-tertiary
-                           hover:text-text-secondary hover:bg-surface-hover transition-all"
-              >
-                Cancel
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                </svg>
               </button>
             </div>
-          </div>
-        ) : (
-          message.blocks.map((block, i) => (
-            <BlockRenderer
-              key={i}
-              block={block}
-              onHitlResume={onHitlResume}
-              isStreaming={isStreaming}
-            />
-          ))
-        )}
+          )}
+        </div>
+        <UserAvatar />
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-message-in group flex gap-2.5 mb-5">
+      <AssistantAvatar />
+      <div className="max-w-[85%] py-1 flex-1 min-w-0">
+        {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
+
+        {(() => {
+          let hasSeenToolCall = false;
+          return message.blocks.map((block, i) => {
+            if (block.type === "tool_call") hasSeenToolCall = true;
+            const prev = message.blocks[i - 1];
+            const needsDivider =
+              hasSeenToolCall && block.type === "text" && prev != null && prev.type !== "text";
+            // Auto-collapse reasoning when subsequent content has arrived
+            const shouldAutoCollapse =
+              block.type === "reasoning" &&
+              message.blocks.slice(i + 1).some((b) => b.type === "text" || b.type === "tool_call");
+            return (
+              <div key={i}>
+                {needsDivider && (
+                  <hr className="my-4 border-t border-border-light" />
+                )}
+                <BlockRenderer
+                  block={block}
+                  onHitlResume={onHitlResume}
+                  isStreaming={isStreaming && isLast}
+                  autoCollapse={shouldAutoCollapse}
+                />
+              </div>
+            );
+          });
+        })()}
 
         {message.error && (
           <div className="mt-3 flex items-start gap-2 p-3 bg-error-light rounded-xl text-xs">
@@ -125,46 +179,32 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
           </div>
         )}
 
-        {/* Action buttons */}
-        {canEdit && !editing && (
-          <button
-            onClick={handleStartEdit}
-            className="mt-1.5 text-[11px] text-text-tertiary hover:text-text-secondary transition-colors"
-          >
-            Edit
-          </button>
-        )}
-        {!isUser && !isStreaming && (
-          <div className="mt-1.5 flex items-center gap-2">
+        {!isStreaming && (
+          <div className="mt-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleCopy}
-              className="text-[11px] text-text-tertiary hover:text-text-secondary transition-colors flex items-center gap-1"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-text-tertiary hover:text-text-secondary hover:bg-surface-hover transition-all"
+              title={copied ? "Copied!" : "Copy"}
             >
               {copied ? (
-                <>
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                  Copied
-                </>
+                <svg className="w-3.5 h-3.5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
               ) : (
-                <>
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
-                  </svg>
-                  Copy
-                </>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                </svg>
               )}
             </button>
             {canRegenerate && (
               <button
                 onClick={onRegenerate}
-                className="text-[11px] text-text-tertiary hover:text-text-secondary transition-colors flex items-center gap-1"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-text-tertiary hover:text-text-secondary hover:bg-surface-hover transition-all"
+                title="Regenerate"
               >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
                 </svg>
-                Regenerate
               </button>
             )}
           </div>
@@ -178,18 +218,37 @@ function BlockRenderer({
   block,
   onHitlResume,
   isStreaming,
+  autoCollapse,
 }: {
   block: ContentBlock;
   onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
   isStreaming?: boolean;
+  autoCollapse?: boolean;
 }) {
   switch (block.type) {
     case "text":
       return (
         <div className="prose-agent text-[14px] leading-[1.7] text-text-primary">
-          <Markdown remarkPlugins={[remarkCjkFriendly]}>{block.content}</Markdown>
+          <Markdown
+            remarkPlugins={[remarkCjkFriendly]}
+            components={{
+              pre({ children }) {
+                return <>{children}</>;
+              },
+              code({ className, children }) {
+                const match = /language-(\w+)/.exec(className || "");
+                const code = String(children).replace(/\n$/, "");
+                if (match) {
+                  return <CodeBlock language={match[1]}>{code}</CodeBlock>;
+                }
+                return <code className={className}>{children}</code>;
+              },
+            }}
+          >{block.content}</Markdown>
         </div>
       );
+    case "reasoning":
+      return <ReasoningBlock content={block.content} isStreaming={isStreaming} autoCollapse={autoCollapse} />;
     case "tool_call":
       return (
         <div className="my-3">
@@ -205,6 +264,65 @@ function BlockRenderer({
         />
       );
   }
+}
+
+// ── Reasoning block with smooth transition ──
+const AUTO_COLLAPSE_DELAY = 2000;
+
+function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: string; isStreaming?: boolean; autoCollapse?: boolean }) {
+  const [open, setOpen] = useState(!!isStreaming);
+  const [userToggled, setUserToggled] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    if (userToggled) return;
+    if (autoCollapse) {
+      // Delay-collapse after message content starts arriving
+      const timer = setTimeout(() => setOpen(false), AUTO_COLLAPSE_DELAY);
+      return () => clearTimeout(timer);
+    }
+    setOpen(!!isStreaming);
+  }, [isStreaming, userToggled, autoCollapse]);
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setHeight(entry.contentRect.height);
+    });
+    observer.observe(contentRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleToggle = () => {
+    setUserToggled(true);
+    setOpen(!open);
+  };
+
+  return (
+    <div className="mb-2">
+      <button
+        onClick={handleToggle}
+        className="flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
+      >
+        <svg
+          className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+        {isStreaming ? "Thinking..." : "Thought"}
+      </button>
+      <div
+        className="overflow-hidden transition-all duration-200 ease-in-out"
+        style={{ maxHeight: open ? `${height + 16}px` : "0px", opacity: open ? 1 : 0 }}
+      >
+        <div ref={contentRef} className="mt-1.5 pl-4 border-l-2 border-border-light prose-reasoning text-xs text-text-secondary leading-relaxed break-words overflow-hidden">
+          <Markdown remarkPlugins={[remarkCjkFriendly]}>{content}</Markdown>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Review type display config ──
@@ -383,45 +501,6 @@ function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Re
                     border border-border-light font-mono text-text-secondary leading-relaxed">
       {JSON.stringify(data, null, 2)}
     </pre>
-  );
-}
-
-// ── Reasoning block ──
-function ReasoningBlock({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
-  const [open, setOpen] = useState(!!isStreaming);
-  const [userToggled, setUserToggled] = useState(false);
-
-  // Auto-open while streaming, auto-close when done (unless user manually toggled)
-  useEffect(() => {
-    if (userToggled) return;
-    setOpen(!!isStreaming);
-  }, [isStreaming, userToggled]);
-
-  const handleToggle = () => {
-    setUserToggled(true);
-    setOpen(!open);
-  };
-
-  return (
-    <div className="mb-2">
-      <button
-        onClick={handleToggle}
-        className="flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
-      >
-        <svg
-          className={`w-3 h-3 transition-transform ${open ? "rotate-90" : ""}`}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
-        {isStreaming ? "Thinking..." : "Thought"}
-      </button>
-      {open && (
-        <div className="mt-1.5 pl-4 border-l-2 border-border-light text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
-          {content}
-        </div>
-      )}
-    </div>
   );
 }
 
