@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import type { ToolRenderProps } from "../registry";
 
-function ImageItem({ url, title, onLoaded }: { url: string; title: string; onLoaded: () => void }) {
+function ImageItem({ url, title, onLoaded, onFailed }: { url: string; title: string; onLoaded: () => void; onFailed: () => void }) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
 
@@ -10,7 +10,7 @@ function ImageItem({ url, title, onLoaded }: { url: string; title: string; onLoa
       className="block rounded-lg overflow-hidden bg-background hover:opacity-80 transition-opacity">
       <img src={url} alt={title} loading="lazy"
         onLoad={onLoaded}
-        onError={() => setFailed(true)}
+        onError={() => { setFailed(true); onFailed(); }}
         className="w-full h-20 object-cover" />
     </a>
   );
@@ -22,8 +22,10 @@ export function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) 
   const query = (toolInput.query as string) ?? (toolResult?.query as string) ?? "";
   const [expanded, setExpanded] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(() => new Set());
   const handleLoaded = useCallback(() => setLoadedCount(c => c + 1), []);
-  const results = toolResult && Array.isArray(toolResult.results) ? toolResult.results as Record<string, unknown>[] : [];
+  const allResults = toolResult && Array.isArray(toolResult.results) ? toolResult.results as Record<string, unknown>[] : [];
+  const results = allResults.filter(r => !failedUrls.has(r.url as string));
   const hasMore = results.length > VISIBLE_COUNT;
   const visible = expanded ? results : results.slice(0, VISIBLE_COUNT);
 
@@ -44,14 +46,16 @@ export function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) 
         )}
         {toolResult && loadedCount > 0 && (
           <span className="text-[10px] text-text-tertiary ml-auto shrink-0">
-            {loadedCount} images
+            {loadedCount} {loadedCount === 1 ? "image" : "images"}
           </span>
         )}
       </div>
       {visible.length > 0 && (
         <div className="grid grid-cols-3 gap-1.5">
           {visible.map((r, i) => (
-            <ImageItem key={i} url={r.url as string} title={r.title as string} onLoaded={handleLoaded} />
+            <ImageItem key={r.url as string} url={r.url as string} title={r.title as string}
+              onLoaded={handleLoaded}
+              onFailed={() => setFailedUrls(s => new Set(s).add(r.url as string))} />
           ))}
         </div>
       )}
