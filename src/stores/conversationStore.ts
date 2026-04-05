@@ -342,6 +342,19 @@ function pushRawEvent(events: RawEvent[], event: RawEvent): RawEvent[] {
   return [...events, event];
 }
 
+export function rebuildTasksFromHistory(messages: Message[]): AgentTask[] {
+  let lastTasks: AgentTask[] = [];
+  for (const msg of messages) {
+    for (const block of msg.blocks) {
+      if (block.type === "ToolCallStart" && PLANNING_TOOL_NAMES.has(block.data.toolName) && block.data.toolResult) {
+        const tasks = block.data.toolResult.tasks as AgentTask[] | undefined;
+        if (tasks) lastTasks = tasks;
+      }
+    }
+  }
+  return lastTasks;
+}
+
 // ── Store ──
 
 interface ConversationStore {
