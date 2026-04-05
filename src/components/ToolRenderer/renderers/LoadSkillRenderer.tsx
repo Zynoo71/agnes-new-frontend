@@ -1,7 +1,7 @@
 import type { ToolRenderProps } from "../registry";
 
 export function LoadSkillRenderer({ toolInput, toolResult }: ToolRenderProps) {
-  const skillName = String(toolInput.skill_name ?? toolInput.skillName ?? "");
+  const skillName = String(toolInput.skill_name ?? toolInput.skillName ?? toolResult?.skill ?? "");
   const reference = toolInput.reference as string | undefined;
 
   const isError = typeof toolResult === "object" && toolResult !== null

@@ -3,8 +3,10 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
 import type { Message, ContentBlock, HumanReviewData, ToolCallData } from "@/stores/conversationStore";
+import { PLANNING_TOOL_NAMES } from "@/stores/conversationStore";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
+import { TaskListPanel } from "./TaskListPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
 
@@ -151,7 +153,10 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
             .map((b) => b.data);
 
           const nonSpawnBlocks = message.blocks.filter(
-            (b) => !(b.type === "ToolCallStart" && b.data.toolName === "spawn_worker"),
+            (b) =>
+              !(b.type === "ToolCallStart" && b.data.toolName === "spawn_worker") &&
+              !(b.type === "ToolCallStart" && PLANNING_TOOL_NAMES.has(b.data.toolName)) &&
+              b.type !== "TaskList",
           );
 
           // Precompute: has any tool_call appeared before index i?
@@ -180,6 +185,16 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
                   spawnToolCalls={spawnToolCalls}
                 />
               );
+            }
+
+            // Planning tools → filter out (data stays in blocks, just not rendered)
+            if (block.type === "ToolCallStart" && PLANNING_TOOL_NAMES.has(block.data.toolName)) {
+              return null;
+            }
+
+            // TaskList anchor → render TaskListPanel
+            if (block.type === "TaskList") {
+              return <TaskListPanel key={`tasklist-${i}`} />;
             }
 
             const idxInNonSpawn = nonSpawnBlocks.indexOf(block);
@@ -318,6 +333,8 @@ function BlockRenderer({
           disabled={isStreaming}
         />
       );
+    case "TaskList":
+      return <TaskListPanel />;
   }
 }
 
@@ -374,7 +391,7 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
         style={{ maxHeight: open ? `${height + 16}px` : "0px", opacity: open ? 1 : 0 }}
       >
         <div ref={contentRef} className="mt-1.5 pl-4 border-l-2 border-border-light prose-reasoning text-xs text-text-secondary leading-relaxed break-words overflow-hidden">
-          <Markdown remarkPlugins={[remarkGfm, remarkCjkFriendly]}>{content}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm, remarkCjkFriendly]}>{content.replace(/\\n/g, "\n")}</Markdown>
         </div>
       </div>
     </div>

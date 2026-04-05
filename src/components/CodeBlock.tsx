@@ -43,7 +43,9 @@ const LANG_LABELS: Record<string, string> = {
 export function CodeBlock({ language, children }: { language?: string; children: string }) {
   const [html, setHtml] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [tab, setTab] = useState<"preview" | "code">("preview");
   const lang = language || "text";
+  const isHtml = lang === "html" && children.length > 200;
 
   useEffect(() => {
     let cancelled = false;
@@ -70,9 +72,34 @@ export function CodeBlock({ language, children }: { language?: string; children:
     <div className="group/code relative my-3 rounded-xl overflow-hidden bg-[#1a1b26] shadow-md">
       {/* Header bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03]">
-        <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
-          {LANG_LABELS[lang] ?? lang}
-        </span>
+        {isHtml ? (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setTab("preview")}
+              className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded transition-colors ${
+                tab === "preview"
+                  ? "text-white/80 bg-white/10"
+                  : "text-white/30 hover:text-white/50"
+              }`}
+            >
+              Preview
+            </button>
+            <button
+              onClick={() => setTab("code")}
+              className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded transition-colors ${
+                tab === "code"
+                  ? "text-white/80 bg-white/10"
+                  : "text-white/30 hover:text-white/50"
+              }`}
+            >
+              Code
+            </button>
+          </div>
+        ) : (
+          <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
+            {LANG_LABELS[lang] ?? lang}
+          </span>
+        )}
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
@@ -98,18 +125,27 @@ export function CodeBlock({ language, children }: { language?: string; children:
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        {html ? (
-          <div
-            className="px-4 py-3 text-[13px] leading-[1.6] [&_pre]:!bg-transparent [&_pre]:!m-0 [&_pre]:!p-0"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        ) : (
-          <pre className="px-4 py-3 text-[13px] leading-[1.6] text-[#d4d4d4] font-mono">
-            <code>{children}</code>
-          </pre>
-        )}
-      </div>
+      {isHtml && tab === "preview" ? (
+        <iframe
+          srcDoc={children}
+          sandbox="allow-scripts"
+          className="w-full border-0 bg-white"
+          style={{ height: "60vh" }}
+        />
+      ) : (
+        <div className="overflow-x-auto">
+          {html ? (
+            <div
+              className="px-4 py-3 text-[13px] leading-[1.6] [&_pre]:!bg-transparent [&_pre]:!m-0 [&_pre]:!p-0"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          ) : (
+            <pre className="px-4 py-3 text-[13px] leading-[1.6] text-[#d4d4d4] font-mono">
+              <code>{children}</code>
+            </pre>
+          )}
+        </div>
+      )}
 
     </div>
   );

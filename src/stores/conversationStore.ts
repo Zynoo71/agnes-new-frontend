@@ -58,11 +58,25 @@ export interface WorkerState {
   error?: string;
 }
 
+export interface AgentTask {
+  id: number;
+  title: string;
+  description: string;
+  status: "pending" | "in_progress" | "done";
+  result: string | null;
+  depends_on: number[];
+}
+
+export const PLANNING_TOOL_NAMES = new Set([
+  "create_task", "update_task", "list_tasks", "get_task",
+]);
+
 export type ContentBlock =
   | { type: "Message"; content: string }
   | { type: "Reasoning"; content: string }
   | { type: "ToolCallStart"; data: ToolCallData }
-  | { type: "human_review"; data: HumanReviewData };
+  | { type: "human_review"; data: HumanReviewData }
+  | { type: "TaskList" };
 
 export interface Message {
   id: string;
@@ -197,6 +211,19 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
         break;
       }
 
+      if (custom.type === "TaskUpdate") {
+        const action = payload.action as string;
+        if (action === "create") {
+          // Insert TaskList anchor block on first task creation
+          const hasAnchor = updated.blocks.some((b) => b.type === "TaskList");
+          if (!hasAnchor) {
+            updated.blocks.push({ type: "TaskList" });
+          }
+        }
+        // Note: store.tasks is updated separately in processEventForConv
+        break;
+      }
+
       // Worker events — route by worker_id
       const workerId = payload.worker_id as string | undefined;
       if (workerId) {
@@ -316,6 +343,20 @@ function pushRawEvent(events: RawEvent[], event: RawEvent): RawEvent[] {
   return [...events, event];
 }
 
+export function rebuildTasksFromHistory(messages: Message[]): AgentTask[] {
+  let lastTasks: AgentTask[] = [];
+  for (const msg of messages) {
+    for (const block of msg.blocks) {
+      // Scan planning tool results for full tasks array
+      if (block.type === "ToolCallStart" && PLANNING_TOOL_NAMES.has(block.data.toolName) && block.data.toolResult) {
+        const tasks = block.data.toolResult.tasks as AgentTask[] | undefined;
+        if (tasks) lastTasks = tasks;
+      }
+    }
+  }
+  return lastTasks;
+}
+
 // ── Store ──
 
 interface ConversationStore {
@@ -323,6 +364,7 @@ interface ConversationStore {
   agentType: string;
   messages: Message[];
   rawEvents: RawEvent[];
+  tasks: AgentTask[];
   isStreaming: boolean;
   isLoadingHistory: boolean;
   error: string | null;
@@ -351,6 +393,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   agentType: "super",
   messages: [],
   rawEvents: [],
+  tasks: [],
   isStreaming: false,
   isLoadingHistory: false,
   error: null,
@@ -400,9 +443,30 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
     const s = get();
     if (s.conversationId !== convId) return;
     const rawEvent = buildRawEvent(event);
+
+    // Extract tasks from TaskUpdate custom events
+    let newTasks: AgentTask[] | undefined;
+    if (event.event.case === "custom" && event.event.value.type === "TaskUpdate") {
+      const payload = asRecord(tryDecodeJson(event.event.value.payload));
+      const action = payload.action as string;
+      if (action === "create") {
+        // create carries full tasks array
+        const tasks = payload.tasks as AgentTask[] | undefined;
+        if (tasks) newTasks = tasks;
+      } else if (action === "update") {
+        // update only carries task_id + status — update in-place
+        const taskId = payload.task_id as number;
+        const status = payload.status as AgentTask["status"];
+        if (taskId != null && status) {
+          newTasks = get().tasks.map((t) => (t.id === taskId ? { ...t, status } : t));
+        }
+      }
+    }
+
     set((prev) => ({
       messages: applyStreamEvent(prev.messages, event),
       rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
+      ...(newTasks !== undefined ? { tasks: newTasks } : {}),
     }));
   },
 
@@ -441,5 +505,5 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   setMessages: (messages) => set({ messages, rawEvents: [] }),
 
   reset: () =>
-    set({ conversationId: null, messages: [], rawEvents: [], isStreaming: false, isLoadingHistory: false, error: null }),
+    set({ conversationId: null, messages: [], rawEvents: [], tasks: [], isStreaming: false, isLoadingHistory: false, error: null }),
 }));

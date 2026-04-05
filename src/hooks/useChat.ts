@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
-import { useConversationStore, type ContentBlock, type Message } from "@/stores/conversationStore";
+import { useConversationStore, type ContentBlock, type Message, rebuildTasksFromHistory } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
@@ -97,6 +97,13 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
         }
       }
     }
+    // Inject TaskList anchor if this message has a create_task tool call
+    const hasCreateTask = assistantBlocks.some(
+      (b) => b.type === "ToolCallStart" && b.data.toolName === "create_task",
+    );
+    if (hasCreateTask && !assistantBlocks.some((b) => b.type === "TaskList")) {
+      assistantBlocks.push({ type: "TaskList" });
+    }
     if (assistantBlocks.length > 0) {
       messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers: {} });
     }
@@ -109,7 +116,10 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
 export function useChat() {
   const loadHistory = async (id: string) => {
     const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
-    getState().setMessages(parseHistoryTurns(resp.turns));
+    const messages = parseHistoryTurns(resp.turns);
+    // Set messages and rebuild tasks in a single state update to avoid intermediate render
+    const tasks = rebuildTasksFromHistory(messages);
+    useConversationStore.setState({ messages, rawEvents: [], tasks });
     return resp;
   };
 
