@@ -117,10 +117,9 @@ export function useChat() {
   const loadHistory = async (id: string) => {
     const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
     const messages = parseHistoryTurns(resp.turns);
-    getState().setMessages(messages);
-    // Rebuild store-level tasks from history tool artifacts
+    // Set messages and rebuild tasks in a single state update to avoid intermediate render
     const tasks = rebuildTasksFromHistory(messages);
-    useConversationStore.setState({ tasks });
+    useConversationStore.setState({ messages, rawEvents: [], tasks });
     return resp;
   };
 
