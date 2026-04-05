@@ -13,7 +13,7 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file kw_agent_service/v1/kw_agent_service.proto.
  */
 export const file_kw_agent_service_v1_kw_agent_service: GenFile = /*@__PURE__*/
-  fileDesc("Ciprd19hZ2VudF9zZXJ2aWNlL3YxL2t3X2FnZW50X3NlcnZpY2UucHJvdG8SE2t3X2FnZW50X3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSJLCglGaWxlSW5wdXQSEQoJbWltZV90eXBlGAEgASgJEgsKA3VybBgCIAEoCRIMCgRkYXRhGAMgASgMEhAKCGZpbGVuYW1lGAQgASgJIo0BCgxBZ2VudFJlcXVlc3QSEgoKcmVxdWVzdF9pZBgBIAEoCRIXCg9jb252ZXJzYXRpb25faWQYAiABKAMSDQoFcXVlcnkYAyABKAkSEgoKYWdlbnRfdHlwZRgEIAEoCRItCgVmaWxlcxgFIAMoCzIeLmt3X2FnZW50X3NlcnZpY2UudjEuRmlsZUlucHV0IsUBCgtQaXhhUmVxdWVzdBIwCgVhZ2VudBgBIAEoCzIhLmt3X2FnZW50X3NlcnZpY2UudjEuQWdlbnRSZXF1ZXN0EhIKCm1lZGlhX3R5cGUYAiABKAkSDQoFbW9kZWwYAyABKAkSDQoFcmF0aW8YBCABKAkSEAoIZHVyYXRpb24YBSABKAUSDgoGaW1hZ2VzGAYgAygJEg0KBWNvdW50GAcgASgFEhIKCnJlc29sdXRpb24YCCABKAkSDQoFc291bmQYCSABKAgiNQoaQ29udmVyc2F0aW9uSGlzdG9yeVJlcXVlc3QSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDIigKDVJlc3VtZVJlcXVlc3QSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDIkEKEUhpdGxSZXN1bWVSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAxITCgtyZXN1bWVfZGF0YRgCIAEoDCKaAQobQ29udmVyc2F0aW9uSGlzdG9yeVJlc3BvbnNlEjQKBXR1cm5zGAEgAygLMiUua3dfYWdlbnRfc2VydmljZS52MS5Db252ZXJzYXRpb25UdXJuEhIKCmlzX3J1bm5pbmcYAiABKAgSFgoOcGVuZGluZ19yZXZpZXcYAyABKAgSGQoRaW50ZXJydXB0X3BheWxvYWQYBCABKAwioQEKEENvbnZlcnNhdGlvblR1cm4SEgoKcmVxdWVzdF9pZBgBIAEoCRIvCgR1c2VyGAIgAygLMiEua3dfYWdlbnRfc2VydmljZS52MS5Db250ZW50QmxvY2sSNAoJYXNzaXN0YW50GAMgAygLMiEua3dfYWdlbnRfc2VydmljZS52MS5Db250ZW50QmxvY2sSEgoKY3JlYXRlZF9hdBgEIAEoAyJtCgxDb250ZW50QmxvY2sSEgoKbWVzc2FnZV9pZBgBIAEoCRIUCgx0b29sX2NhbGxfaWQYAiABKAkSDAoEdHlwZRgDIAEoCRIlCgRkYXRhGAQgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCI7ChFFZGl0UmVzZW5kUmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAMSDQoFcXVlcnkYAiABKAkiWwoRUmVnZW5lcmF0ZVJlcXVlc3QSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDEi0KDGV4dHJhX3BhcmFtcxgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiGwoZQ3JlYXRlQ29udmVyc2F0aW9uUmVxdWVzdCIyChdDcmVhdGVDb252ZXJzYXRpb25SZXBseRIXCg9jb252ZXJzYXRpb25faWQYASABKAMiKAoNQ2FuY2VsUmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAMiDQoLQ2FuY2VsUmVwbHkyqwcKFUt3QWdlbnRTZXJ2aWNlU2VydmljZRJICgRQaW5nEiAua3dfYWdlbnRfc2VydmljZS52MS5QaW5nUmVxdWVzdBoeLmt3X2FnZW50X3NlcnZpY2UudjEuUGluZ1JlcGx5Ek4KCkNoYXRTdHJlYW0SIS5rd19hZ2VudF9zZXJ2aWNlLnYxLkFnZW50UmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESTQoKUGl4YVN0cmVhbRIgLmt3X2FnZW50X3NlcnZpY2UudjEuUGl4YVJlcXVlc3QaGy5jb21tb24udjEuQWdlbnRTdHJlYW1FdmVudDABEnsKFkdldENvbnZlcnNhdGlvbkhpc3RvcnkSLy5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnZlcnNhdGlvbkhpc3RvcnlSZXF1ZXN0GjAua3dfYWdlbnRfc2VydmljZS52MS5Db252ZXJzYXRpb25IaXN0b3J5UmVzcG9uc2UScgoSQ3JlYXRlQ29udmVyc2F0aW9uEi4ua3dfYWdlbnRfc2VydmljZS52MS5DcmVhdGVDb252ZXJzYXRpb25SZXF1ZXN0Giwua3dfYWdlbnRfc2VydmljZS52MS5DcmVhdGVDb252ZXJzYXRpb25SZXBseRJRCgxSZXN1bWVTdHJlYW0SIi5rd19hZ2VudF9zZXJ2aWNlLnYxLlJlc3VtZVJlcXVlc3QaGy5jb21tb24udjEuQWdlbnRTdHJlYW1FdmVudDABElkKEEhpdGxSZXN1bWVTdHJlYW0SJi5rd19hZ2VudF9zZXJ2aWNlLnYxLkhpdGxSZXN1bWVSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJZChBFZGl0UmVzZW5kU3RyZWFtEiYua3dfYWdlbnRfc2VydmljZS52MS5FZGl0UmVzZW5kUmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESWQoQUmVnZW5lcmF0ZVN0cmVhbRImLmt3X2FnZW50X3NlcnZpY2UudjEuUmVnZW5lcmF0ZVJlcXVlc3QaGy5jb21tb24udjEuQWdlbnRTdHJlYW1FdmVudDABElQKDENhbmNlbFN0cmVhbRIiLmt3X2FnZW50X3NlcnZpY2UudjEuQ2FuY2VsUmVxdWVzdBogLmt3X2FnZW50X3NlcnZpY2UudjEuQ2FuY2VsUmVwbHlCPFo6YWduZXMvcHJvdG8vZ2VuL2dvL2t3X2FnZW50X3NlcnZpY2UvdjE7a3dfYWdlbnRfc2VydmljZV92MWIGcHJvdG8z", [file_common_v1_agent_stream, file_google_protobuf_struct]);
+  fileDesc("Ciprd19hZ2VudF9zZXJ2aWNlL3YxL2t3X2FnZW50X3NlcnZpY2UucHJvdG8SE2t3X2FnZW50X3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSJLCglGaWxlSW5wdXQSEQoJbWltZV90eXBlGAEgASgJEgsKA3VybBgCIAEoCRIMCgRkYXRhGAMgASgMEhAKCGZpbGVuYW1lGAQgASgJIo0BCgxBZ2VudFJlcXVlc3QSEgoKcmVxdWVzdF9pZBgBIAEoCRIXCg9jb252ZXJzYXRpb25faWQYAiABKAMSDQoFcXVlcnkYAyABKAkSEgoKYWdlbnRfdHlwZRgEIAEoCRItCgVmaWxlcxgFIAMoCzIeLmt3X2FnZW50X3NlcnZpY2UudjEuRmlsZUlucHV0IioKDVBpeGFJbWFnZUl0ZW0SCwoDdXJsGAEgASgJEgwKBHJvbGUYAiABKAki/gEKC1BpeGFSZXF1ZXN0EjAKBWFnZW50GAEgASgLMiEua3dfYWdlbnRfc2VydmljZS52MS5BZ2VudFJlcXVlc3QSEgoKbWVkaWFfdHlwZRgCIAEoCRINCgVtb2RlbBgDIAEoCRINCgVyYXRpbxgEIAEoCRIQCghkdXJhdGlvbhgFIAEoBRIOCgZpbWFnZXMYBiADKAkSDQoFY291bnQYByABKAUSEgoKcmVzb2x1dGlvbhgIIAEoCRINCgVzb3VuZBgJIAEoCBI3CgtpbWFnZV9pdGVtcxgKIAMoCzIiLmt3X2FnZW50X3NlcnZpY2UudjEuUGl4YUltYWdlSXRlbSI1ChpDb252ZXJzYXRpb25IaXN0b3J5UmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAMiKAoNUmVzdW1lUmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAMiQQoRSGl0bFJlc3VtZVJlcXVlc3QSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDEhMKC3Jlc3VtZV9kYXRhGAIgASgMIpoBChtDb252ZXJzYXRpb25IaXN0b3J5UmVzcG9uc2USNAoFdHVybnMYASADKAsyJS5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnZlcnNhdGlvblR1cm4SEgoKaXNfcnVubmluZxgCIAEoCBIWCg5wZW5kaW5nX3JldmlldxgDIAEoCBIZChFpbnRlcnJ1cHRfcGF5bG9hZBgEIAEoDCKhAQoQQ29udmVyc2F0aW9uVHVybhISCgpyZXF1ZXN0X2lkGAEgASgJEi8KBHVzZXIYAiADKAsyIS5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnRlbnRCbG9jaxI0Cglhc3Npc3RhbnQYAyADKAsyIS5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnRlbnRCbG9jaxISCgpjcmVhdGVkX2F0GAQgASgDIm0KDENvbnRlbnRCbG9jaxISCgptZXNzYWdlX2lkGAEgASgJEhQKDHRvb2xfY2FsbF9pZBgCIAEoCRIMCgR0eXBlGAMgASgJEiUKBGRhdGEYBCABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IjsKEUVkaXRSZXNlbmRSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAxINCgVxdWVyeRgCIAEoCSJbChFSZWdlbmVyYXRlUmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAMSLQoMZXh0cmFfcGFyYW1zGAIgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCIbChlDcmVhdGVDb252ZXJzYXRpb25SZXF1ZXN0IjIKF0NyZWF0ZUNvbnZlcnNhdGlvblJlcGx5EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAyIoCg1DYW5jZWxSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAyINCgtDYW5jZWxSZXBseTKrBwoVS3dBZ2VudFNlcnZpY2VTZXJ2aWNlEkgKBFBpbmcSIC5rd19hZ2VudF9zZXJ2aWNlLnYxLlBpbmdSZXF1ZXN0Gh4ua3dfYWdlbnRfc2VydmljZS52MS5QaW5nUmVwbHkSTgoKQ2hhdFN0cmVhbRIhLmt3X2FnZW50X3NlcnZpY2UudjEuQWdlbnRSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJNCgpQaXhhU3RyZWFtEiAua3dfYWdlbnRfc2VydmljZS52MS5QaXhhUmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESewoWR2V0Q29udmVyc2F0aW9uSGlzdG9yeRIvLmt3X2FnZW50X3NlcnZpY2UudjEuQ29udmVyc2F0aW9uSGlzdG9yeVJlcXVlc3QaMC5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnZlcnNhdGlvbkhpc3RvcnlSZXNwb25zZRJyChJDcmVhdGVDb252ZXJzYXRpb24SLi5rd19hZ2VudF9zZXJ2aWNlLnYxLkNyZWF0ZUNvbnZlcnNhdGlvblJlcXVlc3QaLC5rd19hZ2VudF9zZXJ2aWNlLnYxLkNyZWF0ZUNvbnZlcnNhdGlvblJlcGx5ElEKDFJlc3VtZVN0cmVhbRIiLmt3X2FnZW50X3NlcnZpY2UudjEuUmVzdW1lUmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESWQoQSGl0bFJlc3VtZVN0cmVhbRImLmt3X2FnZW50X3NlcnZpY2UudjEuSGl0bFJlc3VtZVJlcXVlc3QaGy5jb21tb24udjEuQWdlbnRTdHJlYW1FdmVudDABElkKEEVkaXRSZXNlbmRTdHJlYW0SJi5rd19hZ2VudF9zZXJ2aWNlLnYxLkVkaXRSZXNlbmRSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJZChBSZWdlbmVyYXRlU3RyZWFtEiYua3dfYWdlbnRfc2VydmljZS52MS5SZWdlbmVyYXRlUmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESVAoMQ2FuY2VsU3RyZWFtEiIua3dfYWdlbnRfc2VydmljZS52MS5DYW5jZWxSZXF1ZXN0GiAua3dfYWdlbnRfc2VydmljZS52MS5DYW5jZWxSZXBseUI8WjphZ25lcy9wcm90by9nZW4vZ28va3dfYWdlbnRfc2VydmljZS92MTtrd19hZ2VudF9zZXJ2aWNlX3YxYgZwcm90bzM", [file_common_v1_agent_stream, file_google_protobuf_struct]);
 
 /**
  * @generated from message kw_agent_service.v1.PingRequest
@@ -140,6 +140,30 @@ export const AgentRequestSchema: GenMessage<AgentRequest> = /*@__PURE__*/
   messageDesc(file_kw_agent_service_v1_kw_agent_service, 3);
 
 /**
+ * 单张参考图：url 必填；role 可选
+ *
+ * @generated from message kw_agent_service.v1.PixaImageItem
+ */
+export type PixaImageItem = Message<"kw_agent_service.v1.PixaImageItem"> & {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url: string;
+
+  /**
+   * @generated from field: string role = 2;
+   */
+  role: string;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.PixaImageItem.
+ * Use `create(PixaImageItemSchema)` to create a new message.
+ */
+export const PixaImageItemSchema: GenMessage<PixaImageItem> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 4);
+
+/**
  * PixaRequest — pixa 生图/生视频请求（复用 AgentRequest：会话、追踪、用户 query、agent 路由）
  *
  * @generated from message kw_agent_service.v1.PixaRequest
@@ -181,7 +205,7 @@ export type PixaRequest = Message<"kw_agent_service.v1.PixaRequest"> & {
   duration: number;
 
   /**
-   * 可选参考图 URL（1-5 张）
+   * 可选参考图 URL（1-5 张）；无 image_items 时使用
    *
    * @generated from field: repeated string images = 6;
    */
@@ -207,6 +231,13 @@ export type PixaRequest = Message<"kw_agent_service.v1.PixaRequest"> & {
    * @generated from field: bool sound = 9;
    */
   sound: boolean;
+
+  /**
+   * 带 role 的图列表，优先于 images
+   *
+   * @generated from field: repeated kw_agent_service.v1.PixaImageItem image_items = 10;
+   */
+  imageItems: PixaImageItem[];
 };
 
 /**
@@ -214,7 +245,7 @@ export type PixaRequest = Message<"kw_agent_service.v1.PixaRequest"> & {
  * Use `create(PixaRequestSchema)` to create a new message.
  */
 export const PixaRequestSchema: GenMessage<PixaRequest> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 4);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 5);
 
 /**
  * @generated from message kw_agent_service.v1.ConversationHistoryRequest
@@ -231,7 +262,7 @@ export type ConversationHistoryRequest = Message<"kw_agent_service.v1.Conversati
  * Use `create(ConversationHistoryRequestSchema)` to create a new message.
  */
 export const ConversationHistoryRequestSchema: GenMessage<ConversationHistoryRequest> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 5);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 6);
 
 /**
  * ResumeRequest — 重连请求，通过 conversation_id 定位缓冲流
@@ -250,7 +281,7 @@ export type ResumeRequest = Message<"kw_agent_service.v1.ResumeRequest"> & {
  * Use `create(ResumeRequestSchema)` to create a new message.
  */
 export const ResumeRequestSchema: GenMessage<ResumeRequest> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 6);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 7);
 
 /**
  * HitlResumeRequest — HITL resume，conversation_id 定位 thread，resume_data 传用户操作
@@ -276,7 +307,7 @@ export type HitlResumeRequest = Message<"kw_agent_service.v1.HitlResumeRequest">
  * Use `create(HitlResumeRequestSchema)` to create a new message.
  */
 export const HitlResumeRequestSchema: GenMessage<HitlResumeRequest> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 7);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 8);
 
 /**
  * @generated from message kw_agent_service.v1.ConversationHistoryResponse
@@ -314,7 +345,7 @@ export type ConversationHistoryResponse = Message<"kw_agent_service.v1.Conversat
  * Use `create(ConversationHistoryResponseSchema)` to create a new message.
  */
 export const ConversationHistoryResponseSchema: GenMessage<ConversationHistoryResponse> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 8);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 9);
 
 /**
  * 一轮对话 = 一次 astream 调用
@@ -354,7 +385,7 @@ export type ConversationTurn = Message<"kw_agent_service.v1.ConversationTurn"> &
  * Use `create(ConversationTurnSchema)` to create a new message.
  */
 export const ConversationTurnSchema: GenMessage<ConversationTurn> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 9);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 10);
 
 /**
  * 内容块（用户输入 / AI 响应），data 结构由 type 决定
@@ -377,7 +408,7 @@ export type ContentBlock = Message<"kw_agent_service.v1.ContentBlock"> & {
   toolCallId: string;
 
   /**
-   * text / tool_call / tool_result / image / file ...
+   * Message / Reasoning / ToolCallStart / ToolCallResult / File ...
    *
    * @generated from field: string type = 3;
    */
@@ -396,7 +427,7 @@ export type ContentBlock = Message<"kw_agent_service.v1.ContentBlock"> & {
  * Use `create(ContentBlockSchema)` to create a new message.
  */
 export const ContentBlockSchema: GenMessage<ContentBlock> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 10);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 11);
 
 /**
  * EditResendRequest — 编辑最后一条用户消息并重新发送
@@ -424,7 +455,7 @@ export type EditResendRequest = Message<"kw_agent_service.v1.EditResendRequest">
  * Use `create(EditResendRequestSchema)` to create a new message.
  */
 export const EditResendRequestSchema: GenMessage<EditResendRequest> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 11);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 12);
 
 /**
  * RegenerateRequest — 重新生成最后一条 AI 回复
@@ -452,7 +483,7 @@ export type RegenerateRequest = Message<"kw_agent_service.v1.RegenerateRequest">
  * Use `create(RegenerateRequestSchema)` to create a new message.
  */
 export const RegenerateRequestSchema: GenMessage<RegenerateRequest> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 12);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 13);
 
 /**
  * @generated from message kw_agent_service.v1.CreateConversationRequest
@@ -465,7 +496,7 @@ export type CreateConversationRequest = Message<"kw_agent_service.v1.CreateConve
  * Use `create(CreateConversationRequestSchema)` to create a new message.
  */
 export const CreateConversationRequestSchema: GenMessage<CreateConversationRequest> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 13);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 14);
 
 /**
  * @generated from message kw_agent_service.v1.CreateConversationReply
@@ -482,7 +513,7 @@ export type CreateConversationReply = Message<"kw_agent_service.v1.CreateConvers
  * Use `create(CreateConversationReplySchema)` to create a new message.
  */
 export const CreateConversationReplySchema: GenMessage<CreateConversationReply> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 14);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 15);
 
 /**
  * @generated from message kw_agent_service.v1.CancelRequest
@@ -501,7 +532,7 @@ export type CancelRequest = Message<"kw_agent_service.v1.CancelRequest"> & {
  * Use `create(CancelRequestSchema)` to create a new message.
  */
 export const CancelRequestSchema: GenMessage<CancelRequest> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 15);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 16);
 
 /**
  * @generated from message kw_agent_service.v1.CancelReply
@@ -514,7 +545,7 @@ export type CancelReply = Message<"kw_agent_service.v1.CancelReply"> & {
  * Use `create(CancelReplySchema)` to create a new message.
  */
 export const CancelReplySchema: GenMessage<CancelReply> = /*@__PURE__*/
-  messageDesc(file_kw_agent_service_v1_kw_agent_service, 16);
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 17);
 
 /**
  * @generated from service kw_agent_service.v1.KwAgentServiceService

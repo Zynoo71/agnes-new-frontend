@@ -96,12 +96,15 @@ export function ChatPanel() {
 
   const isEmpty = messages.length === 0;
 
+  const prevMsgCountRef = useRef(0);
   useEffect(() => {
     if (!isNearBottomRef.current) return;
     const el = scrollContainerRef.current;
     if (!el) return;
-    if (isStreaming) {
-      // During streaming: instant scroll to avoid animation stacking
+    const isHistoryLoad = prevMsgCountRef.current === 0 && messages.length > 1;
+    prevMsgCountRef.current = messages.length;
+    if (isStreaming || isHistoryLoad) {
+      // Instant scroll during streaming or after history load
       el.scrollTop = el.scrollHeight;
     } else {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -242,8 +245,12 @@ export function ChatPanel() {
               <MessageSkeleton />
             ) : isEmpty ? (
               <div className="flex flex-col items-center justify-center pt-24 text-center">
-                <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center mb-4">
-                  <span className="text-white text-xl font-bold">A</span>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(315deg, #a84e1e, #e8985a)" }}>
+                  <svg width="36" height="36" viewBox="0 0 72 72" fill="none">
+                    <circle cx="30" cy="30" r="18" stroke="white" strokeWidth="3.5" strokeOpacity="0.4" fill="none"/>
+                    <circle cx="42" cy="42" r="18" stroke="white" strokeWidth="3.5" strokeOpacity="0.8" fill="none"/>
+                    <circle cx="36" cy="36" r="6" fill="white" fillOpacity="0.9"/>
+                  </svg>
                 </div>
                 <h2 className="text-xl font-semibold text-text-primary mb-1">Hi, how can I help?</h2>
                 <p className="text-sm text-text-tertiary mb-6">Ask me anything or try a suggestion below</p>
@@ -283,6 +290,7 @@ export function ChatPanel() {
                       onEditResend={editResend}
                       onRegenerate={regenerate}
                       isStreaming={isStreaming}
+                      animate={!msg.id.startsWith("hist-")}
                     />
                   ));
                 })()}

@@ -4,6 +4,7 @@ import { ImageSearchRenderer } from "./renderers/ImageSearchRenderer";
 import { LoadSkillRenderer } from "./renderers/LoadSkillRenderer";
 import { FileToolRenderer } from "./renderers/FileToolRenderer";
 import { ExecuteRenderer } from "./renderers/ExecuteRenderer";
+import { WebReadRenderer } from "./renderers/WebReadRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
@@ -17,6 +18,7 @@ export interface ToolRenderProps {
 /** Explicit tool name → renderer mapping. Add new renderers here. */
 const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   web_search: WebSearchRenderer,
+  read_webpage: WebReadRenderer,
   image_search: ImageSearchRenderer,
   load_skill: LoadSkillRenderer,
   read_file: FileToolRenderer,

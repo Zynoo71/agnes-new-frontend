@@ -70,8 +70,12 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
       <div className={`flex items-center p-3 ${collapsed ? "justify-center" : "justify-between"}`}>
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
-              <span className="text-white text-xs font-bold">A</span>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(315deg, #a84e1e, #e8985a)" }}>
+              <svg width="22" height="22" viewBox="0 0 72 72" fill="none">
+                <circle cx="30" cy="30" r="18" stroke="white" strokeWidth="3.5" strokeOpacity="0.4" fill="none"/>
+                <circle cx="42" cy="42" r="18" stroke="white" strokeWidth="3.5" strokeOpacity="0.8" fill="none"/>
+                <circle cx="36" cy="36" r="6" fill="white" fillOpacity="0.9"/>
+              </svg>
             </div>
             <span className="text-sm font-semibold text-text-primary">Agnes</span>
           </div>

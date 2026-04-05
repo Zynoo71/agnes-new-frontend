@@ -12,13 +12,15 @@ import { PixaPanel } from "@/panels/PixaPanel";
 function ChatRoute() {
   const { convId } = useParams<{ convId: string }>();
   const { selectConversation } = useChat();
-  const currentId = useConversationStore((s) => s.conversationId);
 
   useEffect(() => {
-    if (convId && convId !== currentId) {
-      selectConversation(convId);
+    if (convId) {
+      const currentId = useConversationStore.getState().conversationId;
+      if (convId !== currentId) {
+        selectConversation(convId);
+      }
     }
-  }, [convId, currentId, selectConversation]);
+  }, [convId, selectConversation]);
 
   return (
     <ErrorBoundary>
@@ -38,8 +40,9 @@ function AppLayout() {
   }, [load]);
 
   const handleNewChat = async () => {
+    navigate("/chat");
     const id = await createConversation();
-    navigate(`/chat/${id}`);
+    navigate(`/chat/${id}`, { replace: true });
   };
 
   const handleSelectConversation = (id: string) => {
