@@ -97,11 +97,11 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
         }
       }
     }
-    // Inject TaskList anchor if this message has a write_tasks tool call
-    const hasWriteTasks = assistantBlocks.some(
-      (b) => b.type === "ToolCallStart" && b.data.toolName === "write_tasks",
+    // Inject TaskList anchor if this message has a create_task tool call
+    const hasCreateTask = assistantBlocks.some(
+      (b) => b.type === "ToolCallStart" && b.data.toolName === "create_task",
     );
-    if (hasWriteTasks && !assistantBlocks.some((b) => b.type === "TaskList")) {
+    if (hasCreateTask && !assistantBlocks.some((b) => b.type === "TaskList")) {
       assistantBlocks.push({ type: "TaskList" });
     }
     if (assistantBlocks.length > 0) {
