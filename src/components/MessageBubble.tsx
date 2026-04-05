@@ -391,7 +391,7 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
         style={{ maxHeight: open ? `${height + 16}px` : "0px", opacity: open ? 1 : 0 }}
       >
         <div ref={contentRef} className="mt-1.5 pl-4 border-l-2 border-border-light prose-reasoning text-xs text-text-secondary leading-relaxed break-words overflow-hidden">
-          <Markdown remarkPlugins={[remarkGfm, remarkCjkFriendly]}>{content}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm, remarkCjkFriendly]}>{content.replace(/\\n/g, "\n")}</Markdown>
         </div>
       </div>
     </div>
