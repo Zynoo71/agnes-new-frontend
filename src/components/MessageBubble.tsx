@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
 import type { Message, ContentBlock, HumanReviewData, ToolCallData } from "@/stores/conversationStore";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
@@ -14,13 +15,16 @@ interface MessageBubbleProps {
   onEditResend?: (newQuery: string) => void;
   onRegenerate?: () => void;
   isStreaming?: boolean;
+  animate?: boolean;
 }
 
 // ── Avatars ──
 function AssistantAvatar() {
   return (
     <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center shrink-0">
-      <span className="text-white text-[11px] font-bold">A</span>
+      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+      </svg>
     </div>
   );
 }
@@ -28,12 +32,14 @@ function AssistantAvatar() {
 function UserAvatar() {
   return (
     <div className="w-7 h-7 rounded-full bg-border flex items-center justify-center shrink-0">
-      <span className="text-text-secondary text-[11px] font-bold">U</span>
+      <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+      </svg>
     </div>
   );
 }
 
-export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming }: MessageBubbleProps) {
+export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming, animate = true }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
@@ -44,7 +50,7 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
 
   const handleCopy = useCallback(() => {
     const text = message.blocks
-      .filter((b): b is { type: "text"; content: string } => b.type === "text")
+      .filter((b): b is { type: "Message"; content: string } => b.type === "Message")
       .map((b) => b.content)
       .join("\n");
     navigator.clipboard.writeText(text).then(() => {
@@ -55,7 +61,7 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
 
   const handleStartEdit = () => {
     const text = message.blocks
-      .filter((b): b is { type: "text"; content: string } => b.type === "text")
+      .filter((b): b is { type: "Message"; content: string } => b.type === "Message")
       .map((b) => b.content)
       .join("\n");
     setEditText(text);
@@ -77,7 +83,7 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
 
   if (isUser) {
     return (
-      <div className="animate-message-in group flex justify-end gap-2.5 mb-5">
+      <div className={`${animate ? "animate-message-in" : ""} group flex justify-end gap-2.5 mb-5`}>
         <div className="max-w-[70%]">
           <div className="bg-user-bubble text-text-primary rounded-2xl px-4 py-2.5">
             {editing ? (
@@ -133,19 +139,19 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
   }
 
   return (
-    <div className="animate-message-in group flex gap-2.5 mb-5">
+    <div className={`${animate ? "animate-message-in" : ""} group flex gap-2.5 mb-5`}>
       <AssistantAvatar />
       <div className="max-w-[85%] py-1 flex-1 min-w-0">
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
         {(() => {
           const spawnToolCalls: ToolCallData[] = message.blocks
-            .filter((b): b is { type: "tool_call"; data: ToolCallData } =>
-              b.type === "tool_call" && b.data.toolName === "spawn_worker")
+            .filter((b): b is { type: "ToolCallStart"; data: ToolCallData } =>
+              b.type === "ToolCallStart" && b.data.toolName === "spawn_worker")
             .map((b) => b.data);
 
           const nonSpawnBlocks = message.blocks.filter(
-            (b) => !(b.type === "tool_call" && b.data.toolName === "spawn_worker"),
+            (b) => !(b.type === "ToolCallStart" && b.data.toolName === "spawn_worker"),
           );
 
           // Precompute: has any tool_call appeared before index i?
@@ -153,17 +159,17 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
           let seen = false;
           for (const block of message.blocks) {
             toolSeenBefore.push(seen);
-            const isSpawn = block.type === "tool_call" && block.data.toolName === "spawn_worker";
-            if (block.type === "tool_call" || isSpawn) seen = true;
+            const isSpawn = block.type === "ToolCallStart" && block.data.toolName === "spawn_worker";
+            if (block.type === "ToolCallStart" || isSpawn) seen = true;
           }
 
           // Index of the first spawn_worker block (render AgentSwarmPanel only once)
           const firstSpawnIdx = message.blocks.findIndex(
-            (b) => b.type === "tool_call" && b.data.toolName === "spawn_worker",
+            (b) => b.type === "ToolCallStart" && b.data.toolName === "spawn_worker",
           );
 
           return message.blocks.map((block, i) => {
-            const isSpawn = block.type === "tool_call" && block.data.toolName === "spawn_worker";
+            const isSpawn = block.type === "ToolCallStart" && block.data.toolName === "spawn_worker";
 
             if (isSpawn) {
               if (i !== firstSpawnIdx) return null;
@@ -180,12 +186,12 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
             const prevNonSpawn = idxInNonSpawn > 0 ? nonSpawnBlocks[idxInNonSpawn - 1] : undefined;
             const needsDivider =
               toolSeenBefore[i] &&
-              block.type === "text" &&
+              block.type === "Message" &&
               prevNonSpawn != null &&
-              prevNonSpawn.type !== "text";
+              prevNonSpawn.type !== "Message";
             const shouldAutoCollapse =
-              (block.type === "reasoning" || block.type === "tool_call") &&
-              nonSpawnBlocks.slice(idxInNonSpawn + 1).some((b) => b.type === "text" || b.type === "tool_call");
+              (block.type === "Reasoning" || block.type === "ToolCallStart") &&
+              nonSpawnBlocks.slice(idxInNonSpawn + 1).some((b) => b.type === "Message" || b.type === "ToolCallStart");
             return (
               <div key={i}>
                 {needsDivider && (
@@ -264,11 +270,11 @@ function BlockRenderer({
   autoCollapse?: boolean;
 }) {
   switch (block.type) {
-    case "text":
+    case "Message":
       return (
         <div className="prose-agent text-[14px] leading-[1.7] text-text-primary">
           <Markdown
-            remarkPlugins={[remarkCjkFriendly]}
+            remarkPlugins={[remarkGfm, remarkCjkFriendly]}
             components={{
               pre({ children }) {
                 return <>{children}</>;
@@ -281,13 +287,24 @@ function BlockRenderer({
                 }
                 return <code className={className}>{children}</code>;
               },
+              img({ src, alt, ...props }) {
+                return (
+                  <img
+                    src={src}
+                    alt={alt}
+                    onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                    className="rounded-lg max-w-full"
+                    {...props}
+                  />
+                );
+              },
             }}
           >{block.content}</Markdown>
         </div>
       );
-    case "reasoning":
+    case "Reasoning":
       return <ReasoningBlock content={block.content} isStreaming={isStreaming} autoCollapse={autoCollapse} />;
-    case "tool_call":
+    case "ToolCallStart":
       return (
         <div className="my-3">
           <ToolCallBlock {...block.data} autoCollapse={autoCollapse} />
@@ -357,7 +374,7 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
         style={{ maxHeight: open ? `${height + 16}px` : "0px", opacity: open ? 1 : 0 }}
       >
         <div ref={contentRef} className="mt-1.5 pl-4 border-l-2 border-border-light prose-reasoning text-xs text-text-secondary leading-relaxed break-words overflow-hidden">
-          <Markdown remarkPlugins={[remarkCjkFriendly]}>{content}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm, remarkCjkFriendly]}>{content}</Markdown>
         </div>
       </div>
     </div>

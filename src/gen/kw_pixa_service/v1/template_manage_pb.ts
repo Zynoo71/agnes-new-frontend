@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kw_pixa_service/v1/template_manage.proto.
  */
 export const file_kw_pixa_service_v1_template_manage: GenFile = /*@__PURE__*/
-  fileDesc("Cihrd19waXhhX3NlcnZpY2UvdjEvdGVtcGxhdGVfbWFuYWdlLnByb3RvEhJrd19waXhhX3NlcnZpY2UudjEiKwoISTE4bkl0ZW0SEQoJaTE4bl9jb2RlGAEgASgJEgwKBG5hbWUYAiABKAkiLQoOUmVzb2x1dGlvbkl0ZW0SDQoFbGV2ZWwYASABKAUSDAoEdHlwZRgCIAEoCSIfCh1MaXN0VGVtcGxhdGVDYXRlZ29yaWVzUmVxdWVzdCJyChRUZW1wbGF0ZUNhdGVnb3J5SXRlbRIVCg1jYXRlZ29yeV9jb2RlGAEgASgJEi8KCWkxOG5fbGlzdBgCIAMoCzIcLmt3X3BpeGFfc2VydmljZS52MS5JMThuSXRlbRISCgpzb3J0X29yZGVyGAMgASgFIl4KHkxpc3RUZW1wbGF0ZUNhdGVnb3JpZXNSZXNwb25zZRI8CgpjYXRlZ29yaWVzGAEgAygLMigua3dfcGl4YV9zZXJ2aWNlLnYxLlRlbXBsYXRlQ2F0ZWdvcnlJdGVtInsKHUNyZWF0ZVRlbXBsYXRlQ2F0ZWdvcnlSZXF1ZXN0EhUKDWNhdGVnb3J5X2NvZGUYASABKAkSLwoJaTE4bl9saXN0GAIgAygLMhwua3dfcGl4YV9zZXJ2aWNlLnYxLkkxOG5JdGVtEhIKCnNvcnRfb3JkZXIYAyABKAUiNwoeQ3JlYXRlVGVtcGxhdGVDYXRlZ29yeVJlc3BvbnNlEhUKDWNhdGVnb3J5X2NvZGUYASABKAkifwohVXBkYXRlVGVtcGxhdGVDYXRlZ29yeUkxOG5SZXF1ZXN0EhUKDWNhdGVnb3J5X2NvZGUYASABKAkSLwoJaTE4bl9saXN0GAIgAygLMhwua3dfcGl4YV9zZXJ2aWNlLnYxLkkxOG5JdGVtEhIKCnNvcnRfb3JkZXIYAyABKAUiOwoiVXBkYXRlVGVtcGxhdGVDYXRlZ29yeUkxOG5SZXNwb25zZRIVCg1jYXRlZ29yeV9jb2RlGAEgASgJIjYKHURlbGV0ZVRlbXBsYXRlQ2F0ZWdvcnlSZXF1ZXN0EhUKDWNhdGVnb3J5X2NvZGUYASABKAkiNwoeRGVsZXRlVGVtcGxhdGVDYXRlZ29yeVJlc3BvbnNlEhUKDWNhdGVnb3J5X2NvZGUYASABKAkiVAolQ3JlYXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uUmVxdWVzdBITCgt0ZW1wbGF0ZV9pZBgBIAEoCRIWCg5jYXRlZ29yeV9jb2RlcxgCIAMoCSI9CiZDcmVhdGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb25SZXNwb25zZRITCgt0ZW1wbGF0ZV9pZBgBIAEoCSJUCiVVcGRhdGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb25SZXF1ZXN0EhMKC3RlbXBsYXRlX2lkGAEgASgJEhYKDmNhdGVnb3J5X2NvZGVzGAIgAygJIj0KJlVwZGF0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvblJlc3BvbnNlEhMKC3RlbXBsYXRlX2lkGAEgASgJIlQKJURlbGV0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvblJlcXVlc3QSEwoLdGVtcGxhdGVfaWQYASABKAkSFgoOY2F0ZWdvcnlfY29kZXMYAiADKAkiPQomRGVsZXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uUmVzcG9uc2USEwoLdGVtcGxhdGVfaWQYASABKAkiSgodTGlzdFB1Ymxpc2hlZFRlbXBsYXRlc1JlcXVlc3QSKQoKcGFnaW5hdGlvbhgBIAEoCzIVLmNvbW1vbi52MS5QYWdpbmF0aW9uIqwCChVQdWJsaXNoZWRUZW1wbGF0ZUl0ZW0SEwoLdGVtcGxhdGVfaWQYASABKAkSEgoKcGxhbl9sZXZlbBgCIAEoBRI2CgpyZXNvbHV0aW9uGAMgAygLMiIua3dfcGl4YV9zZXJ2aWNlLnYxLlJlc29sdXRpb25JdGVtEhQKDHB1Ymxpc2hfdGltZRgEIAEoCRISCgpzb3J0X29yZGVyGAUgASgFEhIKCmxpa2VfY291bnQYBiABKAUSGAoQY29sbGVjdGlvbl9jb3VudBgHIAEoBRITCgt1c2FnZV9jb3VudBgIIAEoBRIWCg5wdXJjaGFzZV9jb3VudBgJIAEoBRIWCg5jYXRlZ29yeV9jb2RlcxgKIAMoCRIVCg10ZW1wbGF0ZV9uYW1lGAsgASgJIo8BCh5MaXN0UHVibGlzaGVkVGVtcGxhdGVzUmVzcG9uc2USPAoJdGVtcGxhdGVzGAEgAygLMikua3dfcGl4YV9zZXJ2aWNlLnYxLlB1Ymxpc2hlZFRlbXBsYXRlSXRlbRIvCgpwYWdpbmF0aW9uGAIgASgLMhsuY29tbW9uLnYxLlBhZ2luYXRpb25SZXN1bHQiKQoSQWRkVGVtcGxhdGVSZXF1ZXN0EhMKC3RlbXBsYXRlX2lkGAEgASgJIioKE0FkZFRlbXBsYXRlUmVzcG9uc2USEwoLdGVtcGxhdGVfaWQYASABKAki4AEKFVVwZGF0ZVRlbXBsYXRlUmVxdWVzdBITCgt0ZW1wbGF0ZV9pZBgBIAEoCRIXCgpwbGFuX2xldmVsGAIgASgFSACIAQESNgoKcmVzb2x1dGlvbhgDIAMoCzIiLmt3X3BpeGFfc2VydmljZS52MS5SZXNvbHV0aW9uSXRlbRIZCgxwdWJsaXNoX3RpbWUYBCABKAlIAYgBARIXCgpzb3J0X29yZGVyGAUgASgFSAKIAQFCDQoLX3BsYW5fbGV2ZWxCDwoNX3B1Ymxpc2hfdGltZUINCgtfc29ydF9vcmRlciItChZVcGRhdGVUZW1wbGF0ZVJlc3BvbnNlEhMKC3RlbXBsYXRlX2lkGAEgASgJIiwKFURlbGV0ZVRlbXBsYXRlUmVxdWVzdBITCgt0ZW1wbGF0ZV9pZBgBIAEoCSItChZEZWxldGVUZW1wbGF0ZVJlc3BvbnNlEhMKC3RlbXBsYXRlX2lkGAEgASgJMqkLChVUZW1wbGF0ZU1hbmFnZVNlcnZpY2USfwoWTGlzdFRlbXBsYXRlQ2F0ZWdvcmllcxIxLmt3X3BpeGFfc2VydmljZS52MS5MaXN0VGVtcGxhdGVDYXRlZ29yaWVzUmVxdWVzdBoyLmt3X3BpeGFfc2VydmljZS52MS5MaXN0VGVtcGxhdGVDYXRlZ29yaWVzUmVzcG9uc2USfwoWQ3JlYXRlVGVtcGxhdGVDYXRlZ29yeRIxLmt3X3BpeGFfc2VydmljZS52MS5DcmVhdGVUZW1wbGF0ZUNhdGVnb3J5UmVxdWVzdBoyLmt3X3BpeGFfc2VydmljZS52MS5DcmVhdGVUZW1wbGF0ZUNhdGVnb3J5UmVzcG9uc2USiwEKGlVwZGF0ZVRlbXBsYXRlQ2F0ZWdvcnlJMThuEjUua3dfcGl4YV9zZXJ2aWNlLnYxLlVwZGF0ZVRlbXBsYXRlQ2F0ZWdvcnlJMThuUmVxdWVzdBo2Lmt3X3BpeGFfc2VydmljZS52MS5VcGRhdGVUZW1wbGF0ZUNhdGVnb3J5STE4blJlc3BvbnNlEn8KFkRlbGV0ZVRlbXBsYXRlQ2F0ZWdvcnkSMS5rd19waXhhX3NlcnZpY2UudjEuRGVsZXRlVGVtcGxhdGVDYXRlZ29yeVJlcXVlc3QaMi5rd19waXhhX3NlcnZpY2UudjEuRGVsZXRlVGVtcGxhdGVDYXRlZ29yeVJlc3BvbnNlEpcBCh5DcmVhdGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb24SOS5rd19waXhhX3NlcnZpY2UudjEuQ3JlYXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uUmVxdWVzdBo6Lmt3X3BpeGFfc2VydmljZS52MS5DcmVhdGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb25SZXNwb25zZRKXAQoeVXBkYXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uEjkua3dfcGl4YV9zZXJ2aWNlLnYxLlVwZGF0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvblJlcXVlc3QaOi5rd19waXhhX3NlcnZpY2UudjEuVXBkYXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uUmVzcG9uc2USlwEKHkRlbGV0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvbhI5Lmt3X3BpeGFfc2VydmljZS52MS5EZWxldGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb25SZXF1ZXN0Gjoua3dfcGl4YV9zZXJ2aWNlLnYxLkRlbGV0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvblJlc3BvbnNlEn8KFkxpc3RQdWJsaXNoZWRUZW1wbGF0ZXMSMS5rd19waXhhX3NlcnZpY2UudjEuTGlzdFB1Ymxpc2hlZFRlbXBsYXRlc1JlcXVlc3QaMi5rd19waXhhX3NlcnZpY2UudjEuTGlzdFB1Ymxpc2hlZFRlbXBsYXRlc1Jlc3BvbnNlEl4KC0FkZFRlbXBsYXRlEiYua3dfcGl4YV9zZXJ2aWNlLnYxLkFkZFRlbXBsYXRlUmVxdWVzdBonLmt3X3BpeGFfc2VydmljZS52MS5BZGRUZW1wbGF0ZVJlc3BvbnNlEmcKDlVwZGF0ZVRlbXBsYXRlEikua3dfcGl4YV9zZXJ2aWNlLnYxLlVwZGF0ZVRlbXBsYXRlUmVxdWVzdBoqLmt3X3BpeGFfc2VydmljZS52MS5VcGRhdGVUZW1wbGF0ZVJlc3BvbnNlEmcKDkRlbGV0ZVRlbXBsYXRlEikua3dfcGl4YV9zZXJ2aWNlLnYxLkRlbGV0ZVRlbXBsYXRlUmVxdWVzdBoqLmt3X3BpeGFfc2VydmljZS52MS5EZWxldGVUZW1wbGF0ZVJlc3BvbnNlQjpaOGFnbmVzL3Byb3RvL2dlbi9nby9rd19waXhhX3NlcnZpY2UvdjE7a3dfcGl4YV9zZXJ2aWNlX3YxYgZwcm90bzM", [file_common_v1_context]);
+  fileDesc("Cihrd19waXhhX3NlcnZpY2UvdjEvdGVtcGxhdGVfbWFuYWdlLnByb3RvEhJrd19waXhhX3NlcnZpY2UudjEiKwoISTE4bkl0ZW0SEQoJaTE4bl9jb2RlGAEgASgJEgwKBG5hbWUYAiABKAkiLQoOUmVzb2x1dGlvbkl0ZW0SDQoFbGV2ZWwYASABKAUSDAoEdHlwZRgCIAEoCSJWChBUZW1wbGF0ZUNvc3RJbmZvEhgKEHJlcXVpcmVkX2NyZWRpdHMYASABKAMSEQoJY29zdF90eXBlGAIgASgFEhUKDXJlc29sdmVfZXJyb3IYAyABKAkiHwodTGlzdFRlbXBsYXRlQ2F0ZWdvcmllc1JlcXVlc3QicgoUVGVtcGxhdGVDYXRlZ29yeUl0ZW0SFQoNY2F0ZWdvcnlfY29kZRgBIAEoCRIvCglpMThuX2xpc3QYAiADKAsyHC5rd19waXhhX3NlcnZpY2UudjEuSTE4bkl0ZW0SEgoKc29ydF9vcmRlchgDIAEoBSJeCh5MaXN0VGVtcGxhdGVDYXRlZ29yaWVzUmVzcG9uc2USPAoKY2F0ZWdvcmllcxgBIAMoCzIoLmt3X3BpeGFfc2VydmljZS52MS5UZW1wbGF0ZUNhdGVnb3J5SXRlbSJ7Ch1DcmVhdGVUZW1wbGF0ZUNhdGVnb3J5UmVxdWVzdBIVCg1jYXRlZ29yeV9jb2RlGAEgASgJEi8KCWkxOG5fbGlzdBgCIAMoCzIcLmt3X3BpeGFfc2VydmljZS52MS5JMThuSXRlbRISCgpzb3J0X29yZGVyGAMgASgFIjcKHkNyZWF0ZVRlbXBsYXRlQ2F0ZWdvcnlSZXNwb25zZRIVCg1jYXRlZ29yeV9jb2RlGAEgASgJIn8KIVVwZGF0ZVRlbXBsYXRlQ2F0ZWdvcnlJMThuUmVxdWVzdBIVCg1jYXRlZ29yeV9jb2RlGAEgASgJEi8KCWkxOG5fbGlzdBgCIAMoCzIcLmt3X3BpeGFfc2VydmljZS52MS5JMThuSXRlbRISCgpzb3J0X29yZGVyGAMgASgFIjsKIlVwZGF0ZVRlbXBsYXRlQ2F0ZWdvcnlJMThuUmVzcG9uc2USFQoNY2F0ZWdvcnlfY29kZRgBIAEoCSI2Ch1EZWxldGVUZW1wbGF0ZUNhdGVnb3J5UmVxdWVzdBIVCg1jYXRlZ29yeV9jb2RlGAEgASgJIjcKHkRlbGV0ZVRlbXBsYXRlQ2F0ZWdvcnlSZXNwb25zZRIVCg1jYXRlZ29yeV9jb2RlGAEgASgJIlQKJUNyZWF0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvblJlcXVlc3QSEwoLdGVtcGxhdGVfaWQYASABKAkSFgoOY2F0ZWdvcnlfY29kZXMYAiADKAkiPQomQ3JlYXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uUmVzcG9uc2USEwoLdGVtcGxhdGVfaWQYASABKAkiVAolVXBkYXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uUmVxdWVzdBITCgt0ZW1wbGF0ZV9pZBgBIAEoCRIWCg5jYXRlZ29yeV9jb2RlcxgCIAMoCSI9CiZVcGRhdGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb25SZXNwb25zZRITCgt0ZW1wbGF0ZV9pZBgBIAEoCSJUCiVEZWxldGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb25SZXF1ZXN0EhMKC3RlbXBsYXRlX2lkGAEgASgJEhYKDmNhdGVnb3J5X2NvZGVzGAIgAygJIj0KJkRlbGV0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvblJlc3BvbnNlEhMKC3RlbXBsYXRlX2lkGAEgASgJIkoKHUxpc3RQdWJsaXNoZWRUZW1wbGF0ZXNSZXF1ZXN0EikKCnBhZ2luYXRpb24YASABKAsyFS5jb21tb24udjEuUGFnaW5hdGlvbiLlAgoVUHVibGlzaGVkVGVtcGxhdGVJdGVtEhMKC3RlbXBsYXRlX2lkGAEgASgJEhIKCnBsYW5fbGV2ZWwYAiABKAUSNgoKcmVzb2x1dGlvbhgDIAMoCzIiLmt3X3BpeGFfc2VydmljZS52MS5SZXNvbHV0aW9uSXRlbRIUCgxwdWJsaXNoX3RpbWUYBCABKAkSEgoKc29ydF9vcmRlchgFIAEoBRISCgpsaWtlX2NvdW50GAYgASgFEhgKEGNvbGxlY3Rpb25fY291bnQYByABKAUSEwoLdXNhZ2VfY291bnQYCCABKAUSFgoOcHVyY2hhc2VfY291bnQYCSABKAUSFgoOY2F0ZWdvcnlfY29kZXMYCiADKAkSFQoNdGVtcGxhdGVfbmFtZRgLIAEoCRI3Cgljb3N0X2luZm8YDCABKAsyJC5rd19waXhhX3NlcnZpY2UudjEuVGVtcGxhdGVDb3N0SW5mbyKPAQoeTGlzdFB1Ymxpc2hlZFRlbXBsYXRlc1Jlc3BvbnNlEjwKCXRlbXBsYXRlcxgBIAMoCzIpLmt3X3BpeGFfc2VydmljZS52MS5QdWJsaXNoZWRUZW1wbGF0ZUl0ZW0SLwoKcGFnaW5hdGlvbhgCIAEoCzIbLmNvbW1vbi52MS5QYWdpbmF0aW9uUmVzdWx0IikKEkFkZFRlbXBsYXRlUmVxdWVzdBITCgt0ZW1wbGF0ZV9pZBgBIAEoCSIqChNBZGRUZW1wbGF0ZVJlc3BvbnNlEhMKC3RlbXBsYXRlX2lkGAEgASgJIuABChVVcGRhdGVUZW1wbGF0ZVJlcXVlc3QSEwoLdGVtcGxhdGVfaWQYASABKAkSFwoKcGxhbl9sZXZlbBgCIAEoBUgAiAEBEjYKCnJlc29sdXRpb24YAyADKAsyIi5rd19waXhhX3NlcnZpY2UudjEuUmVzb2x1dGlvbkl0ZW0SGQoMcHVibGlzaF90aW1lGAQgASgJSAGIAQESFwoKc29ydF9vcmRlchgFIAEoBUgCiAEBQg0KC19wbGFuX2xldmVsQg8KDV9wdWJsaXNoX3RpbWVCDQoLX3NvcnRfb3JkZXIiLQoWVXBkYXRlVGVtcGxhdGVSZXNwb25zZRITCgt0ZW1wbGF0ZV9pZBgBIAEoCSIsChVEZWxldGVUZW1wbGF0ZVJlcXVlc3QSEwoLdGVtcGxhdGVfaWQYASABKAkiLQoWRGVsZXRlVGVtcGxhdGVSZXNwb25zZRITCgt0ZW1wbGF0ZV9pZBgBIAEoCTKpCwoVVGVtcGxhdGVNYW5hZ2VTZXJ2aWNlEn8KFkxpc3RUZW1wbGF0ZUNhdGVnb3JpZXMSMS5rd19waXhhX3NlcnZpY2UudjEuTGlzdFRlbXBsYXRlQ2F0ZWdvcmllc1JlcXVlc3QaMi5rd19waXhhX3NlcnZpY2UudjEuTGlzdFRlbXBsYXRlQ2F0ZWdvcmllc1Jlc3BvbnNlEn8KFkNyZWF0ZVRlbXBsYXRlQ2F0ZWdvcnkSMS5rd19waXhhX3NlcnZpY2UudjEuQ3JlYXRlVGVtcGxhdGVDYXRlZ29yeVJlcXVlc3QaMi5rd19waXhhX3NlcnZpY2UudjEuQ3JlYXRlVGVtcGxhdGVDYXRlZ29yeVJlc3BvbnNlEosBChpVcGRhdGVUZW1wbGF0ZUNhdGVnb3J5STE4bhI1Lmt3X3BpeGFfc2VydmljZS52MS5VcGRhdGVUZW1wbGF0ZUNhdGVnb3J5STE4blJlcXVlc3QaNi5rd19waXhhX3NlcnZpY2UudjEuVXBkYXRlVGVtcGxhdGVDYXRlZ29yeUkxOG5SZXNwb25zZRJ/ChZEZWxldGVUZW1wbGF0ZUNhdGVnb3J5EjEua3dfcGl4YV9zZXJ2aWNlLnYxLkRlbGV0ZVRlbXBsYXRlQ2F0ZWdvcnlSZXF1ZXN0GjIua3dfcGl4YV9zZXJ2aWNlLnYxLkRlbGV0ZVRlbXBsYXRlQ2F0ZWdvcnlSZXNwb25zZRKXAQoeQ3JlYXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uEjkua3dfcGl4YV9zZXJ2aWNlLnYxLkNyZWF0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvblJlcXVlc3QaOi5rd19waXhhX3NlcnZpY2UudjEuQ3JlYXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uUmVzcG9uc2USlwEKHlVwZGF0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvbhI5Lmt3X3BpeGFfc2VydmljZS52MS5VcGRhdGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb25SZXF1ZXN0Gjoua3dfcGl4YV9zZXJ2aWNlLnYxLlVwZGF0ZVRlbXBsYXRlQ2F0ZWdvcnlSZWxhdGlvblJlc3BvbnNlEpcBCh5EZWxldGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb24SOS5rd19waXhhX3NlcnZpY2UudjEuRGVsZXRlVGVtcGxhdGVDYXRlZ29yeVJlbGF0aW9uUmVxdWVzdBo6Lmt3X3BpeGFfc2VydmljZS52MS5EZWxldGVUZW1wbGF0ZUNhdGVnb3J5UmVsYXRpb25SZXNwb25zZRJ/ChZMaXN0UHVibGlzaGVkVGVtcGxhdGVzEjEua3dfcGl4YV9zZXJ2aWNlLnYxLkxpc3RQdWJsaXNoZWRUZW1wbGF0ZXNSZXF1ZXN0GjIua3dfcGl4YV9zZXJ2aWNlLnYxLkxpc3RQdWJsaXNoZWRUZW1wbGF0ZXNSZXNwb25zZRJeCgtBZGRUZW1wbGF0ZRImLmt3X3BpeGFfc2VydmljZS52MS5BZGRUZW1wbGF0ZVJlcXVlc3QaJy5rd19waXhhX3NlcnZpY2UudjEuQWRkVGVtcGxhdGVSZXNwb25zZRJnCg5VcGRhdGVUZW1wbGF0ZRIpLmt3X3BpeGFfc2VydmljZS52MS5VcGRhdGVUZW1wbGF0ZVJlcXVlc3QaKi5rd19waXhhX3NlcnZpY2UudjEuVXBkYXRlVGVtcGxhdGVSZXNwb25zZRJnCg5EZWxldGVUZW1wbGF0ZRIpLmt3X3BpeGFfc2VydmljZS52MS5EZWxldGVUZW1wbGF0ZVJlcXVlc3QaKi5rd19waXhhX3NlcnZpY2UudjEuRGVsZXRlVGVtcGxhdGVSZXNwb25zZUI6WjhhZ25lcy9wcm90by9nZW4vZ28va3dfcGl4YV9zZXJ2aWNlL3YxO2t3X3BpeGFfc2VydmljZV92MWIGcHJvdG8z", [file_common_v1_context]);
 
 /**
  * @generated from message kw_pixa_service.v1.I18nItem
@@ -65,6 +65,41 @@ export const ResolutionItemSchema: GenMessage<ResolutionItem> = /*@__PURE__*/
   messageDesc(file_kw_pixa_service_v1_template_manage, 1);
 
 /**
+ * TemplateCostInfo 模板消耗计价信息（从 subscription 服务查询）
+ *
+ * @generated from message kw_pixa_service.v1.TemplateCostInfo
+ */
+export type TemplateCostInfo = Message<"kw_pixa_service.v1.TemplateCostInfo"> & {
+  /**
+   * 所需积分（规则未找到时为 0）
+   *
+   * @generated from field: int64 required_credits = 1;
+   */
+  requiredCredits: bigint;
+
+  /**
+   * 计费方式（与 quota CostType 枚举整型一致）
+   *
+   * @generated from field: int32 cost_type = 2;
+   */
+  costType: number;
+
+  /**
+   * 解析错误信息（空表示成功）
+   *
+   * @generated from field: string resolve_error = 3;
+   */
+  resolveError: string;
+};
+
+/**
+ * Describes the message kw_pixa_service.v1.TemplateCostInfo.
+ * Use `create(TemplateCostInfoSchema)` to create a new message.
+ */
+export const TemplateCostInfoSchema: GenMessage<TemplateCostInfo> = /*@__PURE__*/
+  messageDesc(file_kw_pixa_service_v1_template_manage, 2);
+
+/**
  * @generated from message kw_pixa_service.v1.ListTemplateCategoriesRequest
  */
 export type ListTemplateCategoriesRequest = Message<"kw_pixa_service.v1.ListTemplateCategoriesRequest"> & {
@@ -75,7 +110,7 @@ export type ListTemplateCategoriesRequest = Message<"kw_pixa_service.v1.ListTemp
  * Use `create(ListTemplateCategoriesRequestSchema)` to create a new message.
  */
 export const ListTemplateCategoriesRequestSchema: GenMessage<ListTemplateCategoriesRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 2);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 3);
 
 /**
  * @generated from message kw_pixa_service.v1.TemplateCategoryItem
@@ -102,7 +137,7 @@ export type TemplateCategoryItem = Message<"kw_pixa_service.v1.TemplateCategoryI
  * Use `create(TemplateCategoryItemSchema)` to create a new message.
  */
 export const TemplateCategoryItemSchema: GenMessage<TemplateCategoryItem> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 3);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 4);
 
 /**
  * @generated from message kw_pixa_service.v1.ListTemplateCategoriesResponse
@@ -119,7 +154,7 @@ export type ListTemplateCategoriesResponse = Message<"kw_pixa_service.v1.ListTem
  * Use `create(ListTemplateCategoriesResponseSchema)` to create a new message.
  */
 export const ListTemplateCategoriesResponseSchema: GenMessage<ListTemplateCategoriesResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 4);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 5);
 
 /**
  * @generated from message kw_pixa_service.v1.CreateTemplateCategoryRequest
@@ -146,7 +181,7 @@ export type CreateTemplateCategoryRequest = Message<"kw_pixa_service.v1.CreateTe
  * Use `create(CreateTemplateCategoryRequestSchema)` to create a new message.
  */
 export const CreateTemplateCategoryRequestSchema: GenMessage<CreateTemplateCategoryRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 5);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 6);
 
 /**
  * @generated from message kw_pixa_service.v1.CreateTemplateCategoryResponse
@@ -163,7 +198,7 @@ export type CreateTemplateCategoryResponse = Message<"kw_pixa_service.v1.CreateT
  * Use `create(CreateTemplateCategoryResponseSchema)` to create a new message.
  */
 export const CreateTemplateCategoryResponseSchema: GenMessage<CreateTemplateCategoryResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 6);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 7);
 
 /**
  * @generated from message kw_pixa_service.v1.UpdateTemplateCategoryI18nRequest
@@ -190,7 +225,7 @@ export type UpdateTemplateCategoryI18nRequest = Message<"kw_pixa_service.v1.Upda
  * Use `create(UpdateTemplateCategoryI18nRequestSchema)` to create a new message.
  */
 export const UpdateTemplateCategoryI18nRequestSchema: GenMessage<UpdateTemplateCategoryI18nRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 7);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 8);
 
 /**
  * @generated from message kw_pixa_service.v1.UpdateTemplateCategoryI18nResponse
@@ -207,7 +242,7 @@ export type UpdateTemplateCategoryI18nResponse = Message<"kw_pixa_service.v1.Upd
  * Use `create(UpdateTemplateCategoryI18nResponseSchema)` to create a new message.
  */
 export const UpdateTemplateCategoryI18nResponseSchema: GenMessage<UpdateTemplateCategoryI18nResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 8);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 9);
 
 /**
  * @generated from message kw_pixa_service.v1.DeleteTemplateCategoryRequest
@@ -224,7 +259,7 @@ export type DeleteTemplateCategoryRequest = Message<"kw_pixa_service.v1.DeleteTe
  * Use `create(DeleteTemplateCategoryRequestSchema)` to create a new message.
  */
 export const DeleteTemplateCategoryRequestSchema: GenMessage<DeleteTemplateCategoryRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 9);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 10);
 
 /**
  * @generated from message kw_pixa_service.v1.DeleteTemplateCategoryResponse
@@ -241,7 +276,7 @@ export type DeleteTemplateCategoryResponse = Message<"kw_pixa_service.v1.DeleteT
  * Use `create(DeleteTemplateCategoryResponseSchema)` to create a new message.
  */
 export const DeleteTemplateCategoryResponseSchema: GenMessage<DeleteTemplateCategoryResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 10);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 11);
 
 /**
  * @generated from message kw_pixa_service.v1.CreateTemplateCategoryRelationRequest
@@ -263,7 +298,7 @@ export type CreateTemplateCategoryRelationRequest = Message<"kw_pixa_service.v1.
  * Use `create(CreateTemplateCategoryRelationRequestSchema)` to create a new message.
  */
 export const CreateTemplateCategoryRelationRequestSchema: GenMessage<CreateTemplateCategoryRelationRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 11);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 12);
 
 /**
  * @generated from message kw_pixa_service.v1.CreateTemplateCategoryRelationResponse
@@ -280,7 +315,7 @@ export type CreateTemplateCategoryRelationResponse = Message<"kw_pixa_service.v1
  * Use `create(CreateTemplateCategoryRelationResponseSchema)` to create a new message.
  */
 export const CreateTemplateCategoryRelationResponseSchema: GenMessage<CreateTemplateCategoryRelationResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 12);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 13);
 
 /**
  * @generated from message kw_pixa_service.v1.UpdateTemplateCategoryRelationRequest
@@ -302,7 +337,7 @@ export type UpdateTemplateCategoryRelationRequest = Message<"kw_pixa_service.v1.
  * Use `create(UpdateTemplateCategoryRelationRequestSchema)` to create a new message.
  */
 export const UpdateTemplateCategoryRelationRequestSchema: GenMessage<UpdateTemplateCategoryRelationRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 13);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 14);
 
 /**
  * @generated from message kw_pixa_service.v1.UpdateTemplateCategoryRelationResponse
@@ -319,7 +354,7 @@ export type UpdateTemplateCategoryRelationResponse = Message<"kw_pixa_service.v1
  * Use `create(UpdateTemplateCategoryRelationResponseSchema)` to create a new message.
  */
 export const UpdateTemplateCategoryRelationResponseSchema: GenMessage<UpdateTemplateCategoryRelationResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 14);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 15);
 
 /**
  * @generated from message kw_pixa_service.v1.DeleteTemplateCategoryRelationRequest
@@ -341,7 +376,7 @@ export type DeleteTemplateCategoryRelationRequest = Message<"kw_pixa_service.v1.
  * Use `create(DeleteTemplateCategoryRelationRequestSchema)` to create a new message.
  */
 export const DeleteTemplateCategoryRelationRequestSchema: GenMessage<DeleteTemplateCategoryRelationRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 15);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 16);
 
 /**
  * @generated from message kw_pixa_service.v1.DeleteTemplateCategoryRelationResponse
@@ -358,7 +393,7 @@ export type DeleteTemplateCategoryRelationResponse = Message<"kw_pixa_service.v1
  * Use `create(DeleteTemplateCategoryRelationResponseSchema)` to create a new message.
  */
 export const DeleteTemplateCategoryRelationResponseSchema: GenMessage<DeleteTemplateCategoryRelationResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 16);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 17);
 
 /**
  * @generated from message kw_pixa_service.v1.ListPublishedTemplatesRequest
@@ -377,7 +412,7 @@ export type ListPublishedTemplatesRequest = Message<"kw_pixa_service.v1.ListPubl
  * Use `create(ListPublishedTemplatesRequestSchema)` to create a new message.
  */
 export const ListPublishedTemplatesRequestSchema: GenMessage<ListPublishedTemplatesRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 17);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 18);
 
 /**
  * @generated from message kw_pixa_service.v1.PublishedTemplateItem
@@ -443,6 +478,13 @@ export type PublishedTemplateItem = Message<"kw_pixa_service.v1.PublishedTemplat
    * @generated from field: string template_name = 11;
    */
   templateName: string;
+
+  /**
+   * 模板消耗计价信息（替代三字段）
+   *
+   * @generated from field: kw_pixa_service.v1.TemplateCostInfo cost_info = 12;
+   */
+  costInfo?: TemplateCostInfo;
 };
 
 /**
@@ -450,7 +492,7 @@ export type PublishedTemplateItem = Message<"kw_pixa_service.v1.PublishedTemplat
  * Use `create(PublishedTemplateItemSchema)` to create a new message.
  */
 export const PublishedTemplateItemSchema: GenMessage<PublishedTemplateItem> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 18);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 19);
 
 /**
  * @generated from message kw_pixa_service.v1.ListPublishedTemplatesResponse
@@ -472,7 +514,7 @@ export type ListPublishedTemplatesResponse = Message<"kw_pixa_service.v1.ListPub
  * Use `create(ListPublishedTemplatesResponseSchema)` to create a new message.
  */
 export const ListPublishedTemplatesResponseSchema: GenMessage<ListPublishedTemplatesResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 19);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 20);
 
 /**
  * @generated from message kw_pixa_service.v1.AddTemplateRequest
@@ -489,7 +531,7 @@ export type AddTemplateRequest = Message<"kw_pixa_service.v1.AddTemplateRequest"
  * Use `create(AddTemplateRequestSchema)` to create a new message.
  */
 export const AddTemplateRequestSchema: GenMessage<AddTemplateRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 20);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 21);
 
 /**
  * @generated from message kw_pixa_service.v1.AddTemplateResponse
@@ -506,7 +548,7 @@ export type AddTemplateResponse = Message<"kw_pixa_service.v1.AddTemplateRespons
  * Use `create(AddTemplateResponseSchema)` to create a new message.
  */
 export const AddTemplateResponseSchema: GenMessage<AddTemplateResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 21);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 22);
 
 /**
  * @generated from message kw_pixa_service.v1.UpdateTemplateRequest
@@ -545,7 +587,7 @@ export type UpdateTemplateRequest = Message<"kw_pixa_service.v1.UpdateTemplateRe
  * Use `create(UpdateTemplateRequestSchema)` to create a new message.
  */
 export const UpdateTemplateRequestSchema: GenMessage<UpdateTemplateRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 22);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 23);
 
 /**
  * @generated from message kw_pixa_service.v1.UpdateTemplateResponse
@@ -562,7 +604,7 @@ export type UpdateTemplateResponse = Message<"kw_pixa_service.v1.UpdateTemplateR
  * Use `create(UpdateTemplateResponseSchema)` to create a new message.
  */
 export const UpdateTemplateResponseSchema: GenMessage<UpdateTemplateResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 23);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 24);
 
 /**
  * @generated from message kw_pixa_service.v1.DeleteTemplateRequest
@@ -579,7 +621,7 @@ export type DeleteTemplateRequest = Message<"kw_pixa_service.v1.DeleteTemplateRe
  * Use `create(DeleteTemplateRequestSchema)` to create a new message.
  */
 export const DeleteTemplateRequestSchema: GenMessage<DeleteTemplateRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 24);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 25);
 
 /**
  * @generated from message kw_pixa_service.v1.DeleteTemplateResponse
@@ -596,7 +638,7 @@ export type DeleteTemplateResponse = Message<"kw_pixa_service.v1.DeleteTemplateR
  * Use `create(DeleteTemplateResponseSchema)` to create a new message.
  */
 export const DeleteTemplateResponseSchema: GenMessage<DeleteTemplateResponse> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_template_manage, 25);
+  messageDesc(file_kw_pixa_service_v1_template_manage, 26);
 
 /**
  * @generated from service kw_pixa_service.v1.TemplateManageService

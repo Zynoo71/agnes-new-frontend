@@ -59,37 +59,37 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
   for (const turn of turns) {
     const userBlocks = turn.user as { type: string; data: unknown }[];
     const userText = userBlocks
-      .filter((b) => b.type === "human" || b.type === "text")
+      .filter((b) => b.type === "Message")
       .map((b) => (b.data as Record<string, unknown>)?.content ?? JSON.stringify(b.data))
       .join("\n");
     if (userText) {
-      messages.push({ id: nextHistoryId(), role: "user", blocks: [{ type: "text", content: userText }], nodes: [], workers: {} });
+      messages.push({ id: nextHistoryId(), role: "user", blocks: [{ type: "Message", content: userText }], nodes: [], workers: {} });
     }
     const assistantBlocks: ContentBlock[] = [];
     const aBlocks = turn.assistant as { type: string; data: unknown; toolCallId?: string }[];
     for (const block of aBlocks) {
-      if (block.type === "text") {
+      if (block.type === "Message") {
         const content = (block.data as Record<string, unknown>)?.content as string ?? JSON.stringify(block.data);
-        assistantBlocks.push({ type: "text", content });
-      } else if (block.type === "reasoning") {
+        assistantBlocks.push({ type: "Message", content });
+      } else if (block.type === "Reasoning") {
         const content = (block.data as Record<string, unknown>)?.content as string ?? "";
-        if (content) assistantBlocks.push({ type: "reasoning", content });
-      } else if (block.type === "tool_call") {
+        if (content) assistantBlocks.push({ type: "Reasoning", content });
+      } else if (block.type === "ToolCallStart") {
         const data = block.data as Record<string, unknown>;
         assistantBlocks.push({
-          type: "tool_call",
+          type: "ToolCallStart",
           data: {
             toolCallId: block.toolCallId || "",
             toolName: (data?.name as string) ?? "",
             toolInput: (data?.args as Record<string, unknown>) ?? {},
           },
         });
-      } else if (block.type === "tool_result") {
+      } else if (block.type === "ToolCallResult") {
         const data = (block.data ?? {}) as Record<string, unknown>;
         const existing = assistantBlocks.find(
-          (b) => b.type === "tool_call" && b.data.toolCallId === block.toolCallId,
+          (b) => b.type === "ToolCallStart" && b.data.toolCallId === block.toolCallId,
         );
-        if (existing && existing.type === "tool_call") {
+        if (existing && existing.type === "ToolCallStart") {
           existing.data.toolResult = data;
           if (!existing.data.toolName && typeof data.tool_name === "string") {
             existing.data.toolName = data.tool_name;
@@ -107,9 +107,10 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
 // ── Hook ──
 
 export function useChat() {
-  const loadHistory = async (id: string): Promise<void> => {
+  const loadHistory = async (id: string) => {
     const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
     getState().setMessages(parseHistoryTurns(resp.turns));
+    return resp;
   };
 
   const createConversation = useCallback(async () => {
@@ -222,18 +223,23 @@ export function useChat() {
 
     s.setConversationId(id);
     s.setError(null);
+    s.setLoadingHistory(true);
 
-    const isTargetStreaming = s.streamingConvIds.has(id);
-
+    let resp;
     try {
-      await loadHistory(id);
+      resp = await loadHistory(id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       getState().setError(`Load history: ${msg}`);
+      getState().setLoadingHistory(false);
       return;
     }
 
-    if (isTargetStreaming) {
+    getState().setLoadingHistory(false);
+
+    const shouldResume = s.streamingConvIds.has(id) || resp.isRunning;
+
+    if (shouldResume) {
       getState().startAssistantMessage();
       const signal = beginStream(id);
       const stream = agentClient.resumeStream({ conversationId: BigInt(id) }, { signal });

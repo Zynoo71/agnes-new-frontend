@@ -1,21 +1,31 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { ToolRenderProps } from "../registry";
 
-function ImageItem({ url, title }: { url: string; title: string }) {
+function ImageItem({ url, title, onLoaded }: { url: string; title: string; onLoaded: () => void }) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
 
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
       className="block rounded-lg overflow-hidden bg-background hover:opacity-80 transition-opacity">
-      <img src={url} alt={title} loading="lazy" onError={() => setFailed(true)}
+      <img src={url} alt={title} loading="lazy"
+        onLoad={onLoaded}
+        onError={() => setFailed(true)}
         className="w-full h-20 object-cover" />
     </a>
   );
 }
 
+const VISIBLE_COUNT = 3;
+
 export function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
   const query = (toolInput.query as string) ?? (toolResult?.query as string) ?? "";
+  const [expanded, setExpanded] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const handleLoaded = useCallback(() => setLoadedCount(c => c + 1), []);
+  const results = toolResult && Array.isArray(toolResult.results) ? toolResult.results as Record<string, unknown>[] : [];
+  const hasMore = results.length > VISIBLE_COUNT;
+  const visible = expanded ? results : results.slice(0, VISIBLE_COUNT);
 
   return (
     <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 text-sm shadow-sm">
@@ -32,18 +42,26 @@ export function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) 
         {!toolResult && (
           <span className="text-[10px] text-text-tertiary animate-gentle-pulse ml-auto shrink-0">Searching...</span>
         )}
-        {toolResult && Array.isArray(toolResult.results) && (
+        {toolResult && loadedCount > 0 && (
           <span className="text-[10px] text-text-tertiary ml-auto shrink-0">
-            {toolResult.results.length} images
+            {loadedCount} images
           </span>
         )}
       </div>
-      {toolResult && Array.isArray(toolResult.results) && (
+      {visible.length > 0 && (
         <div className="grid grid-cols-3 gap-1.5">
-          {toolResult.results.map((r: Record<string, unknown>, i: number) => (
-            <ImageItem key={i} url={r.url as string} title={r.title as string} />
+          {visible.map((r, i) => (
+            <ImageItem key={i} url={r.url as string} title={r.title as string} onLoaded={handleLoaded} />
           ))}
         </div>
+      )}
+      {hasMore && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-1.5 text-[11px] text-text-tertiary hover:text-text-secondary transition-colors"
+        >
+          {expanded ? "Collapse" : `Show ${results.length - VISIBLE_COUNT} more`}
+        </button>
       )}
     </div>
   );
