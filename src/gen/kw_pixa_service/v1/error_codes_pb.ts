@@ -9,7 +9,7 @@ import { enumDesc, fileDesc } from "@bufbuild/protobuf/codegenv2";
  * Describes the file kw_pixa_service/v1/error_codes.proto.
  */
 export const file_kw_pixa_service_v1_error_codes: GenFile = /*@__PURE__*/
-  fileDesc("CiRrd19waXhhX3NlcnZpY2UvdjEvZXJyb3JfY29kZXMucHJvdG8SEmt3X3BpeGFfc2VydmljZS52MSqjAQoNUGl4YUVycm9yQ29kZRIfChtQSVhBX0VSUk9SX0NPREVfVU5TUEVDSUZJRUQQABIkCh5QSVhBX1RFTVBMQVRFX1NVQkpFQ1RfTUlTTUFUQ0gQxdUDEjEKK1BJWEFfVEVNUExBVEVfU1VCSkVDVF9ERVRFQ1RJT05fVU5BVkFJTEFCTEUQxtUDEhgKElBJWEFfVUdDX05PVF9GT1VORBCN1wNCOlo4YWduZXMvcHJvdG8vZ2VuL2dvL2t3X3BpeGFfc2VydmljZS92MTtrd19waXhhX3NlcnZpY2VfdjFiBnByb3RvMw");
+  fileDesc("CiRrd19waXhhX3NlcnZpY2UvdjEvZXJyb3JfY29kZXMucHJvdG8SEmt3X3BpeGFfc2VydmljZS52MSrCAQoNUGl4YUVycm9yQ29kZRIfChtQSVhBX0VSUk9SX0NPREVfVU5TUEVDSUZJRUQQABIkCh5QSVhBX1RFTVBMQVRFX1NVQkpFQ1RfTUlTTUFUQ0gQxdUDEjEKK1BJWEFfVEVNUExBVEVfU1VCSkVDVF9ERVRFQ1RJT05fVU5BVkFJTEFCTEUQxtUDEh0KF1BJWEFfVEVNUExBVEVfTk9UX0ZPVU5EEKnWAxIYChJQSVhBX1VHQ19OT1RfRk9VTkQQjdcDQjpaOGFnbmVzL3Byb3RvL2dlbi9nby9rd19waXhhX3NlcnZpY2UvdjE7a3dfcGl4YV9zZXJ2aWNlX3YxYgZwcm90bzM");
 
 /**
  * Pixa 服务专属错误码（060000-069999 号段，与 common/v1/error.proto 约定一致）。
@@ -37,6 +37,13 @@ export enum PixaErrorCode {
    * @generated from enum value: PIXA_TEMPLATE_SUBJECT_DETECTION_UNAVAILABLE = 60102;
    */
   PIXA_TEMPLATE_SUBJECT_DETECTION_UNAVAILABLE = 60102,
+
+  /**
+   * 060201: 模版 - 目标模版在 Pixa 侧不存在或未发布（用户侧点赞等）
+   *
+   * @generated from enum value: PIXA_TEMPLATE_NOT_FOUND = 60201;
+   */
+  PIXA_TEMPLATE_NOT_FOUND = 60201,
 
   /**
    * 060301: UGC 用户侧 - 目标 UGC 不存在或已删除

@@ -81,19 +81,9 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
           data: {
             toolCallId: block.toolCallId || "",
             toolName: (data?.name as string) ?? "",
-            toolInput: {},
+            toolInput: (data?.args as Record<string, unknown>) ?? {},
           },
         });
-      } else if (block.type === "ToolCallArgs") {
-        const data = block.data as Record<string, unknown>;
-        const tcId = block.toolCallId || "";
-        const args = (data?.args as Record<string, unknown>) ?? {};
-        const existing = assistantBlocks.find(
-          (b) => b.type === "ToolCallStart" && b.data.toolCallId === tcId,
-        );
-        if (existing && existing.type === "ToolCallStart") {
-          existing.data.toolInput = args;
-        }
       } else if (block.type === "ToolCallResult") {
         const data = (block.data ?? {}) as Record<string, unknown>;
         const existing = assistantBlocks.find(

@@ -339,7 +339,7 @@ export const KwEchoServiceService: GenService<{
     output: typeof ListEchoGameCategoryTreeReplySchema;
   },
   /**
-   * 按一级/二级分类过滤 Echo 目录中的 game_id（供 groupchat GetGameList 与 cooperation_game 求交）
+   * 按一级/二级分类过滤 Echo 目录中的 game_id（供 groupchat GetGameList 与 kw_groupchat.game 求交）
    *
    * @generated from rpc kw_echo_service.v1.KwEchoServiceService.ListEchoCatalogGameIds
    */
