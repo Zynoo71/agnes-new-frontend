@@ -211,6 +211,19 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
         break;
       }
 
+      if (custom.type === "ToolCallArgs") {
+        const tcId = payload.tool_call_id as string;
+        const args = asRecord(payload.args);
+        if (tcId) {
+          updated.blocks = updated.blocks.map((block) =>
+            block.type === "ToolCallStart" && block.data.toolCallId === tcId
+              ? { type: "ToolCallStart", data: { ...block.data, toolInput: args } }
+              : block
+          );
+        }
+        break;
+      }
+
       if (custom.type === "TaskUpdate") {
         const action = payload.action as string;
         if (action === "create") {
