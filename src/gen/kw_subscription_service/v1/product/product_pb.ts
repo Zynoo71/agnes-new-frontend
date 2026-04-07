@@ -1033,7 +1033,7 @@ export const CheckResourceAccessRequestSchema: GenMessage<CheckResourceAccessReq
 
 /**
  * CheckResourceAccessResponse 资源访问权限检查响应
- * - product_type=GAME（游戏创建检查）：不抛业务 BizError，仅用 unlocked、can_play、error_code（insufficient_points | insufficient_grade | payment）表达；成功可玩时 error_code 为空。
+ * - product_type=GAME（游戏创建检查）：不抛业务 BizError，仅用 unlocked、can_play、error_code（insufficient_points | insufficient_grade | payment 未购买 | consumption_rule_not_found 无开局规则）表达；成功可玩时 error_code 为空。
  * - 其它资源类型：不可访问时仍通过 BizError 抛出（六位 error_code + metadata）。
  *
  * @generated from message kw_subscription_service.v1.product.CheckResourceAccessResponse

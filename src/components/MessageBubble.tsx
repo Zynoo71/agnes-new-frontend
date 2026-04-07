@@ -215,7 +215,7 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
                 <BlockRenderer
                   block={block}
                   onHitlResume={onHitlResume}
-                  isStreaming={isStreaming && isLast}
+                  isStreaming={isStreaming && isLast && !shouldAutoCollapse}
                   autoCollapse={shouldAutoCollapse}
                 />
               </div>
