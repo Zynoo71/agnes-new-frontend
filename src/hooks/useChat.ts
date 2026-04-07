@@ -81,8 +81,14 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
           data: {
             toolCallId: block.toolCallId || "",
             toolName: (data?.name as string) ?? "",
-            toolInput: (data?.args as Record<string, unknown>) ?? {},
+            toolInput: (data?.input as Record<string, unknown>) ?? {},
           },
+        });
+      } else if (block.type === "HumanReview") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        assistantBlocks.push({
+          type: "human_review",
+          data: { payload: data, resolved: true },
         });
       } else if (block.type === "ToolCallResult") {
         const data = (block.data ?? {}) as Record<string, unknown>;
@@ -117,6 +123,19 @@ export function useChat() {
   const loadHistory = async (id: string) => {
     const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
     const messages = parseHistoryTurns(resp.turns);
+    // If there's a pending review, mark the last HumanReview block as unresolved
+    if (resp.pendingReview) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const blocks = messages[i].blocks;
+        for (let j = blocks.length - 1; j >= 0; j--) {
+          if (blocks[j].type === "human_review") {
+            blocks[j] = { type: "human_review", data: { ...blocks[j].data, resolved: false } };
+            break;
+          }
+        }
+        break;
+      }
+    }
     // Set messages and rebuild tasks in a single state update to avoid intermediate render
     const tasks = rebuildTasksFromHistory(messages);
     useConversationStore.setState({ messages, rawEvents: [], tasks });
