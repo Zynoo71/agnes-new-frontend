@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type KeyboardEvent } from "react";
 import { useConversationStore } from "@/stores/conversationStore";
+import { useConversationListStore } from "@/stores/conversationListStore";
 import { useChat } from "@/hooks/useChat";
 import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
 import { MessageBubble } from "@/components/MessageBubble";
@@ -85,6 +86,7 @@ export function ChatPanel() {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const isNearBottomRef = useRef(true);
 
@@ -153,6 +155,7 @@ export function ChatPanel() {
                     ${isEmpty ? "max-w-xl w-full" : ""}`}>
       <div className="flex items-end">
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -209,7 +212,10 @@ export function ChatPanel() {
               {AGENT_TYPES.map((t) => (
                 <button
                   key={t}
-                  onClick={() => setAgentType(t)}
+                  onClick={() => {
+                    setAgentType(t);
+                    if (conversationId) useConversationListStore.getState().update(conversationId, { agentType: t });
+                  }}
                   className={`px-3 py-1 text-xs font-medium rounded-md transition-all capitalize ${
                     agentType === t
                       ? "bg-surface text-text-primary shadow-sm"
@@ -329,7 +335,7 @@ export function ChatPanel() {
         </div>
 
         {!isEmpty && (
-          <div className="px-5 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
+          <div className="shrink-0 px-5 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
             <div className="max-w-2xl mx-auto">
               {inputArea}
               <p className="text-[10px] text-text-tertiary text-center mt-2">

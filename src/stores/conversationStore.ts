@@ -360,17 +360,29 @@ function pushRawEvent(events: RawEvent[], event: RawEvent): RawEvent[] {
 }
 
 export function rebuildTasksFromHistory(messages: Message[]): AgentTask[] {
-  let lastTasks: AgentTask[] = [];
+  let tasks: AgentTask[] = [];
   for (const msg of messages) {
     for (const block of msg.blocks) {
-      // Scan planning tool results for full tasks array
-      if (block.type === "ToolCallStart" && PLANNING_TOOL_NAMES.has(block.data.toolName) && block.data.toolResult) {
-        const tasks = block.data.toolResult.tasks as AgentTask[] | undefined;
-        if (tasks) lastTasks = tasks;
+      if (block.type !== "ToolCallStart" || !PLANNING_TOOL_NAMES.has(block.data.toolName) || !block.data.toolResult) continue;
+      const result = block.data.toolResult;
+      // Full tasks array (from list_tasks / update_task) — use as-is
+      if (Array.isArray(result.tasks)) {
+        tasks = result.tasks as AgentTask[];
+      }
+      // Single task creation — accumulate
+      if (result.action === "create" && result.task && typeof (result.task as Record<string, unknown>).id === "number") {
+        const task = result.task as AgentTask;
+        if (!tasks.some((t) => t.id === task.id)) {
+          tasks = [...tasks, task];
+        }
+      }
+      // Status update — apply in-place
+      if (result.action === "update" && typeof result.task_id === "number" && result.status) {
+        tasks = tasks.map((t) => t.id === result.task_id ? { ...t, status: result.status as AgentTask["status"] } : t);
       }
     }
   }
-  return lastTasks;
+  return tasks;
 }
 
 // ── Store ──

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
@@ -41,7 +41,7 @@ function UserAvatar() {
   );
 }
 
-export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming, animate = true }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming, animate = true }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
@@ -271,7 +271,7 @@ export function MessageBubble({ message, isLast, onHitlResume, onEditResend, onR
       </div>
     </div>
   );
-}
+});
 
 function BlockRenderer({
   block,
@@ -419,8 +419,7 @@ function ContextCompactingBlock({ done }: { done: boolean }) {
 
 // ── Review type display config ──
 const REVIEW_TYPE_CONFIG: Record<string, { title: string; description: string }> = {
-  plan: { title: "Plan Review", description: "Review the proposed research plan before execution" },
-  clarification: { title: "Clarification Needed", description: "The agent needs more information to proceed" },
+  research_plan: { title: "Research Plan", description: "Review the proposed tasks before execution" },
 };
 
 function HumanReviewBlock({
@@ -432,9 +431,6 @@ function HumanReviewBlock({
   onResume?: (action: "approve" | "modify", feedback?: string) => void;
   disabled?: boolean;
 }) {
-  const [feedback, setFeedback] = useState("");
-  const [showFeedback, setShowFeedback] = useState(false);
-
   const reviewType = data.payload.review_type as string | undefined;
   const reviewData = data.payload.data as Record<string, unknown> | undefined;
   const timeoutSeconds = data.payload.timeout_seconds as number | undefined;
@@ -493,62 +489,16 @@ function HumanReviewBlock({
       ) : (
         onResume && (
           <div className="mt-4 space-y-3">
-            {/* Feedback input for modify */}
-            {showFeedback && (
-              <div>
-                <textarea
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Enter your feedback or modifications..."
-                  rows={3}
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/30
-                             placeholder:text-text-tertiary"
-                />
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={() => { if (feedback.trim()) onResume("modify", feedback.trim()); }}
-                    disabled={disabled || !feedback.trim()}
-                    className="rounded-lg bg-accent text-white px-3.5 py-1.5 text-xs font-medium
-                               hover:bg-accent-hover active:scale-[0.97] disabled:opacity-40 transition-all"
-                  >
-                    Send Feedback
-                  </button>
-                  <button
-                    onClick={() => { setShowFeedback(false); setFeedback(""); }}
-                    className="rounded-lg px-3.5 py-1.5 text-xs font-medium text-text-tertiary
-                               hover:text-text-secondary hover:bg-surface-hover transition-all"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Action buttons */}
-            {!showFeedback && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onResume("approve")}
-                  disabled={disabled}
-                  className="rounded-lg bg-success text-white px-4 py-1.5 text-xs font-medium
-                             hover:bg-success/90 active:scale-[0.97] disabled:opacity-40 transition-all"
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={() => setShowFeedback(true)}
-                  disabled={disabled}
-                  className="rounded-lg bg-surface border border-border text-text-primary px-4 py-1.5 text-xs font-medium
-                             hover:bg-surface-hover active:scale-[0.97] disabled:opacity-40 transition-all"
-                >
-                  Modify
-                </button>
-              </div>
-            )}
-
+            <button
+              onClick={() => onResume("approve")}
+              disabled={disabled}
+              className="rounded-lg bg-success text-white px-4 py-1.5 text-xs font-medium
+                         hover:bg-success/90 active:scale-[0.97] disabled:opacity-40 transition-all"
+            >
+              Approve
+            </button>
             <p className="text-[11px] text-text-tertiary">
-              You can also type directly in the chat input to provide feedback
+              Or type in the chat input to provide feedback
             </p>
           </div>
         )
@@ -558,36 +508,55 @@ function HumanReviewBlock({
 }
 
 // ── Review data renderer ──
-function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Record<string, unknown> }) {
-  if (reviewType === "plan" && data.plan) {
-    const plan = data.plan as string[];
-    return (
-      <div className="space-y-1.5">
-        {(Array.isArray(plan) ? plan : [plan]).map((item, i) => (
-          <div key={i} className="flex items-start gap-2 text-sm">
-            <span className="text-text-tertiary text-xs mt-0.5 shrink-0 w-5 text-right">{i + 1}.</span>
-            <span className="text-text-primary">{String(item)}</span>
+
+// ── Review data renderers (registry pattern) ──
+
+type ReviewRenderer = (data: Record<string, unknown>) => React.ReactNode;
+
+interface ReviewTask {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  depends_on: number[];
+}
+
+function ResearchPlanRenderer(data: Record<string, unknown>) {
+  if (!Array.isArray(data.tasks)) return null;
+  const tasks = data.tasks as ReviewTask[];
+  return (
+    <div className="space-y-2">
+      {tasks.map((task) => (
+        <div key={task.id} className="rounded-lg bg-surface border border-border-light p-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+              #{task.id}
+            </span>
+            <span className="text-sm font-medium text-text-primary">{task.title}</span>
           </div>
-        ))}
-      </div>
-    );
-  }
+          {task.description && (
+            <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">{task.description}</p>
+          )}
+          {task.depends_on.length > 0 && (
+            <p className="text-[10px] text-text-tertiary mt-1.5">
+              Depends on: {task.depends_on.map((d) => `#${d}`).join(", ")}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
-  if (reviewType === "clarification" && data.question) {
-    const originalQuery = data.original_query as string | undefined;
-    return (
-      <div className="rounded-lg bg-surface border border-border-light p-3">
-        <p className="text-sm text-text-primary">{String(data.question)}</p>
-        {originalQuery && (
-          <p className="text-xs text-text-tertiary mt-2">
-            Original query: <span className="text-text-secondary">{originalQuery}</span>
-          </p>
-        )}
-      </div>
-    );
-  }
+const REVIEW_RENDERERS: Record<string, ReviewRenderer> = {
+  research_plan: ResearchPlanRenderer,
+};
 
-  // Fallback: JSON
+function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Record<string, unknown> }) {
+  const renderer = reviewType ? REVIEW_RENDERERS[reviewType] : undefined;
+  const content = renderer?.(data);
+  if (content) return <>{content}</>;
+
   return (
     <pre className="text-xs bg-surface rounded-lg p-3 overflow-x-auto whitespace-pre-wrap
                     border border-border-light font-mono text-text-secondary leading-relaxed">
