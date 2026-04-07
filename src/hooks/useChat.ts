@@ -235,6 +235,10 @@ export function useChat() {
     s.setError(null);
     s.setLoadingHistory(true);
 
+    // Restore agentType from the conversation list
+    const conv = useConversationListStore.getState().conversations.find((c) => c.id === id);
+    if (conv) s.setAgentType(conv.agentType);
+
     let resp;
     try {
       resp = await loadHistory(id);

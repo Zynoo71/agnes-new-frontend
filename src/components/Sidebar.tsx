@@ -147,10 +147,6 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
                         <div className={`transition-all duration-150 ${confirmDeleteId === conv.id ? "opacity-0 scale-95 h-0" : "opacity-100 scale-100"}`}>
                           <div className="truncate text-[13px] font-medium leading-snug">{conv.title}</div>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full capitalize
-                              ${AGENT_BADGE_COLORS[conv.agentType] ?? "bg-surface-hover text-text-tertiary"}`}>
-                              {conv.agentType}
-                            </span>
                             {isConvStreaming && !isActive && (
                               <span className="flex items-center gap-1 text-[10px] text-accent">
                                 <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />

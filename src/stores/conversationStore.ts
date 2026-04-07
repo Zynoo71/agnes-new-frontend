@@ -76,7 +76,8 @@ export type ContentBlock =
   | { type: "Reasoning"; content: string }
   | { type: "ToolCallStart"; data: ToolCallData }
   | { type: "human_review"; data: HumanReviewData }
-  | { type: "TaskList" };
+  | { type: "TaskList" }
+  | { type: "ContextCompacting"; done: boolean };
 
 export interface Message {
   id: string;
@@ -202,6 +203,21 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
     case "custom": {
       const custom = event.event.value;
       const payload = (tryDecodeJson(custom.payload) ?? {}) as Record<string, unknown>;
+
+      if (custom.type === "ContextCompactStart") {
+        updated.blocks.push({ type: "ContextCompacting", done: false });
+        break;
+      }
+
+      if (custom.type === "ContextCompactEnd") {
+        for (let i = updated.blocks.length - 1; i >= 0; i--) {
+          if (updated.blocks[i].type === "ContextCompacting" && !updated.blocks[i].done) {
+            updated.blocks[i] = { type: "ContextCompacting", done: true };
+            break;
+          }
+        }
+        break;
+      }
 
       if (custom.type === "HumanReview") {
         updated.blocks.push({
