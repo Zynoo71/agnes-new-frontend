@@ -73,10 +73,10 @@ export function CodeBlock({ language, children }: { language?: string; children:
       {/* Header bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03]">
         {isHtml ? (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 bg-white/5 rounded-md p-0.5">
             <button
               onClick={() => setTab("preview")}
-              className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded transition-colors ${
+              className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded transition-colors ${
                 tab === "preview"
                   ? "text-white/80 bg-white/10"
                   : "text-white/30 hover:text-white/50"
@@ -86,7 +86,7 @@ export function CodeBlock({ language, children }: { language?: string; children:
             </button>
             <button
               onClick={() => setTab("code")}
-              className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded transition-colors ${
+              className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded transition-colors ${
                 tab === "code"
                   ? "text-white/80 bg-white/10"
                   : "text-white/30 hover:text-white/50"
@@ -133,7 +133,7 @@ export function CodeBlock({ language, children }: { language?: string; children:
           style={{ height: "60vh" }}
         />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-auto" style={isHtml ? { maxHeight: "60vh" } : undefined}>
           {html ? (
             <div
               className="px-4 py-3 text-[13px] leading-[1.6] [&_pre]:!bg-transparent [&_pre]:!m-0 [&_pre]:!p-0"

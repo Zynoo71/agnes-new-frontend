@@ -37,10 +37,11 @@ function buildHistoryWorkers(toolCalls: ToolCallData[]): HistoryWorker[] {
     .filter((tc) => tc.toolResult)
     .map((tc) => {
       const r = tc.toolResult!;
-      const { index, character } = pickWorkerCharacter(usedIndices);
+      const wId = (r.worker_id as string) ?? tc.toolCallId;
+      const { index, character } = pickWorkerCharacter(usedIndices, wId);
       usedIndices.add(index);
       return {
-        workerId: (r.worker_id as string) ?? tc.toolCallId,
+        workerId: wId,
         description: (r.description as string) ?? "",
         status: (r.status as "completed" | "failed") ?? "completed",
         toolsUsed: (r.tools_used as string[]) ?? [],
@@ -49,18 +50,6 @@ function buildHistoryWorkers(toolCalls: ToolCallData[]): HistoryWorker[] {
         character,
       };
     });
-}
-
-/** Chevron icon that rotates when expanded. */
-function Chevron({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      className={`w-3 h-3 text-text-tertiary transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
-      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-    </svg>
-  );
 }
 
 /** Smooth height transition wrapper. */
@@ -85,10 +74,42 @@ function Collapsible({ open, children }: { open: boolean; children: React.ReactN
   );
 }
 
+// ── Status Badge ──
+
+function StatusBadge({ status, duration }: { status: string; duration?: number }) {
+  if (status === "running") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-accent bg-accent/8 px-1.5 py-0.5 rounded-full">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+        Working
+      </span>
+    );
+  }
+  if (status === "done" || status === "completed") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/8 px-1.5 py-0.5 rounded-full">
+        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+        {duration != null ? formatDuration(duration) : "Done"}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error bg-error/8 px-1.5 py-0.5 rounded-full">
+      Failed
+    </span>
+  );
+}
+
 // ── Main Panel ──
+
+const MAX_VISIBLE_HEIGHT = 400;
 
 export function AgentSwarmPanel({ liveWorkers, spawnToolCalls }: AgentSwarmPanelProps) {
   const hasLiveWorkers = Object.keys(liveWorkers).length > 0;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLDivElement>(null);
 
   const historyKey = spawnToolCalls.map((tc) => tc.toolCallId).join(",");
   const historyWorkers = useMemo(
@@ -97,26 +118,67 @@ export function AgentSwarmPanel({ liveWorkers, spawnToolCalls }: AgentSwarmPanel
     [historyKey, hasLiveWorkers],
   );
 
-  const taskCount = hasLiveWorkers ? Object.keys(liveWorkers).length : historyWorkers.length;
+  const liveEntries = Object.values(liveWorkers);
+  const taskCount = hasLiveWorkers ? liveEntries.length : historyWorkers.length;
+  const doneCount = hasLiveWorkers
+    ? liveEntries.filter((w) => w.status === "done").length
+    : historyWorkers.filter((w) => w.status === "completed").length;
+  const hasRunning = hasLiveWorkers && liveEntries.some((w) => w.status === "running");
+
+  // Auto-scroll to the active (running) worker
+  useEffect(() => {
+    if (!hasRunning || !activeRef.current || !scrollRef.current) return;
+    const container = scrollRef.current;
+    const active = activeRef.current;
+    const top = active.offsetTop - container.offsetTop;
+    const isVisible = top >= container.scrollTop && top < container.scrollTop + container.clientHeight - 60;
+    if (!isVisible) {
+      container.scrollTo({ top: Math.max(0, top - 8), behavior: "smooth" });
+    }
+  });
+
   if (taskCount === 0) return null;
 
+  const progress = taskCount > 0 ? (doneCount / taskCount) * 100 : 0;
+
   return (
-    <div className="my-3 rounded-xl border border-border-light bg-surface-alt p-3 shadow-sm">
+    <div className="my-3 rounded-xl border border-border-light bg-surface-alt shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-2.5 px-1">
-        <svg className="w-4 h-4 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <div className="flex items-center gap-2 px-3.5 py-2.5">
+        <svg className="w-4 h-4 text-text-tertiary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
         </svg>
         <span className="text-xs font-semibold text-text-primary">Agent Swarm</span>
-        <span className="text-[11px] text-text-tertiary">{taskCount} Tasks</span>
+        <span className="text-[11px] text-text-tertiary">
+          {doneCount}/{taskCount}
+        </span>
+        {/* Mini progress bar */}
+        <div className="flex-1 h-1 rounded-full bg-border-light overflow-hidden max-w-[80px]">
+          <div
+            className="h-full rounded-full bg-accent transition-all duration-500 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        {hasRunning && (
+          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" />
+        )}
       </div>
 
-      {/* Worker cards */}
-      <div className="space-y-2">
+      {/* Scrollable worker list */}
+      <div
+        ref={scrollRef}
+        className="overflow-y-auto px-2.5 pb-2.5 space-y-1.5"
+        style={{ maxHeight: MAX_VISIBLE_HEIGHT }}
+      >
         {hasLiveWorkers
-          ? Object.values(liveWorkers).map((w, i) => (
-              <LiveWorkerCard key={w.workerId} worker={w} index={i + 1} />
-            ))
+          ? liveEntries.map((w, i) => {
+              const isActive = w.status === "running";
+              return (
+                <div key={w.workerId} ref={isActive ? activeRef : undefined}>
+                  <LiveWorkerCard worker={w} index={i + 1} />
+                </div>
+              );
+            })
           : historyWorkers.map((w, i) => (
               <HistoryWorkerCard key={w.workerId} worker={w} index={i + 1} />
             ))}
@@ -128,64 +190,35 @@ export function AgentSwarmPanel({ liveWorkers, spawnToolCalls }: AgentSwarmPanel
 // ── Live Worker Card ──
 
 function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number }) {
-  const [userToggled, setUserToggled] = useState(false);
-  const autoExpanded = !userToggled && worker.status === "running";
-  const [manualExpanded, setManualExpanded] = useState(false);
-  const expanded = userToggled ? manualExpanded : autoExpanded;
+  const [expanded, setExpanded] = useState(false);
   const avatarUri = useMemo(() => getWorkerAvatar(worker.character.name), [worker.character.name]);
 
-  const handleToggle = () => {
-    setUserToggled(true);
-    setManualExpanded(!expanded);
-  };
-
   const isRunning = worker.status === "running";
-  const isDone = worker.status === "done";
-  const isError = worker.status === "error";
-
   const completedToolCount = worker.toolCalls.filter((tc) => tc.toolResult).length;
   const runningToolCount = worker.toolCalls.filter((tc) => !tc.toolResult).length;
+  const hasDetails = worker.toolCalls.length > 0 || worker.text || worker.summary || worker.error;
 
   return (
     <div
-      className="rounded-lg border border-border-light bg-surface shadow-sm overflow-hidden"
-      style={{ borderLeftWidth: 3, borderLeftColor: isError ? "var(--color-error)" : worker.character.color }}
+      className={`rounded-lg border bg-surface overflow-hidden transition-colors ${
+        isRunning ? "border-accent/30" : "border-border-light"
+      }`}
+      style={{ borderLeftWidth: 3, borderLeftColor: worker.status === "error" ? "var(--color-error)" : worker.character.color }}
     >
-      {/* Header row */}
-      <button
-        onClick={handleToggle}
-        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-surface-hover/50 transition-colors"
-      >
-        <Chevron expanded={expanded} />
-        <img src={avatarUri} alt={worker.character.name} className="w-6 h-6 rounded-full shrink-0" />
-        <span className="text-xs font-semibold text-text-primary">{worker.character.name}</span>
-
-        {isRunning && (
-          <span className="text-[10px] text-accent animate-gentle-pulse">Working...</span>
-        )}
-        {isDone && (
-          <span className="text-[10px] text-success flex items-center gap-0.5">
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-            Done
-          </span>
-        )}
-        {isError && (
-          <span className="text-[10px] text-error">Error</span>
-        )}
-
-        <span className="ml-auto text-[11px] font-mono text-text-tertiary">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="text-[10px] font-mono text-text-tertiary/60 w-4 text-right shrink-0">
           {String(index).padStart(2, "0")}
         </span>
-      </button>
-
-      {/* Description + progress dots (always visible) */}
-      <div className="px-3 pb-2 pl-[38px]">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-text-secondary truncate flex-1">
-            {worker.description}
-          </span>
+        <img src={avatarUri} alt={worker.character.name} className="w-5 h-5 rounded-full shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-text-primary truncate">{worker.character.name}</span>
+            <StatusBadge status={worker.status} />
+          </div>
+          <p className="text-[11px] text-text-secondary truncate mt-0.5">{worker.description}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           <ProgressDots
             total={worker.toolCalls.length}
             completed={completedToolCount}
@@ -193,13 +226,24 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
             status={worker.status}
             color={worker.character.color}
           />
+          {hasDetails && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className={`text-[10px] font-medium px-2 py-0.5 rounded-md transition-all ${
+                expanded
+                  ? "bg-accent/10 text-accent"
+                  : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
+              }`}
+            >
+              {expanded ? "Hide" : "Details"}
+            </button>
+          )}
         </div>
       </div>
 
       {/* Expandable details */}
       <Collapsible open={expanded}>
-        <div className="border-t border-border-light px-3 py-2.5 pl-[38px] space-y-2">
-          {/* Tool calls — compact style, no extra border/shadow */}
+        <div className="border-t border-border-light px-3 py-2.5 ml-9 space-y-2">
           {worker.toolCalls.map((tc, i) => (
             <div key={i} className="[&>div]:shadow-none [&>div]:border-0 [&>div]:bg-background [&>div]:rounded-lg">
               <ToolCallBlock
@@ -211,7 +255,6 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
             </div>
           ))}
 
-          {/* Worker streaming text */}
           {worker.text && (
             <div className="pl-3 border-l-2 border-border-light max-h-32 overflow-y-auto">
               <div className="prose-reasoning text-[11px] leading-relaxed text-text-secondary">
@@ -220,7 +263,6 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
             </div>
           )}
 
-          {/* Summary */}
           {worker.summary && (
             <div className="rounded-lg bg-success-light/50 px-2.5 py-2">
               <div className="prose-reasoning text-[11px] leading-relaxed text-text-primary">
@@ -229,7 +271,6 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
             </div>
           )}
 
-          {/* Error */}
           {worker.error && (
             <div className="rounded-lg bg-error-light px-2.5 py-2">
               <p className="text-[11px] text-error">{worker.error}</p>
@@ -246,46 +287,41 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
 function HistoryWorkerCard({ worker, index }: { worker: HistoryWorker; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const avatarUri = useMemo(() => getWorkerAvatar(worker.character.name), [worker.character.name]);
-
-  const isFailed = worker.status === "failed";
+  const hasDetails = worker.toolsUsed.length > 0 || worker.error;
 
   return (
     <div
-      className="rounded-lg border border-border-light bg-surface shadow-sm overflow-hidden"
-      style={{ borderLeftWidth: 3, borderLeftColor: isFailed ? "var(--color-error)" : worker.character.color }}
+      className="rounded-lg border border-border-light bg-surface overflow-hidden"
+      style={{ borderLeftWidth: 3, borderLeftColor: worker.status === "failed" ? "var(--color-error)" : worker.character.color }}
     >
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-surface-hover/50 transition-colors"
-      >
-        <Chevron expanded={expanded} />
-        <img src={avatarUri} alt={worker.character.name} className="w-6 h-6 rounded-full shrink-0" />
-        <span className="text-xs font-semibold text-text-primary">{worker.character.name}</span>
-
-        {!isFailed ? (
-          <span className="text-[10px] text-success flex items-center gap-0.5">
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-            {formatDuration(worker.durationSeconds)}
-          </span>
-        ) : (
-          <span className="text-[10px] text-error">Failed</span>
-        )}
-
-        <span className="ml-auto text-[11px] font-mono text-text-tertiary">
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="text-[10px] font-mono text-text-tertiary/60 w-4 text-right shrink-0">
           {String(index).padStart(2, "0")}
         </span>
-      </button>
-
-      {/* Description (always visible) */}
-      <div className="px-3 pb-2 pl-[38px]">
-        <p className="text-[11px] text-text-secondary truncate">{worker.description}</p>
+        <img src={avatarUri} alt={worker.character.name} className="w-5 h-5 rounded-full shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-text-primary truncate">{worker.character.name}</span>
+            <StatusBadge status={worker.status} duration={worker.durationSeconds} />
+          </div>
+          <p className="text-[11px] text-text-secondary truncate mt-0.5">{worker.description}</p>
+        </div>
+        {hasDetails && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className={`text-[10px] font-medium px-2 py-0.5 rounded-md transition-all shrink-0 ${
+              expanded
+                ? "bg-accent/10 text-accent"
+                : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
+            }`}
+          >
+            {expanded ? "Hide" : "Details"}
+          </button>
+        )}
       </div>
 
-      {/* Expandable: tools used + error */}
       <Collapsible open={expanded}>
-        <div className="border-t border-border-light px-3 py-2 pl-[38px]">
+        <div className="border-t border-border-light px-3 py-2 ml-9">
           {worker.toolsUsed.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {worker.toolsUsed.map((t, i) => (

@@ -85,25 +85,28 @@ export function getWorkerAvatar(name: string): string {
 }
 
 /**
- * Randomly pick a character that hasn't been used yet.
- * Pass in the set of indices already assigned to other workers in the same swarm.
- * Returns { index, character } — store the index so you can pass it back next time.
+ * Simple string → number hash (djb2).
+ * Deterministic: same input always produces the same output.
  */
-export function pickWorkerCharacter(usedIndices: Set<number>): {
+function hashString(s: string): number {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+/**
+ * Deterministically pick a character based on workerId.
+ * Same workerId always maps to the same character, so SSE and history match.
+ * No dedup — with 50 characters and typically <10 workers, collision is rare
+ * and harmless (just two workers sharing a name/color).
+ */
+export function pickWorkerCharacter(_usedIndices: Set<number>, workerId?: string): {
   index: number;
   character: WorkerCharacter;
 } {
-  const available: number[] = [];
-  for (let i = 0; i < WORKER_CHARACTERS.length; i++) {
-    if (!usedIndices.has(i)) available.push(i);
-  }
-
-  // All 50 exhausted — just pick any random one
-  if (available.length === 0) {
-    const idx = Math.floor(Math.random() * WORKER_CHARACTERS.length);
-    return { index: idx, character: WORKER_CHARACTERS[idx] };
-  }
-
-  const idx = available[Math.floor(Math.random() * available.length)];
+  const len = WORKER_CHARACTERS.length;
+  const idx = workerId ? hashString(workerId) % len : Math.floor(Math.random() * len);
   return { index: idx, character: WORKER_CHARACTERS[idx] };
 }
