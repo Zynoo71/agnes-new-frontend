@@ -307,8 +307,9 @@ function BlockRenderer({
                   <img
                     src={src}
                     alt={alt}
+                    onLoad={(e) => { (e.target as HTMLElement).classList.remove("opacity-0", "h-0"); (e.target as HTMLElement).classList.add("opacity-100"); }}
                     onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                    className="rounded-lg max-w-full"
+                    className="rounded-lg max-w-full transition-opacity duration-300 opacity-0 h-0"
                     {...props}
                   />
                 );
