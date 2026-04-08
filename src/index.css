@@ -160,6 +160,45 @@ textarea {
   animation: message-in 150ms ease-out;
 }
 
+/* Scrolling hints — horizontal marquee */
+.scroll-row-mask {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 40%, black 60%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 40%, black 60%, transparent);
+}
+.scroll-row-left, .scroll-row-right {
+  display: flex;
+  gap: 12px;
+  width: max-content;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.scroll-row-left {
+  animation-name: scroll-left;
+}
+.scroll-row-right {
+  animation-name: scroll-right;
+}
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+@keyframes scroll-right {
+  0% { transform: translateX(-33.333%); }
+  100% { transform: translateX(0); }
+}
+.scroll-hint-pill {
+  flex-shrink: 0;
+  padding: 8px 20px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border-light);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  opacity: 0.45;
+  white-space: nowrap;
+}
+
 /* Shared markdown prose base */
 .prose-agent, .prose-reasoning {
   & p { margin: 0.4em 0; }
