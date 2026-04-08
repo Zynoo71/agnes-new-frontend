@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
-import { useConversationStore, type ContentBlock, type Message, rebuildTasksFromHistory } from "@/stores/conversationStore";
+import { useConversationStore, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
@@ -52,6 +52,19 @@ async function runStream(
 let messageIdCounter = 0;
 function nextHistoryId(): string {
   return `hist-${Date.now()}-${++messageIdCounter}`;
+}
+
+function turnsToRawEvents(turns: { user: unknown[]; assistant: unknown[] }[]): RawEvent[] {
+  const events: RawEvent[] = [];
+  for (const turn of turns) {
+    for (const block of turn.user as { type: string; data: unknown }[]) {
+      events.push({ timestamp: 0, type: "history:" + block.type, data: block.data, role: "user" });
+    }
+    for (const block of turn.assistant as { type: string; data: unknown; toolCallId?: string }[]) {
+      events.push({ timestamp: 0, type: "history:" + block.type, data: block.data, role: "assistant" });
+    }
+  }
+  return events;
 }
 
 function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): Message[] {
@@ -123,22 +136,23 @@ export function useChat() {
   const loadHistory = async (id: string) => {
     const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
     const messages = parseHistoryTurns(resp.turns);
-    // If there's a pending review, mark the last HumanReview block as unresolved
-    if (resp.pendingReview) {
-      for (let i = messages.length - 1; i >= 0; i--) {
-        const blocks = messages[i].blocks;
-        for (let j = blocks.length - 1; j >= 0; j--) {
-          if (blocks[j].type === "human_review") {
-            blocks[j] = { type: "human_review", data: { ...blocks[j].data, resolved: false } };
-            break;
-          }
-        }
-        break;
+    // If there's a pending review, mark the last HumanReview as unresolved
+    // ONLY if it's the very last block in the last message (no subsequent content
+    // means the agent hasn't continued after the review).
+    if (resp.pendingReview && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      const lastBlock = lastMsg.blocks[lastMsg.blocks.length - 1];
+      if (lastBlock?.type === "human_review") {
+        lastMsg.blocks[lastMsg.blocks.length - 1] = {
+          type: "human_review",
+          data: { ...lastBlock.data, resolved: false },
+        };
       }
     }
-    // Set messages and rebuild tasks in a single state update to avoid intermediate render
+    // Set messages, tasks, and history events in a single state update
     const tasks = rebuildTasksFromHistory(messages);
-    useConversationStore.setState({ messages, rawEvents: [], tasks });
+    const rawEvents = turnsToRawEvents(resp.turns as { user: unknown[]; assistant: unknown[] }[]);
+    useConversationStore.setState({ messages, rawEvents, tasks });
     return resp;
   };
 
