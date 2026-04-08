@@ -9,6 +9,103 @@ import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { TaskListPanel } from "./TaskListPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
+import { CitationSources, type CitationSource } from "./CitationSources";
+
+// ── Citation helpers ──
+
+const SOURCE_TOOL_NAMES = new Set(["web_search", "image_search"]);
+
+/** Extract ref→source mapping from tool results within a message. */
+function extractSources(blocks: ContentBlock[]): CitationSource[] {
+  const seen = new Set<number>();
+  const sources: CitationSource[] = [];
+  for (const block of blocks) {
+    if (block.type !== "ToolCallStart") continue;
+    if (!SOURCE_TOOL_NAMES.has(block.data.toolName)) continue;
+    const results = block.data.toolResult?.results;
+    if (!Array.isArray(results)) continue;
+    for (const r of results as Record<string, unknown>[]) {
+      const ref = r.ref as number | undefined;
+      if (ref == null || seen.has(ref)) continue;
+      seen.add(ref);
+      sources.push({
+        ref,
+        url: (r.url as string) ?? "",
+        title: (r.title as string) ?? "",
+        snippet: (r.snippet as string) ?? undefined,
+        toolName: block.data.toolName,
+      });
+    }
+  }
+  return sources.sort((a, b) => a.ref - b.ref);
+}
+
+/** Build lookup maps from sources. */
+function buildSourceMaps(sources: CitationSource[]) {
+  const webRefs = new Set<number>();
+  const imgRefs = new Map<number, CitationSource>();
+  for (const s of sources) {
+    if (s.toolName === "image_search") {
+      imgRefs.set(s.ref, s);
+    } else {
+      webRefs.add(s.ref);
+    }
+  }
+  return { webRefs, imgRefs };
+}
+
+/**
+ * Preprocess markdown:
+ * - image_search refs [N] → inline image ![title](url)
+ * - web_search refs [N] → move to end of line as citation pill
+ */
+function injectCitations(
+  text: string,
+  webRefs: Set<number>,
+  imgRefs: Map<number, CitationSource>,
+): string {
+  if (webRefs.size === 0 && imgRefs.size === 0) return text;
+
+  return text.split("\n").map((line) => {
+    const collectedWeb: number[] = [];
+
+    const processed = line.replace(/\[(\d+)\](?:\s*\[(\d+)\])*/g, (match) => {
+      const nums: number[] = [];
+      for (const m of match.matchAll(/\[(\d+)\]/g)) {
+        nums.push(Number(m[1]));
+      }
+
+      // Check if any are image refs — render inline images
+      const images: string[] = [];
+      const webs: number[] = [];
+      for (const n of nums) {
+        const img = imgRefs.get(n);
+        if (img) {
+          images.push(`![${img.title}](${img.url})`);
+        } else if (webRefs.has(n)) {
+          webs.push(n);
+        }
+      }
+
+      if (images.length === 0 && webs.length === 0) return match; // unknown refs
+
+      // Collect web refs for end-of-line
+      collectedWeb.push(...webs);
+
+      // Return inline images (or empty if only web refs)
+      return images.length > 0 ? "\n" + images.join("\n") + "\n" : "";
+    });
+
+    if (collectedWeb.length === 0) return processed;
+
+    // Deduplicate web refs and build pill link
+    const allRefs = [...new Set(collectedWeb)];
+    const label = allRefs.length === 1 ? `${allRefs[0]}` : `${allRefs[0]}+${allRefs.length - 1}`;
+    const link = `[${label}](#cite-${allRefs.join(",")})`;
+
+    return processed.replace(/\s{2,}/g, " ").trimEnd() + " " + link;
+  }).join("\n");
+}
 
 interface MessageBubbleProps {
   message: Message;
@@ -147,6 +244,9 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
         {(() => {
+          const sources = extractSources(message.blocks);
+          const { webRefs, imgRefs } = buildSourceMaps(sources);
+
           const spawnToolCalls: ToolCallData[] = message.blocks
             .filter((b): b is { type: "ToolCallStart"; data: ToolCallData } =>
               b.type === "ToolCallStart" && b.data.toolName === "spawn_worker")
@@ -173,7 +273,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
             (b) => b.type === "ToolCallStart" && b.data.toolName === "spawn_worker",
           );
 
-          return message.blocks.map((block, i) => {
+          const rendered = message.blocks.map((block, i) => {
             const isSpawn = block.type === "ToolCallStart" && block.data.toolName === "spawn_worker";
 
             if (isSpawn) {
@@ -217,10 +317,31 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
                   onHitlResume={onHitlResume}
                   isStreaming={isStreaming && isLast && !shouldAutoCollapse}
                   autoCollapse={shouldAutoCollapse}
+                  citationWebRefs={webRefs}
+                  citationImgRefs={imgRefs}
+                  citationSources={sources}
                 />
               </div>
             );
           });
+
+          // Only show web_search sources that were actually cited in the message text
+          const citedRefs = new Set<number>();
+          for (const block of message.blocks) {
+            if (block.type !== "Message") continue;
+            for (const m of block.content.matchAll(/\[(\d+)\]/g)) {
+              const n = Number(m[1]);
+              if (webRefs.has(n)) citedRefs.add(n);
+            }
+          }
+          const citedSources = sources.filter((s) => s.toolName === "web_search" && citedRefs.has(s.ref));
+
+          return (
+            <>
+              {rendered}
+              {citedSources.length > 0 && <CitationSources sources={citedSources} />}
+            </>
+          );
         })()}
 
         {message.error && (
@@ -273,19 +394,99 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
   );
 });
 
+/** Extract short main domain from URL. e.g. m.haikou.bendibao.com → bendibao.com */
+function shortDomain(url: string): string {
+  try {
+    const parts = new URL(url).hostname.split(".");
+    // Take last 2 parts (handles most domains)
+    return parts.length > 2 ? parts.slice(-2).join(".") : parts.join(".");
+  } catch {
+    return url;
+  }
+}
+
+/** Google favicon service URL. */
+function faviconUrl(siteUrl: string): string {
+  try {
+    const host = new URL(siteUrl).hostname;
+    return `https://www.google.com/s2/favicons?domain=${host}&sz=32`;
+  } catch {
+    return "";
+  }
+}
+
+/** Inline citation badge — pill with domain name, hover shows detail popover. */
+function CitationBadge({ refs, sources }: { refs: number[]; sources: CitationSource[] }) {
+  const matched = refs
+    .map((r) => sources.find((s) => s.ref === r))
+    .filter(Boolean) as CitationSource[];
+  if (matched.length === 0) return null;
+
+  const first = matched[0];
+  const extra = matched.length - 1;
+  const domainName = shortDomain(first.url);
+
+  return (
+    <span className="cite-wrapper">
+      <span className="cite-badge">
+        {domainName}{extra > 0 && <span className="cite-extra">+{extra}</span>}
+      </span>
+      <span className="cite-popover">
+        <span className="cite-popover-inner">
+          {matched.map((s) => (
+            <a
+              key={s.ref}
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cite-popover-item"
+            >
+              <span className="cite-popover-header">
+                <img
+                  src={faviconUrl(s.url)}
+                  alt=""
+                  className="w-4 h-4 rounded-sm shrink-0"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                <span className="cite-popover-domain">{shortDomain(s.url)}</span>
+              </span>
+              {s.title && (
+                <span className="cite-popover-title">{s.title}</span>
+              )}
+              {s.snippet && (
+                <span className="cite-popover-snippet">{s.snippet}</span>
+              )}
+            </a>
+          ))}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 function BlockRenderer({
   block,
   onHitlResume,
   isStreaming,
   autoCollapse,
+  citationWebRefs,
+  citationImgRefs,
+  citationSources,
 }: {
   block: ContentBlock;
   onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
   isStreaming?: boolean;
   autoCollapse?: boolean;
+  citationWebRefs?: Set<number>;
+  citationImgRefs?: Map<number, CitationSource>;
+  citationSources?: CitationSource[];
 }) {
   switch (block.type) {
-    case "Message":
+    case "Message": {
+      const webRefs = citationWebRefs ?? new Set<number>();
+      const imgRefs = citationImgRefs ?? new Map<number, CitationSource>();
+      const sources = citationSources ?? [];
+      const processed = injectCitations(block.content, webRefs, imgRefs);
       return (
         <div className="prose-agent text-[14px] leading-[1.7] text-text-primary">
           <Markdown
@@ -314,10 +515,20 @@ function BlockRenderer({
                   />
                 );
               },
+              a({ href, children, ...props }) {
+                if (href?.startsWith("#cite-")) {
+                  const nums = href.slice(6).split(",").map(Number).filter((n) => !isNaN(n));
+                  if (nums.length > 0) {
+                    return <CitationBadge refs={nums} sources={sources} />;
+                  }
+                }
+                return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+              },
             }}
-          >{block.content}</Markdown>
+          >{processed}</Markdown>
         </div>
       );
+    }
     case "Reasoning":
       return <ReasoningBlock content={block.content} isStreaming={isStreaming} autoCollapse={autoCollapse} />;
     case "ToolCallStart":
