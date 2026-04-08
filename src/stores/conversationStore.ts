@@ -92,6 +92,7 @@ export interface RawEvent {
   timestamp: number;
   type: string;
   data: unknown;
+  role?: "user" | "assistant";
 }
 
 // ── Event processing (pure functions) ──
@@ -250,7 +251,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             const usedIndices = new Set(
               Object.values(updated.workers).map((w) => w.characterIndex),
             );
-            const { index, character } = pickWorkerCharacter(usedIndices);
+            const { index, character } = pickWorkerCharacter(usedIndices, workerId);
             updated.workers[workerId] = {
               workerId,
               description: (payload.description as string) ?? "",
@@ -347,7 +348,7 @@ export function buildRawEvent(event: AgentStreamEvent): RawEvent {
       ])
     );
   }
-  return { timestamp: Date.now(), type: event.event.case ?? "unknown", data: cleaned };
+  return { timestamp: Date.now(), type: event.event.case ?? "unknown", data: cleaned, role: "assistant" };
 }
 
 function pushRawEvent(events: RawEvent[], event: RawEvent): RawEvent[] {
@@ -379,6 +380,10 @@ export function rebuildTasksFromHistory(messages: Message[]): AgentTask[] {
       // Status update — apply in-place
       if (result.action === "update" && typeof result.task_id === "number" && result.status) {
         tasks = tasks.map((t) => t.id === result.task_id ? { ...t, status: result.status as AgentTask["status"] } : t);
+      }
+      // Reset — clear all tasks
+      if (result.action === "reset") {
+        tasks = [];
       }
     }
   }

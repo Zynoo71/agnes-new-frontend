@@ -162,6 +162,25 @@ export function ChatPanel() {
     <div className={`relative rounded-[20px] border border-border bg-surface shadow-sm
                     focus-within:shadow-md focus-within:border-border transition-shadow
                     ${isEmpty ? "max-w-xl w-full" : ""}`}>
+      {/* Agent mode selector */}
+      <div className="flex items-center gap-1 px-3 pt-2.5 pb-0">
+        {AGENT_TYPES.map((t) => (
+          <button
+            key={t}
+            onClick={() => {
+              setAgentType(t);
+              if (conversationId) useConversationListStore.getState().update(conversationId, { agentType: t });
+            }}
+            className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all capitalize ${
+              agentType === t
+                ? "bg-accent/10 text-accent"
+                : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
       <div className="flex items-end">
         <textarea
           ref={textareaRef}
@@ -170,7 +189,7 @@ export function ChatPanel() {
           onKeyDown={handleKeyDown}
           placeholder={hasPendingReview ? "Type feedback to modify..." : "Ask Agnes anything..."}
           rows={1}
-          className="flex-1 resize-none bg-transparent py-3.5 pl-4 pr-14 text-sm
+          className="flex-1 resize-none bg-transparent py-2.5 pl-4 pr-14 text-sm
                      focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
         />
       </div>
@@ -217,25 +236,6 @@ export function ChatPanel() {
           )}
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="flex items-center bg-surface-hover rounded-lg p-0.5">
-              {AGENT_TYPES.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    setAgentType(t);
-                    if (conversationId) useConversationListStore.getState().update(conversationId, { agentType: t });
-                  }}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all capitalize ${
-                    agentType === t
-                      ? "bg-surface text-text-primary shadow-sm"
-                      : "text-text-tertiary hover:text-text-secondary"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-
             <button
               onClick={() => setShowEvents(!showEvents)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${

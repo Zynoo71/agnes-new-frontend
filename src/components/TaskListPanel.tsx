@@ -100,7 +100,8 @@ export function TaskListPanel() {
   const allDone = doneCount === total;
   const progress = total > 0 ? (doneCount / total) * 100 : 0;
 
-  const visibleTasks = showAll ? tasks : tasks.slice(0, MAX_VISIBLE);
+  const sorted = [...tasks].sort((a, b) => a.id - b.id);
+  const visibleTasks = showAll ? sorted : sorted.slice(0, MAX_VISIBLE);
   const hasMore = tasks.length > MAX_VISIBLE && !showAll;
 
   return (
