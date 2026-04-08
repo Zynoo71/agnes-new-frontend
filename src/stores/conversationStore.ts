@@ -488,6 +488,8 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
         if (taskId != null && status) {
           newTasks = get().tasks.map((t) => (t.id === taskId ? { ...t, status } : t));
         }
+      } else if (action === "reset") {
+        newTasks = [];
       }
     }
 

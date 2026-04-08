@@ -98,20 +98,29 @@ export function ChatPanel() {
 
   const isEmpty = messages.length === 0;
 
-  const prevMsgCountRef = useRef(0);
+  // Reset scroll state when conversation changes
+  const pendingScrollRef = useRef(false);
   useEffect(() => {
+    isNearBottomRef.current = true;
+    pendingScrollRef.current = true;
+    setShowScrollBtn(false);
+  }, [conversationId]);
+
+  // Auto-scroll when messages update (streaming / new message / history load)
+  useEffect(() => {
+    if (isLoadingHistory) return;
     if (!isNearBottomRef.current) return;
     const el = scrollContainerRef.current;
-    if (!el) return;
-    const isHistoryLoad = prevMsgCountRef.current === 0 && messages.length > 1;
-    prevMsgCountRef.current = messages.length;
-    if (isStreaming || isHistoryLoad) {
-      // Instant scroll during streaming or after history load
-      el.scrollTop = el.scrollHeight;
+    if (!el || messages.length === 0) return;
+    if (pendingScrollRef.current || isStreaming) {
+      // Instant scroll after conversation switch or during streaming
+      pendingScrollRef.current = false;
+      // rAF ensures layout is complete before reading scrollHeight
+      requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
     } else {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isStreaming]);
+  }, [messages, isStreaming, isLoadingHistory]);
 
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
