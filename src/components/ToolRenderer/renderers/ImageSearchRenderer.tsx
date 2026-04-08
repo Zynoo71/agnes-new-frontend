@@ -2,14 +2,17 @@ import { useState, useCallback } from "react";
 import type { ToolRenderProps } from "../registry";
 
 function ImageItem({ url, title, onLoaded, onFailed }: { url: string; title: string; onLoaded: () => void; onFailed: () => void }) {
+  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   if (failed) return null;
 
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
-      className="block rounded-lg overflow-hidden bg-background hover:opacity-80 transition-opacity">
+      className={`block rounded-lg overflow-hidden bg-background hover:opacity-80 transition-all duration-300 ${
+        loaded ? "opacity-100" : "opacity-0 h-0"
+      }`}>
       <img src={url} alt={title} loading="lazy"
-        onLoad={onLoaded}
+        onLoad={() => { setLoaded(true); onLoaded(); }}
         onError={() => { setFailed(true); onFailed(); }}
         className="w-full h-20 object-cover" />
     </a>
