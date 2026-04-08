@@ -8,6 +8,27 @@ import { EventStream } from "@/components/EventStream";
 
 const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
 
+const SCROLL_HINTS_ROW1 = [
+  "Search the latest AI news",
+  "Summarize a research paper",
+  "Draft a professional email",
+  "Compare product features",
+  "Plan a weekend trip to Kyoto",
+  "Explain quantum computing simply",
+  "Debug my React component",
+  "Write a product launch plan",
+];
+const SCROLL_HINTS_ROW2 = [
+  "Analyze a financial report",
+  "Create a competitive analysis",
+  "Translate this into French",
+  "Design a database schema",
+  "Review my pull request",
+  "Generate test cases for an API",
+  "Brainstorm startup ideas",
+  "Optimize this SQL query",
+];
+
 const HEALTH_CONFIG = {
   ok: { dot: "bg-green-500", color: "#22c55e", label: "Connected" },
   error: { dot: "bg-red-500", color: "#ef4444", label: "Disconnected" },
@@ -72,11 +93,33 @@ function MessageSkeleton() {
   );
 }
 
-const SUGGESTIONS = [
-  "Search the latest AI news",
-  "Summarize a research paper",
-  "Help me draft an email",
-];
+function ScrollingHints() {
+  const row1 = SCROLL_HINTS_ROW1;
+  const row2 = SCROLL_HINTS_ROW2;
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none flex flex-col justify-center gap-4">
+      <ScrollRow items={row1} direction="left" duration={35} />
+      <ScrollRow items={row2} direction="right" duration={40} />
+    </div>
+  );
+}
+
+function ScrollRow({ items, direction, duration }: { items: string[]; direction: "left" | "right"; duration: number }) {
+  // Triple for seamless loop
+  const repeated = [...items, ...items, ...items];
+  return (
+    <div className="scroll-row-mask">
+      <div
+        className={direction === "left" ? "scroll-row-left" : "scroll-row-right"}
+        style={{ animationDuration: `${duration}s` }}
+      >
+        {repeated.map((hint, i) => (
+          <span key={i} className="scroll-hint-pill">{hint}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function ChatPanel() {
   const { conversationId, agentType, messages, rawEvents, isStreaming, isLoadingHistory, error, setAgentType } =
@@ -255,42 +298,12 @@ export function ChatPanel() {
           onScroll={handleScroll}
           className="flex-1 overflow-y-auto relative"
         >
+          {isEmpty && !isLoadingHistory && <ScrollingHints />}
           <div className="max-w-2xl mx-auto px-5 py-8">
             {isLoadingHistory ? (
               <MessageSkeleton />
             ) : isEmpty ? (
-              <div className="flex flex-col items-center justify-center pt-24 text-center">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(315deg, #a84e1e, #e8985a)" }}>
-                  <svg width="36" height="36" viewBox="0 0 72 72" fill="none">
-                    <circle cx="30" cy="30" r="18" stroke="white" strokeWidth="3.5" strokeOpacity="0.4" fill="none"/>
-                    <circle cx="42" cy="42" r="18" stroke="white" strokeWidth="3.5" strokeOpacity="0.8" fill="none"/>
-                    <circle cx="36" cy="36" r="6" fill="white" fillOpacity="0.9"/>
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-text-primary mb-1">Hi, how can I help?</h2>
-                <p className="text-sm text-text-tertiary mb-6">Ask me anything or try a suggestion below</p>
-
-                <div className="flex flex-wrap gap-2 justify-center mb-8 max-w-md">
-                  {SUGGESTIONS.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => handleSend(s)}
-                      disabled={isStreaming}
-                      className="text-xs px-4 py-2 bg-surface border border-border rounded-full text-text-secondary
-                                 hover:bg-surface-hover hover:text-text-primary hover:border-border
-                                 disabled:opacity-40 transition-all"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-
-                {inputArea}
-
-                <p className="text-[10px] text-text-tertiary mt-3">
-                  Agnes may make mistakes. Please verify important information.
-                </p>
-              </div>
+              null
             ) : (
               <>
                 {(() => {
@@ -343,16 +356,11 @@ export function ChatPanel() {
           )}
         </div>
 
-        {!isEmpty && (
-          <div className="shrink-0 px-5 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
-            <div className="max-w-2xl mx-auto">
-              {inputArea}
-              <p className="text-[10px] text-text-tertiary text-center mt-2">
-                Agnes may make mistakes. Please verify important information.
-              </p>
-            </div>
+        <div className="shrink-0 px-5 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
+          <div className="max-w-2xl mx-auto">
+            {inputArea}
           </div>
-        )}
+        </div>
       </div>
 
       <div
