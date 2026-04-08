@@ -172,11 +172,30 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
     case "toolCallResult": {
       const tr = event.event.value;
       const result = asRecord(tryDecodeJson(tr.toolResult));
-      updated.blocks = updated.blocks.map((block) =>
-        block.type === "ToolCallStart" && block.data.toolCallId === tr.toolCallId
-          ? { type: "ToolCallStart", data: { ...block.data, toolResult: result } }
-          : block
-      );
+      // Primary: match by toolCallId (both sides non-empty and equal).
+      // Fallback: if no id-match found, attach to the last unresolved ToolCallStart with
+      // the same tool name. This handles providers that emit empty/mismatched tool_call_id
+      // in streaming chunks.
+      const hasIdMatch = tr.toolCallId
+        ? updated.blocks.some(
+            (b) => b.type === "ToolCallStart" && b.data.toolCallId === tr.toolCallId,
+          )
+        : false;
+      let fallbackUsed = false;
+      updated.blocks = updated.blocks.map((block) => {
+        if (block.type !== "ToolCallStart") return block;
+        if (hasIdMatch) {
+          return block.data.toolCallId === tr.toolCallId
+            ? { type: "ToolCallStart", data: { ...block.data, toolResult: result } }
+            : block;
+        }
+        // Fallback: attach to the last unresolved block with matching name
+        if (!fallbackUsed && block.data.toolName === tr.toolName && !block.data.toolResult) {
+          fallbackUsed = true;
+          return { type: "ToolCallStart", data: { ...block.data, toolResult: result } };
+        }
+        return block;
+      });
       break;
     }
     case "nodeStart": {

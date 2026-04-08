@@ -5,6 +5,7 @@ import { LoadSkillRenderer } from "./renderers/LoadSkillRenderer";
 import { FileToolRenderer } from "./renderers/FileToolRenderer";
 import { ExecuteRenderer } from "./renderers/ExecuteRenderer";
 import { WebReadRenderer } from "./renderers/WebReadRenderer";
+import { ScheduleManagerRenderer } from "./renderers/ScheduleManagerRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
@@ -28,6 +29,7 @@ const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   grep: FileToolRenderer,
   glob: FileToolRenderer,
   execute: ExecuteRenderer,
+  schedule_manager: ScheduleManagerRenderer,
 };
 
 export function getToolRenderer(toolName: string): FC<ToolRenderProps> | undefined {

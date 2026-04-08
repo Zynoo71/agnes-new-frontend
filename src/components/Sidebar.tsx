@@ -127,9 +127,12 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
                   className={`group/conv relative mb-0.5 transition-all duration-200
                     ${deletingId === conv.id ? "opacity-0 -translate-x-4 max-h-0 overflow-hidden" : "opacity-100 translate-x-0 max-h-20"}`}
                 >
-                  <button
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onSelectConversation(conv.id)}
-                    className={`w-full text-left rounded-lg transition-all relative
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelectConversation(conv.id); }}
+                    className={`w-full text-left rounded-lg transition-all relative cursor-pointer
                       ${collapsed ? "p-2 flex items-center justify-center" : "px-3 py-2 pr-8"}
                       ${isActive
                         ? "bg-accent/10 text-text-primary"
@@ -186,7 +189,7 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
                         </div>
                       </div>
                     )}
-                  </button>
+                  </div>
                   {/* Delete icon — hover visible, only when not confirming */}
                   {!collapsed && confirmDeleteId !== conv.id && (
                     <button
