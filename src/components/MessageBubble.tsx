@@ -15,26 +15,28 @@ import { CitationSources, type CitationSource } from "./CitationSources";
 
 const SOURCE_TOOL_NAMES = new Set(["web_search", "image_search"]);
 
-/** Extract ref→source mapping from tool results within a message. */
-function extractSources(blocks: ContentBlock[]): CitationSource[] {
+/** Extract ref→source mapping from ALL messages (refs can be cited across turns). */
+export function extractAllSources(messages: Message[]): CitationSource[] {
   const seen = new Set<number>();
   const sources: CitationSource[] = [];
-  for (const block of blocks) {
-    if (block.type !== "ToolCallStart") continue;
-    if (!SOURCE_TOOL_NAMES.has(block.data.toolName)) continue;
-    const results = block.data.toolResult?.results;
-    if (!Array.isArray(results)) continue;
-    for (const r of results as Record<string, unknown>[]) {
-      const ref = r.ref as number | undefined;
-      if (ref == null || seen.has(ref)) continue;
-      seen.add(ref);
-      sources.push({
-        ref,
-        url: (r.url as string) ?? "",
-        title: (r.title as string) ?? "",
-        snippet: (r.snippet as string) ?? undefined,
-        toolName: block.data.toolName,
-      });
+  for (const msg of messages) {
+    for (const block of msg.blocks) {
+      if (block.type !== "ToolCallStart") continue;
+      if (!SOURCE_TOOL_NAMES.has(block.data.toolName)) continue;
+      const results = block.data.toolResult?.results;
+      if (!Array.isArray(results)) continue;
+      for (const r of results as Record<string, unknown>[]) {
+        const ref = r.ref as number | undefined;
+        if (ref == null || seen.has(ref)) continue;
+        seen.add(ref);
+        sources.push({
+          ref,
+          url: (r.url as string) ?? "",
+          title: (r.title as string) ?? "",
+          snippet: (r.snippet as string) ?? undefined,
+          toolName: block.data.toolName,
+        });
+      }
     }
   }
   return sources.sort((a, b) => a.ref - b.ref);
@@ -109,6 +111,7 @@ function injectCitations(
 
 interface MessageBubbleProps {
   message: Message;
+  allSources?: CitationSource[];
   isLast?: boolean;
   onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
   onEditResend?: (newQuery: string) => void;
@@ -138,7 +141,7 @@ function UserAvatar() {
   );
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming, animate = true }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, allSources, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming, animate = true }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
@@ -261,7 +264,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
         {(() => {
-          const sources = extractSources(message.blocks);
+          const sources = allSources ?? [];
           const { webRefs, imgRefs } = buildSourceMaps(sources);
 
           const spawnToolCalls: ToolCallData[] = message.blocks

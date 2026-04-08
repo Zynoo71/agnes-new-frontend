@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useCallback, type KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type KeyboardEvent } from "react";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import { useChat } from "@/hooks/useChat";
 import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
-import { MessageBubble } from "@/components/MessageBubble";
+import { MessageBubble, extractAllSources } from "@/components/MessageBubble";
 import { EventStream } from "@/components/EventStream";
 
 const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
@@ -138,6 +138,8 @@ export function ChatPanel() {
   const hasPendingReview = messages.some(
     (m) => m.blocks.some((b) => b.type === "human_review" && !b.data.resolved)
   );
+
+  const allSources = useMemo(() => extractAllSources(messages), [messages]);
 
   const isEmpty = messages.length === 0;
 
@@ -319,6 +321,7 @@ export function ChatPanel() {
                     <MessageBubble
                       key={msg.id}
                       message={msg}
+                      allSources={allSources}
                       isLast={msg.role === "user" ? i === lastUserIdx : i === lastAssistantIdx}
                       onHitlResume={hitlResume}
                       onEditResend={editResend}
