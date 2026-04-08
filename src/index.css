@@ -202,6 +202,108 @@ textarea {
 .prose-agent th, .prose-agent td { border: 1px solid var(--color-border-light); padding: 0.4em 0.6em; text-align: left; }
 .prose-agent th { background: var(--color-surface-hover); font-weight: 600; }
 
+/* Citation — inline pill + hover popover */
+.cite-wrapper {
+  position: relative;
+  display: inline;
+}
+.cite-badge {
+  display: inline;
+  vertical-align: baseline;
+  font-size: 0.8em;
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  padding: 0.15em 0.55em;
+  border-radius: 9999px;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  margin: 0 0.1em;
+  white-space: nowrap;
+}
+.cite-badge:hover {
+  background: var(--color-surface);
+  border-color: var(--color-text-tertiary);
+  color: var(--color-text-primary);
+}
+.cite-extra {
+  font-size: 0.85em;
+  font-weight: 500;
+  opacity: 0.5;
+  margin-left: 0.2em;
+}
+/* Popover card */
+.cite-popover {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  min-width: 240px;
+  max-width: 320px;
+  /* Extra padding at bottom creates invisible hover bridge to the badge */
+  padding-bottom: 8px;
+}
+.cite-wrapper:hover .cite-popover {
+  display: block;
+}
+.cite-popover-inner {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.cite-popover-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none !important;
+  color: var(--color-text-primary);
+  transition: background 0.12s;
+}
+.cite-popover-item:hover {
+  background: var(--color-surface-hover);
+}
+.cite-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cite-popover-domain {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+.cite-popover-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cite-popover-snippet {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-tertiary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Reasoning-specific overrides (tighter spacing) */
 .prose-reasoning { & p { margin: 0.3em 0; } }
 .prose-reasoning { & ul, & ol { margin: 0.3em 0; padding-left: 1.3em; } }
