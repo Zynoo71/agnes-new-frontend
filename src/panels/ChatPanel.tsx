@@ -129,9 +129,12 @@ export function ChatPanel() {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const isNearBottomRef = useRef(true);
+  const pendingScrollRef = useRef(false);
+  const lastAutoScrollRef = useRef(0);
 
   const health = useHealthCheck();
 
@@ -141,33 +144,42 @@ export function ChatPanel() {
 
   const isEmpty = messages.length === 0;
 
-  // Reset scroll state when conversation changes
-  const pendingScrollRef = useRef(false);
+  // Reset scroll state when conversation changes — force next scroll to bottom.
   useEffect(() => {
     isNearBottomRef.current = true;
     pendingScrollRef.current = true;
     setShowScrollBtn(false);
   }, [conversationId]);
 
-  // Auto-scroll when messages update (streaming / new message / history load)
+  // Auto-scroll via ResizeObserver: fires whenever the content div changes
+  // height (new messages rendered, streaming text appended, images loaded, etc).
   useEffect(() => {
-    if (isLoadingHistory) return;
-    if (!isNearBottomRef.current) return;
-    const el = scrollContainerRef.current;
-    if (!el || messages.length === 0) return;
-    if (pendingScrollRef.current || isStreaming) {
-      // Instant scroll after conversation switch or during streaming
-      pendingScrollRef.current = false;
-      // rAF ensures layout is complete before reading scrollHeight
-      requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
-    } else {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, isStreaming, isLoadingHistory]);
+    const container = scrollContainerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const observer = new ResizeObserver(() => {
+      if (pendingScrollRef.current || isNearBottomRef.current) {
+        pendingScrollRef.current = false;
+        container.scrollTop = container.scrollHeight;
+        // Mark as programmatic scroll so handleScroll won't
+        // invalidate isNearBottomRef before the next resize fires.
+        lastAutoScrollRef.current = Date.now();
+        isNearBottomRef.current = true;
+      }
+    });
+
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
 
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
+    // Ignore scroll events triggered by programmatic scrolling —
+    // the async onScroll fires after content has grown further,
+    // giving a stale distanceFromBottom that falsely clears isNearBottom.
+    if (Date.now() - lastAutoScrollRef.current < 200) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     isNearBottomRef.current = distanceFromBottom < 100;
     setShowScrollBtn(distanceFromBottom > 200);
@@ -193,11 +205,7 @@ export function ChatPanel() {
     } else {
       sendMessage(trimmed);
     }
-    // Force scroll after layout settles (empty→non-empty transition)
-    requestAnimationFrame(() => {
-      const el = scrollContainerRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
-    });
+    // ResizeObserver handles the scroll when content appears.
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -279,7 +287,7 @@ export function ChatPanel() {
 
   return (
     <div className="h-full flex">
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Top controls */}
         <div className="flex items-center gap-3 px-5 py-2.5 border-b border-border-light bg-surface-alt">
           <HealthBadge info={health} />
@@ -308,10 +316,10 @@ export function ChatPanel() {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto relative"
+          className="flex-1 overflow-y-auto min-h-0 relative"
         >
           {isEmpty && !isLoadingHistory && <ScrollingHints />}
-          <div className="max-w-2xl mx-auto px-5 py-8">
+          <div ref={contentRef} className="max-w-2xl mx-auto px-5 py-8">
             {isLoadingHistory ? (
               <MessageSkeleton />
             ) : isEmpty ? (
