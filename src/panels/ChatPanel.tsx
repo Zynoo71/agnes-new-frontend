@@ -135,6 +135,8 @@ export function ChatPanel() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const isComposingRef = useRef(false);
+
   const handleSend = async (text?: string) => {
     const trimmed = (text ?? input).trim();
     if (!trimmed || isStreaming) return;
@@ -150,7 +152,9 @@ export function ChatPanel() {
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Check both standard isComposing and our ref for broader compatibility
+    const isComposing = e.nativeEvent.isComposing || isComposingRef.current;
+    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
       e.preventDefault();
       handleSend();
     }
@@ -187,6 +191,8 @@ export function ChatPanel() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onCompositionStart={() => { isComposingRef.current = true; }}
+          onCompositionEnd={() => { isComposingRef.current = false; }}
           placeholder={hasPendingReview ? "Type feedback to modify..." : "Ask Agnes anything..."}
           rows={1}
           className="flex-1 resize-none bg-transparent py-2.5 pl-4 pr-14 text-sm

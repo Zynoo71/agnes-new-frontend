@@ -56,4 +56,4 @@ static_resources:
                   address:
                     socket_address:
                       address: host.docker.internal
-                      port_value: 9201
+                      port_value: 9200
