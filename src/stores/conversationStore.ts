@@ -71,7 +71,6 @@ export const PLANNING_TOOL_NAMES = new Set([
   "create_task", "update_task", "list_tasks", "get_task",
 ]);
 
-
 export interface SourceCitation {
   ref: number;
   url: string;
@@ -106,7 +105,7 @@ export interface RawEvent {
 
 // ── Event processing (pure functions) ──
 
-const MAX_RAW_EVENTS = 500;
+const MAX_RAW_EVENTS = 2000;
 
 function appendOrPushBlock(
   blocks: ContentBlock[],
@@ -182,10 +181,6 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
     case "toolCallResult": {
       const tr = event.event.value;
       const result = asRecord(tryDecodeJson(tr.toolResult));
-      // Primary: match by toolCallId (both sides non-empty and equal).
-      // Fallback: if no id-match found, attach to the last unresolved ToolCallStart with
-      // the same tool name. This handles providers that emit empty/mismatched tool_call_id
-      // in streaming chunks.
       const hasIdMatch = tr.toolCallId
         ? updated.blocks.some(
             (b) => b.type === "ToolCallStart" && b.data.toolCallId === tr.toolCallId,
@@ -199,7 +194,6 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             ? { type: "ToolCallStart", data: { ...block.data, toolResult: result } }
             : block;
         }
-        // Fallback: attach to the last unresolved block with matching name
         if (!fallbackUsed && block.data.toolName === tr.toolName && !block.data.toolResult) {
           fallbackUsed = true;
           return { type: "ToolCallStart", data: { ...block.data, toolResult: result } };
@@ -267,26 +261,21 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
       if (custom.type === "TaskUpdate") {
         const action = payload.action as string;
         if (action === "create") {
-          // Insert TaskList anchor block on first task creation
           const hasAnchor = updated.blocks.some((b) => b.type === "TaskList");
           if (!hasAnchor) {
             updated.blocks.push({ type: "TaskList" });
           }
         }
-        // Note: store.tasks is updated separately in processEventForConv
         break;
       }
 
-      // Worker events — route by worker_id
+      // Worker events
       const workerId = payload.worker_id as string | undefined;
       if (workerId) {
         updated.workers = { ...updated.workers };
-
         switch (custom.type) {
           case "WorkerStart": {
-            const usedIndices = new Set(
-              Object.values(updated.workers).map((w) => w.characterIndex),
-            );
+            const usedIndices = new Set(Object.values(updated.workers).map((w) => w.characterIndex));
             const { index, character } = pickWorkerCharacter(usedIndices, workerId);
             updated.workers[workerId] = {
               workerId,
@@ -302,10 +291,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
           case "MessageDelta": {
             const w = updated.workers[workerId];
             if (w) {
-              updated.workers[workerId] = {
-                ...w,
-                text: w.text + ((payload.content as string) ?? ""),
-              };
+              updated.workers[workerId] = { ...w, text: w.text + ((payload.content as string) ?? "") };
             }
             break;
           }
@@ -314,13 +300,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             if (w) {
               updated.workers[workerId] = {
                 ...w,
-                toolCalls: [
-                  ...w.toolCalls,
-                  {
-                    toolName: (payload.tool_name as string) ?? "",
-                    toolInput: (payload.tool_input as Record<string, unknown>) ?? {},
-                  },
-                ],
+                toolCalls: [...w.toolCalls, { toolName: (payload.tool_name as string) ?? "", toolInput: (payload.tool_input as Record<string, unknown>) ?? {} }],
               };
             }
             break;
@@ -330,10 +310,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             if (w) {
               const toolCalls = [...w.toolCalls];
               for (let i = toolCalls.length - 1; i >= 0; i--) {
-                if (
-                  toolCalls[i].toolName === (payload.tool_name as string) &&
-                  !toolCalls[i].toolResult
-                ) {
+                if (toolCalls[i].toolName === (payload.tool_name as string) && !toolCalls[i].toolResult) {
                   toolCalls[i] = { ...toolCalls[i], toolResult: payload.tool_result as Record<string, unknown> };
                   break;
                 }
@@ -345,22 +322,14 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
           case "WorkerEnd": {
             const w = updated.workers[workerId];
             if (w) {
-              updated.workers[workerId] = {
-                ...w,
-                status: "done",
-                summary: (payload.summary as string) ?? "",
-              };
+              updated.workers[workerId] = { ...w, status: "done", summary: (payload.summary as string) ?? "" };
             }
             break;
           }
           case "WorkerError": {
             const w = updated.workers[workerId];
             if (w) {
-              updated.workers[workerId] = {
-                ...w,
-                status: "error",
-                error: (payload.error as string) ?? "Unknown error",
-              };
+              updated.workers[workerId] = { ...w, status: "error", error: (payload.error as string) ?? "Unknown error" };
             }
             break;
           }
@@ -389,7 +358,6 @@ export function buildRawEvent(event: AgentStreamEvent): RawEvent {
 
 function pushRawEvent(events: RawEvent[], event: RawEvent): RawEvent[] {
   if (events.length >= MAX_RAW_EVENTS) {
-    // Drop oldest 20% when hitting the cap
     const trimmed = events.slice(Math.floor(MAX_RAW_EVENTS * 0.2));
     return [...trimmed, event];
   }
@@ -402,22 +370,18 @@ export function rebuildTasksFromHistory(messages: Message[]): AgentTask[] {
     for (const block of msg.blocks) {
       if (block.type !== "ToolCallStart" || !PLANNING_TOOL_NAMES.has(block.data.toolName) || !block.data.toolResult) continue;
       const result = block.data.toolResult;
-      // Full tasks array (from list_tasks / update_task) — use as-is
       if (Array.isArray(result.tasks)) {
         tasks = result.tasks as AgentTask[];
       }
-      // Single task creation — accumulate
       if (result.action === "create" && result.task && typeof (result.task as Record<string, unknown>).id === "number") {
         const task = result.task as AgentTask;
         if (!tasks.some((t) => t.id === task.id)) {
           tasks = [...tasks, task];
         }
       }
-      // Status update — apply in-place
       if (result.action === "update" && typeof result.task_id === "number" && result.status) {
         tasks = tasks.map((t) => t.id === result.task_id ? { ...t, status: result.status as AgentTask["status"] } : t);
       }
-      // Reset — clear all tasks
       if (result.action === "reset") {
         tasks = [];
       }
@@ -427,6 +391,12 @@ export function rebuildTasksFromHistory(messages: Message[]): AgentTask[] {
 }
 
 // ── Store ──
+
+interface PendingTextSegment {
+  convId: string;
+  type: "Message" | "Reasoning";
+  content: string;
+}
 
 interface ConversationStore {
   conversationId: string | null;
@@ -438,6 +408,10 @@ interface ConversationStore {
   isLoadingHistory: boolean;
   error: string | null;
   streamingConvIds: Set<string>;
+
+  // Typing animation state
+  pendingTextQueue: PendingTextSegment[];
+  isTyping: boolean;
 
   setConversationId: (id: string) => void;
   setAgentType: (type: string) => void;
@@ -455,126 +429,212 @@ interface ConversationStore {
   addStreamingConv: (convId: string) => void;
   removeStreamingConv: (convId: string) => void;
   processEventForConv: (convId: string, event: AgentStreamEvent) => void;
+  
+  // Internal typing loop
+  flushPendingText: () => void;
 }
 
-export const useConversationStore = create<ConversationStore>((set, get) => ({
-  conversationId: null,
-  agentType: "super",
-  messages: [],
-  rawEvents: [],
-  tasks: [],
-  isStreaming: false,
-  isLoadingHistory: false,
-  error: null,
-  streamingConvIds: new Set(),
+export const useConversationStore = create<ConversationStore>((set, get) => {
+  let rafId: number | null = null;
 
-  setConversationId: (id) => set({ conversationId: id }),
-  setAgentType: (type) => set({ agentType: type }),
-  setStreaming: (v) => set({ isStreaming: v }),
-  setLoadingHistory: (v) => set({ isLoadingHistory: v }),
-  setError: (err) => set({ error: err }),
-
-  addUserMessage: (content) =>
-    set((s) => ({
-      messages: [
-        ...s.messages,
-        { id: nextMessageId(), role: "user", blocks: [{ type: "Message", content }], nodes: [], workers: {}, sources: [] },
-      ],
-    })),
-
-  startAssistantMessage: () =>
-    set((s) => ({
-      messages: [
-        ...s.messages,
-        { id: nextMessageId(), role: "assistant", blocks: [], nodes: [], workers: {}, sources: [] },
-      ],
-    })),
-
-  addStreamingConv: (convId) =>
-    set((s) => {
-      const ids = new Set(s.streamingConvIds);
-      ids.add(convId);
-      return { streamingConvIds: ids };
-    }),
-
-  removeStreamingConv: (convId) =>
-    set((s) => {
-      const ids = new Set(s.streamingConvIds);
-      ids.delete(convId);
-      const isActiveConv = s.conversationId === convId;
-      return {
-        streamingConvIds: ids,
-        ...(isActiveConv ? { isStreaming: false } : {}),
-      };
-    }),
-
-  processEventForConv: (convId, event) => {
-    const s = get();
-    if (s.conversationId !== convId) return;
-    const rawEvent = buildRawEvent(event);
-
-    // Extract tasks from TaskUpdate custom events
-    let newTasks: AgentTask[] | undefined;
-    if (event.event.case === "custom" && event.event.value.type === "TaskUpdate") {
-      const payload = asRecord(tryDecodeJson(event.event.value.payload));
-      const action = payload.action as string;
-      if (action === "create") {
-        // create carries full tasks array
-        const tasks = payload.tasks as AgentTask[] | undefined;
-        if (tasks) newTasks = tasks;
-      } else if (action === "update") {
-        // update only carries task_id + status — update in-place
-        const taskId = payload.task_id as number;
-        const status = payload.status as AgentTask["status"];
-        if (taskId != null && status) {
-          newTasks = get().tasks.map((t) => (t.id === taskId ? { ...t, status } : t));
-        }
-      } else if (action === "reset") {
-        newTasks = [];
-      }
+  const runTypingLoop = () => {
+    const { pendingTextQueue, flushPendingText } = get();
+    if (pendingTextQueue.length === 0) {
+      set({ isTyping: false });
+      rafId = null;
+      return;
     }
 
-    set((prev) => ({
-      messages: applyStreamEvent(prev.messages, event),
-      rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
-      ...(newTasks !== undefined ? { tasks: newTasks } : {}),
-    }));
-  },
+    flushPendingText();
+    rafId = requestAnimationFrame(runTypingLoop);
+  };
 
-  resolveHumanReview: () =>
-    set((s) => {
-      const messages = [...s.messages];
-      const last = messages[messages.length - 1];
-      if (!last) return s;
-      const blocks = [...last.blocks];
-      for (let i = blocks.length - 1; i >= 0; i--) {
-        const block = blocks[i];
-        if (block.type === "human_review" && !block.data.resolved) {
-          blocks[i] = { type: "human_review", data: { ...block.data, resolved: true } };
-          break;
+  return {
+    conversationId: null,
+    agentType: "super",
+    messages: [],
+    rawEvents: [],
+    tasks: [],
+    isStreaming: false,
+    isLoadingHistory: false,
+    error: null,
+    streamingConvIds: new Set(),
+    pendingTextQueue: [],
+    isTyping: false,
+
+    setConversationId: (id) => set({ conversationId: id }),
+    setAgentType: (type) => set({ agentType: type }),
+    setStreaming: (v) => set({ isStreaming: v }),
+    setLoadingHistory: (v) => set({ isLoadingHistory: v }),
+    setError: (err) => set({ error: err }),
+
+    addUserMessage: (content) =>
+      set((s) => ({
+        messages: [
+          ...s.messages,
+          { id: nextMessageId(), role: "user", blocks: [{ type: "Message", content }], nodes: [], workers: {}, sources: [] },
+        ],
+      })),
+
+    startAssistantMessage: () =>
+      set((s) => ({
+        messages: [
+          ...s.messages,
+          { id: nextMessageId(), role: "assistant", blocks: [], nodes: [], workers: {}, sources: [] },
+        ],
+      })),
+
+    addStreamingConv: (convId) =>
+      set((s) => {
+        const ids = new Set(s.streamingConvIds);
+        ids.add(convId);
+        return { streamingConvIds: ids };
+      }),
+
+    removeStreamingConv: (convId) =>
+      set((s) => {
+        const ids = new Set(s.streamingConvIds);
+        ids.delete(convId);
+        const isActiveConv = s.conversationId === convId;
+        return {
+          streamingConvIds: ids,
+          ...(isActiveConv ? { isStreaming: false } : {}),
+        };
+      }),
+
+    processEventForConv: (convId, event) => {
+      const s = get();
+      if (s.conversationId !== convId) return;
+      
+      const rawEvent = buildRawEvent(event);
+
+      // Handle text deltas via queue
+      if (event.event.case === "messageDelta" && event.event.value.content) {
+        set((prev) => ({
+          pendingTextQueue: [...prev.pendingTextQueue, { convId, type: "Message", content: event.event.value.content! }],
+          rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
+        }));
+        if (!get().isTyping) {
+          set({ isTyping: true });
+          if (rafId) cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(runTypingLoop);
+        }
+        return;
+      }
+      if (event.event.case === "reasoningDelta" && event.event.value.content) {
+        set((prev) => ({
+          pendingTextQueue: [...prev.pendingTextQueue, { convId, type: "Reasoning", content: event.event.value.content! }],
+          rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
+        }));
+        if (!get().isTyping) {
+          set({ isTyping: true });
+          if (rafId) cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(runTypingLoop);
+        }
+        return;
+      }
+
+      // Extract tasks from TaskUpdate custom events
+      let newTasks: AgentTask[] | undefined;
+      if (event.event.case === "custom" && event.event.value.type === "TaskUpdate") {
+        const payload = asRecord(tryDecodeJson(event.event.value.payload));
+        const action = payload.action as string;
+        if (action === "create") {
+          const tasks = payload.tasks as AgentTask[] | undefined;
+          if (tasks) newTasks = tasks;
+        } else if (action === "update") {
+          const taskId = payload.task_id as number;
+          const status = payload.status as AgentTask["status"];
+          if (taskId != null && status) {
+            newTasks = get().tasks.map((t) => (t.id === taskId ? { ...t, status } : t));
+          }
+        } else if (action === "reset") {
+          newTasks = [];
         }
       }
-      messages[messages.length - 1] = { ...last, blocks };
-      return { messages };
-    }),
 
-  removeLastRound: () =>
-    set((s) => {
-      const messages = [...s.messages];
-      if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
-      if (messages.length > 0 && messages[messages.length - 1].role === "user") messages.pop();
-      return { messages };
-    }),
+      set((prev) => ({
+        messages: applyStreamEvent(prev.messages, event),
+        rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
+        ...(newTasks !== undefined ? { tasks: newTasks } : {}),
+      }));
+    },
 
-  removeLastAssistantMessage: () =>
-    set((s) => {
-      const messages = [...s.messages];
-      if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
-      return { messages };
-    }),
+    flushPendingText: () => {
+      const { pendingTextQueue, conversationId, messages } = get();
+      if (pendingTextQueue.length === 0) return;
 
-  setMessages: (messages) => set({ messages, rawEvents: [] }),
+      const newQueue = [...pendingTextQueue];
+      const msgs = [...messages];
+      
+      const CHARS_PER_FRAME = Math.max(2, Math.floor(newQueue.reduce((acc, s) => acc + s.content.length, 0) / 10));
+      let charsRemaining = CHARS_PER_FRAME;
 
-  reset: () =>
-    set({ conversationId: null, messages: [], rawEvents: [], tasks: [], isStreaming: false, isLoadingHistory: false, error: null }),
-}));
+      while (charsRemaining > 0 && newQueue.length > 0) {
+        const segment = newQueue[0];
+        
+        if (segment.convId !== conversationId) {
+          newQueue.shift();
+          continue;
+        }
+
+        const toTake = Math.min(segment.content.length, charsRemaining);
+        const chunk = segment.content.slice(0, toTake);
+        const remainingInSegment = segment.content.slice(toTake);
+
+        const last = msgs[msgs.length - 1];
+        if (last && last.role === "assistant") {
+          const updated = { ...last, blocks: [...last.blocks], workers: { ...last.workers }, sources: [...last.sources] };
+          appendOrPushBlock(updated.blocks, segment.type, chunk);
+          msgs[msgs.length - 1] = updated;
+        }
+
+        charsRemaining -= toTake;
+        if (remainingInSegment) {
+          newQueue[0] = { ...segment, content: remainingInSegment };
+        } else {
+          newQueue.shift();
+        }
+      }
+
+      set({ messages: msgs, pendingTextQueue: newQueue });
+    },
+
+    resolveHumanReview: () =>
+      set((s) => {
+        const messages = [...s.messages];
+        const last = messages[messages.length - 1];
+        if (!last) return s;
+        const blocks = [...last.blocks];
+        for (let i = blocks.length - 1; i >= 0; i--) {
+          const block = blocks[i];
+          if (block.type === "human_review" && !block.data.resolved) {
+            blocks[i] = { type: "human_review", data: { ...block.data, resolved: true } };
+            break;
+          }
+        }
+        messages[messages.length - 1] = { ...last, blocks };
+        return { messages };
+      }),
+
+    removeLastRound: () =>
+      set((s) => {
+        const messages = [...s.messages];
+        if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
+        if (messages.length > 0 && messages[messages.length - 1].role === "user") messages.pop();
+        return { messages };
+      }),
+
+    removeLastAssistantMessage: () =>
+      set((s) => {
+        const messages = [...s.messages];
+        if (messages.length > 0 && messages[messages.length - 1].role === "assistant") messages.pop();
+        return { messages };
+      }),
+
+    setMessages: (messages) => set({ messages, rawEvents: [] }),
+
+    reset: () =>
+      set({ conversationId: null, messages: [], rawEvents: [], tasks: [], isStreaming: false, isLoadingHistory: false, error: null, pendingTextQueue: [], isTyping: false }),
+  };
+});
