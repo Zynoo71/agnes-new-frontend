@@ -184,6 +184,7 @@ export function ChatPanel() {
     const trimmed = (text ?? input).trim();
     if (!trimmed || isStreaming) return;
     setInput("");
+    isNearBottomRef.current = true;
     if (!conversationId) {
       await createConversation();
     }
@@ -192,6 +193,11 @@ export function ChatPanel() {
     } else {
       sendMessage(trimmed);
     }
+    // Force scroll after layout settles (empty→non-empty transition)
+    requestAnimationFrame(() => {
+      const el = scrollContainerRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
