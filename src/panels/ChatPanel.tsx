@@ -122,8 +122,11 @@ function ScrollRow({ items, direction, duration }: { items: string[]; direction:
 }
 
 export function ChatPanel() {
-  const { conversationId, agentType, messages, rawEvents, isStreaming, isLoadingHistory, error, setAgentType } =
+  const { conversationId, agentType, messages, isStreaming, isLoadingHistory, error, setAgentType } =
     useConversationStore();
+  const rawEventsCount = useConversationStore(s => s.rawEvents.length);
+  const rawEvents = useConversationStore(s => s.rawEvents);
+  
   const { createConversation, sendMessage, hitlResume, editResend, regenerate, cancelStream } = useChat();
   const [showEvents, setShowEvents] = useState(false);
   const [input, setInput] = useState("");
@@ -307,7 +310,7 @@ export function ChatPanel() {
                   : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
               }`}
             >
-              Events{rawEvents.length > 0 ? ` (${rawEvents.length})` : ""}
+              Events{rawEventsCount > 0 ? ` (${rawEventsCount})` : ""}
             </button>
           </div>
         </div>
@@ -388,7 +391,7 @@ export function ChatPanel() {
         style={{ width: showEvents ? 400 : 0 }}
       >
         <div className="w-[400px] h-full">
-          <EventStream events={rawEvents} />
+          {showEvents && <EventStream events={rawEvents} />}
         </div>
       </div>
     </div>
