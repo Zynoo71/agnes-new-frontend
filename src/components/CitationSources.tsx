@@ -1,12 +1,5 @@
 import { useState } from "react";
-
-export interface CitationSource {
-  ref: number;
-  url: string;
-  title: string;
-  snippet?: string;
-  toolName: string;
-}
+import type { SourceCitation } from "@/stores/conversationStore";
 
 /** Extract short domain from URL. */
 function domain(raw: string): string {
@@ -28,7 +21,7 @@ function faviconUrl(siteUrl: string): string {
 }
 
 /** Deduplicate sources by domain — keep first occurrence. */
-function uniqueByDomain(sources: CitationSource[]): CitationSource[] {
+function uniqueByDomain(sources: SourceCitation[]): SourceCitation[] {
   const seen = new Set<string>();
   return sources.filter((s) => {
     const d = domain(s.url);
@@ -38,7 +31,7 @@ function uniqueByDomain(sources: CitationSource[]): CitationSource[] {
   });
 }
 
-export function CitationSources({ sources }: { sources: CitationSource[] }) {
+export function CitationSources({ sources }: { sources: SourceCitation[] }) {
   const [expanded, setExpanded] = useState(false);
   if (sources.length === 0) return null;
 

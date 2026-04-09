@@ -71,6 +71,14 @@ export const PLANNING_TOOL_NAMES = new Set([
   "create_task", "update_task", "list_tasks", "get_task",
 ]);
 
+
+export interface SourceCitation {
+  ref: number;
+  url: string;
+  title: string;
+  snippet?: string;
+}
+
 export type ContentBlock =
   | { type: "Message"; content: string }
   | { type: "Reasoning"; content: string }
@@ -85,6 +93,7 @@ export interface Message {
   blocks: ContentBlock[];
   nodes: NodeData[];
   workers: Record<string, WorkerState>;
+  sources: SourceCitation[];
   error?: { errorType: string; message: string; recoverable: boolean };
 }
 
@@ -132,7 +141,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
       if (userText) {
         const userMsg: Message = {
           id: nextMessageId(), role: "user",
-          blocks: [{ type: "Message", content: userText }], nodes: [], workers: {},
+          blocks: [{ type: "Message", content: userText }], nodes: [], workers: {}, sources: [],
         };
         const lastIdx = msgs.length - 1;
         if (msgs[lastIdx]?.role === "assistant") {
@@ -148,7 +157,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
   const last = msgs[msgs.length - 1];
   if (!last || last.role !== "assistant") return msgs;
 
-  const updated = { ...last, blocks: [...last.blocks], workers: { ...last.workers } };
+  const updated = { ...last, blocks: [...last.blocks], workers: { ...last.workers }, sources: [...last.sources] };
 
   switch (event.event.case) {
     case "messageDelta": {
@@ -244,6 +253,14 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
           type: "human_review",
           data: { payload, resolved: false },
         });
+        break;
+      }
+
+      if (custom.type === "SourcesCited") {
+        const sources = (payload.sources as SourceCitation[]) ?? [];
+        if (sources.length > 0) {
+          updated.sources = [...updated.sources, ...sources];
+        }
         break;
       }
 
@@ -461,7 +478,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
     set((s) => ({
       messages: [
         ...s.messages,
-        { id: nextMessageId(), role: "user", blocks: [{ type: "Message", content }], nodes: [], workers: {} },
+        { id: nextMessageId(), role: "user", blocks: [{ type: "Message", content }], nodes: [], workers: {}, sources: [] },
       ],
     })),
 
@@ -469,7 +486,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
     set((s) => ({
       messages: [
         ...s.messages,
-        { id: nextMessageId(), role: "assistant", blocks: [], nodes: [], workers: {} },
+        { id: nextMessageId(), role: "assistant", blocks: [], nodes: [], workers: {}, sources: [] },
       ],
     })),
 

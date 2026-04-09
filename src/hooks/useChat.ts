@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
 import { useConversationStore, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory } from "@/stores/conversationStore";
+import type { SourceCitation } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
@@ -76,9 +77,10 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       .map((b) => (b.data as Record<string, unknown>)?.content ?? JSON.stringify(b.data))
       .join("\n");
     if (userText) {
-      messages.push({ id: nextHistoryId(), role: "user", blocks: [{ type: "Message", content: userText }], nodes: [], workers: {} });
+      messages.push({ id: nextHistoryId(), role: "user", blocks: [{ type: "Message", content: userText }], nodes: [], workers: {}, sources: [] });
     }
     const assistantBlocks: ContentBlock[] = [];
+    const turnSources: SourceCitation[] = [];
     const aBlocks = turn.assistant as { type: string; data: unknown; toolCallId?: string }[];
     for (const block of aBlocks) {
       if (block.type === "Message") {
@@ -103,6 +105,10 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
           type: "human_review",
           data: { payload: data, resolved: true },
         });
+      } else if (block.type === "SourcesCited") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const sources = (data.sources as SourceCitation[]) ?? [];
+        turnSources.push(...sources);
       } else if (block.type === "ToolCallResult") {
         const data = (block.data ?? {}) as Record<string, unknown>;
         const existing = assistantBlocks.find(
@@ -124,7 +130,7 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       assistantBlocks.push({ type: "TaskList" });
     }
     if (assistantBlocks.length > 0) {
-      messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers: {} });
+      messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers: {}, sources: turnSources });
     }
   }
   return messages;
