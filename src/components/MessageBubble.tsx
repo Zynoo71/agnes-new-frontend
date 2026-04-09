@@ -11,6 +11,38 @@ import { TaskListPanel } from "./TaskListPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
 
+// ── Stable references for Markdown (avoid remounting custom elements on re-render) ──
+const REMARK_PLUGINS = [remarkGfm, remarkCjkFriendly];
+
+const MARKDOWN_COMPONENTS = {
+  pre({ children }: { children?: React.ReactNode }) {
+    return <>{children}</>;
+  },
+  code({ className, children }: { className?: string; children?: React.ReactNode }) {
+    const match = /language-(\w+)/.exec(className || "");
+    const code = String(children).replace(/\n$/, "");
+    if (match) {
+      return <CodeBlock language={match[1]}>{code}</CodeBlock>;
+    }
+    return <code className={className}>{children}</code>;
+  },
+  img({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        onLoad={(e) => { (e.target as HTMLElement).classList.remove("opacity-0", "h-0"); (e.target as HTMLElement).classList.add("opacity-100"); }}
+        onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+        className="rounded-lg max-w-full transition-opacity duration-300 opacity-0 h-0"
+        {...props}
+      />
+    );
+  },
+  a({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+    return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+  },
+};
+
 interface MessageBubbleProps {
   message: Message;
   isLast?: boolean;
@@ -298,7 +330,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
   );
 });
 
-function BlockRenderer({
+const BlockRenderer = memo(function BlockRenderer({
   block,
   onHitlResume,
   isStreaming,
@@ -314,35 +346,8 @@ function BlockRenderer({
       return (
         <div className="prose-agent text-[14px] leading-[1.7] text-text-primary">
           <Markdown
-            remarkPlugins={[remarkGfm, remarkCjkFriendly]}
-            components={{
-              pre({ children }) {
-                return <>{children}</>;
-              },
-              code({ className, children }) {
-                const match = /language-(\w+)/.exec(className || "");
-                const code = String(children).replace(/\n$/, "");
-                if (match) {
-                  return <CodeBlock language={match[1]}>{code}</CodeBlock>;
-                }
-                return <code className={className}>{children}</code>;
-              },
-              img({ src, alt, ...props }) {
-                return (
-                  <img
-                    src={src}
-                    alt={alt}
-                    onLoad={(e) => { (e.target as HTMLElement).classList.remove("opacity-0", "h-0"); (e.target as HTMLElement).classList.add("opacity-100"); }}
-                    onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                    className="rounded-lg max-w-full transition-opacity duration-300 opacity-0 h-0"
-                    {...props}
-                  />
-                );
-              },
-              a({ href, children, ...props }) {
-                return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
-              },
-            }}
+            remarkPlugins={REMARK_PLUGINS}
+            components={MARKDOWN_COMPONENTS}
           >{block.content}</Markdown>
         </div>
       );
@@ -367,7 +372,7 @@ function BlockRenderer({
     case "ContextCompacting":
       return <ContextCompactingBlock done={block.done || !isStreaming} />;
   }
-}
+});
 
 // ── Reasoning block with smooth transition ──
 const AUTO_COLLAPSE_DELAY = 2000;
