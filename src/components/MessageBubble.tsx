@@ -10,9 +10,31 @@ import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { TaskListPanel } from "./TaskListPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
+import { useImagePreviewStore } from "@/stores/imagePreviewStore";
 
 // ── Stable references for Markdown (avoid remounting custom elements on re-render) ──
 const REMARK_PLUGINS = [remarkGfm, remarkCjkFriendly];
+
+function MarkdownImage({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const openPreview = useImagePreviewStore((s) => s.open);
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onLoad={(e) => {
+        const target = e.target as HTMLElement;
+        target.classList.remove("opacity-0", "h-0");
+        target.classList.add("opacity-100");
+      }}
+      onError={(e) => {
+        (e.target as HTMLElement).style.display = "none";
+      }}
+      onClick={() => src && openPreview(src, alt)}
+      className="rounded-lg max-w-full transition-opacity duration-300 opacity-0 h-0 cursor-zoom-in hover:opacity-90 active:scale-[0.99]"
+      {...props}
+    />
+  );
+}
 
 const MARKDOWN_COMPONENTS = {
   pre({ children }: { children?: React.ReactNode }) {
@@ -26,17 +48,8 @@ const MARKDOWN_COMPONENTS = {
     }
     return <code className={className}>{children}</code>;
   },
-  img({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
-    return (
-      <img
-        src={src}
-        alt={alt}
-        onLoad={(e) => { (e.target as HTMLElement).classList.remove("opacity-0", "h-0"); (e.target as HTMLElement).classList.add("opacity-100"); }}
-        onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-        className="rounded-lg max-w-full transition-opacity duration-300 opacity-0 h-0"
-        {...props}
-      />
-    );
+  img(props: React.ImgHTMLAttributes<HTMLImageElement>) {
+    return <MarkdownImage {...props} />;
   },
   a({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
     return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
