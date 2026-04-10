@@ -214,6 +214,8 @@ textarea {
     border-radius: 4px;
   }
   & ul, & ol { margin: 0.4em 0; padding-left: 1.5em; }
+  & ul { list-style-type: disc; }
+  & ol { list-style-type: decimal; }
   & li { margin: 0.2em 0; }
   & a { color: var(--color-accent); text-decoration: underline; }
 }
