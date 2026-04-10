@@ -78,13 +78,19 @@ export interface SourceCitation {
   snippet?: string;
 }
 
+export interface MemoryUpdateData {
+  field: "soul" | "identity";
+  content: string;
+}
+
 export type ContentBlock =
   | { type: "Message"; content: string }
   | { type: "Reasoning"; content: string }
   | { type: "ToolCallStart"; data: ToolCallData }
   | { type: "human_review"; data: HumanReviewData }
   | { type: "TaskList" }
-  | { type: "ContextCompacting"; done: boolean };
+  | { type: "ContextCompacting"; done: boolean }
+  | { type: "MemoryUpdate"; data: MemoryUpdateData };
 
 export interface Message {
   id: string;
@@ -265,6 +271,18 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
           if (!hasAnchor) {
             updated.blocks.push({ type: "TaskList" });
           }
+        }
+        break;
+      }
+
+      if (custom.type === "MemoryUpdate") {
+        const field = payload.field as string;
+        const content = payload.content as string;
+        if (field && content) {
+          updated.blocks.push({
+            type: "MemoryUpdate",
+            data: { field: field as "soul" | "identity", content },
+          });
         }
         break;
       }
