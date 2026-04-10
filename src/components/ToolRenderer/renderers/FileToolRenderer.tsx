@@ -167,6 +167,47 @@ function CodeContent({ content, label }: { content: string; label: string }) {
   );
 }
 
+function PreviewableContent({ content, label }: { content: string; label: string }) {
+  const [tab, setTab] = useState<"preview" | "code">("preview");
+  return (
+    <div className="mt-2">
+      <div className="flex items-center gap-2 mb-1 px-0.5">
+        <div className="flex items-center gap-0.5 bg-surface-hover rounded-md p-0.5">
+          <button
+            onClick={() => setTab("preview")}
+            className={`text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
+              tab === "preview" ? "text-text-primary bg-surface" : "text-text-tertiary hover:text-text-secondary"
+            }`}
+          >
+            Preview
+          </button>
+          <button
+            onClick={() => setTab("code")}
+            className={`text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${
+              tab === "code" ? "text-text-primary bg-surface" : "text-text-tertiary hover:text-text-secondary"
+            }`}
+          >
+            Code
+          </button>
+        </div>
+        <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">{label}</span>
+      </div>
+      {tab === "preview" ? (
+        <iframe
+          srcDoc={content}
+          sandbox=""
+          className="w-full border border-border-light rounded-lg bg-white"
+          style={{ height: "300px" }}
+        />
+      ) : (
+        <pre className="text-[11px] bg-console-bg text-console-text rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap font-mono max-h-48 overflow-y-auto border border-white/5">
+          {content}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolName: string; toolInput: Record<string, unknown>; toolResult: Record<string, unknown>; autoCollapse?: boolean }) {
   switch (toolName) {
     case "read_file": {
@@ -184,12 +225,18 @@ function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolNa
     case "write_file": {
       const content = toolInput.content as string | undefined;
       if (!content) return null;
+      const filePath = (toolInput.path as string) ?? "";
+      const isPreviewable = /\.(svg|html?)$/i.test(filePath);
       return (
         <details className="mt-2">
           <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
             View Content
           </summary>
-          <CodeContent content={content} label="Written Content" />
+          {isPreviewable ? (
+            <PreviewableContent content={content} label="Written Content" />
+          ) : (
+            <CodeContent content={content} label="Written Content" />
+          )}
         </details>
       );
     }
