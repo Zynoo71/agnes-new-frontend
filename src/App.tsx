@@ -5,6 +5,7 @@ import { useConversationListStore } from "@/stores/conversationListStore";
 import { useChat } from "@/hooks/useChat";
 import { Sidebar } from "@/components/Sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ImagePreview } from "@/components/ImagePreview";
 import { ChatPanel } from "@/panels/ChatPanel";
 import { PixaPanel } from "@/panels/PixaPanel";
 
@@ -74,6 +75,7 @@ function AppLayout() {
           <Route path="*" element={<Navigate to="/chat" replace />} />
         </Routes>
       </main>
+      <ImagePreview />
     </div>
   );
 }
