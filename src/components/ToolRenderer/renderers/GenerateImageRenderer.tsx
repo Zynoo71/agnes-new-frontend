@@ -41,7 +41,7 @@ export function GenerateImageRenderer({ toolInput, toolResult }: ToolRenderProps
               <img
                 src={url}
                 alt={`Generated image ${i + 1}`}
-                className="w-40 h-40 object-cover"
+                className="max-w-60 max-h-60 object-contain"
                 onError={() => setFailedUrls((s) => new Set(s).add(url))}
               />
             </button>
