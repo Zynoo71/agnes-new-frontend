@@ -45,7 +45,7 @@ export function CodeBlock({ language, children }: { language?: string; children:
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"preview" | "code">("preview");
   const lang = language || "text";
-  const isHtml = lang === "html" && children.length > 200;
+  const isHtml = (lang === "html" || lang === "svg") && children.length > 200;
 
   useEffect(() => {
     let cancelled = false;
