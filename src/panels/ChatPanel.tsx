@@ -6,7 +6,7 @@ import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
 import { MessageBubble } from "@/components/MessageBubble";
 import { EventStream } from "@/components/EventStream";
 
-const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
+const AGENT_TYPES = ["super", "search", "research", "slide", "pixa"] as const;
 
 const SCROLL_HINTS_ROW1 = [
   "Search the latest AI news",

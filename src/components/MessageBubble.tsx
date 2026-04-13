@@ -2,7 +2,15 @@ import { useState, useEffect, useRef, useCallback, memo } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
-import type { Message, ContentBlock, HumanReviewData, ToolCallData, MemoryUpdateData } from "@/stores/conversationStore";
+import type {
+  Message,
+  ContentBlock,
+  HumanReviewData,
+  ToolCallData,
+  MemoryUpdateData,
+  SlideOutlineData,
+  SlideDesignSystemData,
+} from "@/stores/conversationStore";
 import { PLANNING_TOOL_NAMES } from "@/stores/conversationStore";
 import { CitationSources } from "@/components/CitationSources";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
@@ -386,6 +394,10 @@ const BlockRenderer = memo(function BlockRenderer({
       return <ContextCompactingBlock done={block.done || !isStreaming} />;
     case "MemoryUpdate":
       return <MemoryUpdateBlock data={block.data} />;
+    case "SlideOutline":
+      return <SlideOutlineBlock data={block.data} />;
+    case "SlideDesignSystem":
+      return <SlideDesignSystemBlock data={block.data} />;
   }
 });
 
@@ -652,6 +664,82 @@ function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Re
                     border border-border-light font-mono text-text-secondary leading-relaxed">
       {JSON.stringify(data, null, 2)}
     </pre>
+  );
+}
+
+// ── Slide outline preview ──
+
+interface SlideEntry {
+  slide_id: string;
+  index: number;
+  title: string;
+  role: string;
+  desc?: string;
+}
+
+function SlideOutlineBlock({ data }: { data: SlideOutlineData }) {
+  const outline = data.outline;
+  const title = (outline.deck_title as string) ?? "Untitled Deck";
+  const goal = (outline.deck_goal as string) ?? "";
+  const slides = (outline.slides as SlideEntry[]) ?? [];
+
+  const ROLE_COLORS: Record<string, string> = {
+    cover: "bg-indigo-100 text-indigo-700",
+    toc: "bg-sky-100 text-sky-700",
+    content: "bg-emerald-100 text-emerald-700",
+    divider: "bg-amber-100 text-amber-700",
+    summary: "bg-violet-100 text-violet-700",
+    end: "bg-rose-100 text-rose-700",
+  };
+
+  return (
+    <div className="my-3 rounded-xl border border-teal-200/60 bg-teal-50/30 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-5 h-5 rounded-md bg-teal-500/20 flex items-center justify-center shrink-0">
+          <svg className="w-3 h-3 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+          </svg>
+        </div>
+        <div>
+          <span className="text-sm font-semibold text-text-primary">{title}</span>
+          <span className="text-[11px] text-text-tertiary ml-2">{slides.length} pages</span>
+        </div>
+      </div>
+      {goal && (
+        <p className="text-xs text-text-secondary mb-3 leading-relaxed">{goal}</p>
+      )}
+      <div className="space-y-1.5">
+        {slides.map((slide) => (
+          <div key={slide.slide_id} className="flex items-center gap-2 rounded-lg bg-surface/60 px-3 py-2">
+            <span className="text-[10px] font-mono text-text-tertiary w-5 text-right shrink-0">
+              {slide.index}
+            </span>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${ROLE_COLORS[slide.role] ?? "bg-gray-100 text-gray-600"}`}>
+              {slide.role}
+            </span>
+            <span className="text-xs text-text-primary truncate">{slide.title}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Slide design system summary ──
+
+function SlideDesignSystemBlock({ data }: { data: SlideDesignSystemData }) {
+  return (
+    <div className="my-3 rounded-xl border border-violet-200/60 bg-violet-50/30 p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-5 h-5 rounded-md bg-violet-500/20 flex items-center justify-center shrink-0">
+          <svg className="w-3 h-3 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z" />
+          </svg>
+        </div>
+        <span className="text-sm font-semibold text-text-primary">Design System</span>
+      </div>
+      <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-line">{data.summary}</p>
+    </div>
   );
 }
 

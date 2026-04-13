@@ -34,7 +34,7 @@ npm start
 | `VITE_DEV_USER_ID` | 开发用 user-id，注入 `x-user-id` 请求头 | - |
 | `VITE_DEV_LANE` | 开发泳道标识，注入 `x-dev-lane` 请求头 | - |
 
-启动后访问 `http://localhost:5173`。
+启动后访问 `http://127.0.0.1:5173`。
 
 ### 分步启动
 
@@ -45,6 +45,8 @@ npm run proxy
 # 终端 2：启动 Vite 开发服务器
 npm run dev
 ```
+
+如果浏览器无法打开 `localhost:5173`，请直接访问 `http://127.0.0.1:5173`。当前开发服务器显式监听 IPv4 环回地址，避免部分本机环境下 `localhost` 解析到 `::1` 时无法访问。
 
 ## 功能特性
 

@@ -11,6 +11,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: "127.0.0.1",
     proxy: {
       "/kw_agent_service": {
         target: "http://localhost:8080",

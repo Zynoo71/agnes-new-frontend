@@ -71,6 +71,14 @@ export const PLANNING_TOOL_NAMES = new Set([
   "create_task", "update_task", "list_tasks", "get_task",
 ]);
 
+export interface SlideOutlineData {
+  outline: Record<string, unknown>;
+}
+
+export interface SlideDesignSystemData {
+  summary: string;
+}
+
 export interface SourceCitation {
   ref: number;
   url: string;
@@ -90,6 +98,8 @@ export type ContentBlock =
   | { type: "human_review"; data: HumanReviewData }
   | { type: "TaskList" }
   | { type: "ContextCompacting"; done: boolean }
+  | { type: "SlideOutline"; data: SlideOutlineData }
+  | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
   | { type: "MemoryUpdate"; data: MemoryUpdateData };
 
 export interface Message {
@@ -240,7 +250,8 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
 
       if (custom.type === "ContextCompactEnd") {
         for (let i = updated.blocks.length - 1; i >= 0; i--) {
-          if (updated.blocks[i].type === "ContextCompacting" && !updated.blocks[i].done) {
+          const block = updated.blocks[i];
+          if (block.type === "ContextCompacting" && !block.done) {
             updated.blocks[i] = { type: "ContextCompacting", done: true };
             break;
           }
@@ -272,6 +283,22 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             updated.blocks.push({ type: "TaskList" });
           }
         }
+        break;
+      }
+
+      if (custom.type === "OutlineGenerated") {
+        updated.blocks.push({
+          type: "SlideOutline",
+          data: { outline: (payload.outline as Record<string, unknown>) ?? {} },
+        });
+        break;
+      }
+
+      if (custom.type === "DesignSystemGenerated") {
+        updated.blocks.push({
+          type: "SlideDesignSystem",
+          data: { summary: (payload.summary as string) ?? "" },
+        });
         break;
       }
 
@@ -527,9 +554,11 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
       const rawEvent = buildRawEvent(event);
 
       // Handle text deltas via queue
-      if (event.event.case === "messageDelta" && event.event.value.content) {
+      if (event.event.case === "messageDelta") {
+        const value = event.event.value;
+        if (!value?.content) return;
         set((prev) => ({
-          pendingTextQueue: [...prev.pendingTextQueue, { convId, type: "Message", content: event.event.value.content! }],
+          pendingTextQueue: [...prev.pendingTextQueue, { convId, type: "Message", content: value.content }],
           rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
         }));
         if (!get().isTyping) {
@@ -539,9 +568,11 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         }
         return;
       }
-      if (event.event.case === "reasoningDelta" && event.event.value.content) {
+      if (event.event.case === "reasoningDelta") {
+        const value = event.event.value;
+        if (!value?.content) return;
         set((prev) => ({
-          pendingTextQueue: [...prev.pendingTextQueue, { convId, type: "Reasoning", content: event.event.value.content! }],
+          pendingTextQueue: [...prev.pendingTextQueue, { convId, type: "Reasoning", content: value.content }],
           rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
         }));
         if (!get().isTyping) {

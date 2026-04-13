@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "proto:gen": "NODE_NO_WARNINGS=1 buf generate ../Kiwi/agnes_core/proto",
+    "proto:gen": "NODE_NO_WARNINGS=1 buf generate ../agnes_core/proto",
     "proxy": "docker compose up envoy",
     "start": "docker compose up envoy -d && vite"
   },
