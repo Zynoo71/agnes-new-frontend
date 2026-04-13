@@ -13,7 +13,7 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file kw_agent_service/v1/kw_agent_service.proto.
  */
 export const file_kw_agent_service_v1_kw_agent_service: GenFile = /*@__PURE__*/
-  fileDesc("Ciprd19hZ2VudF9zZXJ2aWNlL3YxL2t3X2FnZW50X3NlcnZpY2UucHJvdG8SE2t3X2FnZW50X3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSJLCglGaWxlSW5wdXQSEQoJbWltZV90eXBlGAEgASgJEgsKA3VybBgCIAEoCRIMCgRkYXRhGAMgASgMEhAKCGZpbGVuYW1lGAQgASgJIh0KDEFsbG93ZWRUb29scxINCgV0b29scxgBIAMoCSKoAgoMQWdlbnRSZXF1ZXN0EhIKCnJlcXVlc3RfaWQYASABKAkSFwoPY29udmVyc2F0aW9uX2lkGAIgASgDEg0KBXF1ZXJ5GAMgASgJEhIKCmFnZW50X3R5cGUYBCABKAkSLQoFZmlsZXMYBSADKAsyHi5rd19hZ2VudF9zZXJ2aWNlLnYxLkZpbGVJbnB1dBI4Cg1hbGxvd2VkX3Rvb2xzGAYgASgLMiEua3dfYWdlbnRfc2VydmljZS52MS5BbGxvd2VkVG9vbHMSFgoObW9kZWxfb3ZlcnJpZGUYByABKAkSFwoPdGltZW91dF9zZWNvbmRzGAggASgFEi4KDWV4dHJhX2NvbnRleHQYCSABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IioKDVBpeGFJbWFnZUl0ZW0SCwoDdXJsGAEgASgJEgwKBHJvbGUYAiABKAkitAIKC1BpeGFSZXF1ZXN0EjAKBWFnZW50GAEgASgLMiEua3dfYWdlbnRfc2VydmljZS52MS5BZ2VudFJlcXVlc3QSEgoKbWVkaWFfdHlwZRgCIAEoCRINCgVtb2RlbBgDIAEoCRINCgVyYXRpbxgEIAEoCRIQCghkdXJhdGlvbhgFIAEoBRIWCg5kdXJhdGlvbl9wYXJhbRgNIAEoCRIOCgZpbWFnZXMYBiADKAkSDQoFY291bnQYByABKAUSEgoKcmVzb2x1dGlvbhgIIAEoCRINCgVzb3VuZBgJIAEoCBI3CgtpbWFnZV9pdGVtcxgKIAMoCzIiLmt3X2FnZW50X3NlcnZpY2UudjEuUGl4YUltYWdlSXRlbRIMCgRtb2RlGAsgASgJEg4KBnZpZGVvcxgMIAMoCSI1ChpDb252ZXJzYXRpb25IaXN0b3J5UmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAMiKAoNUmVzdW1lUmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAMiQQoRSGl0bFJlc3VtZVJlcXVlc3QSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDEhMKC3Jlc3VtZV9kYXRhGAIgASgMIpoBChtDb252ZXJzYXRpb25IaXN0b3J5UmVzcG9uc2USNAoFdHVybnMYASADKAsyJS5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnZlcnNhdGlvblR1cm4SEgoKaXNfcnVubmluZxgCIAEoCBIWCg5wZW5kaW5nX3JldmlldxgDIAEoCBIZChFpbnRlcnJ1cHRfcGF5bG9hZBgEIAEoDCKhAQoQQ29udmVyc2F0aW9uVHVybhISCgpyZXF1ZXN0X2lkGAEgASgJEi8KBHVzZXIYAiADKAsyIS5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnRlbnRCbG9jaxI0Cglhc3Npc3RhbnQYAyADKAsyIS5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnRlbnRCbG9jaxISCgpjcmVhdGVkX2F0GAQgASgDIm0KDENvbnRlbnRCbG9jaxISCgptZXNzYWdlX2lkGAEgASgJEhQKDHRvb2xfY2FsbF9pZBgCIAEoCRIMCgR0eXBlGAMgASgJEiUKBGRhdGEYBCABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IjsKEUVkaXRSZXNlbmRSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAxINCgVxdWVyeRgCIAEoCSJbChFSZWdlbmVyYXRlUmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAMSLQoMZXh0cmFfcGFyYW1zGAIgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCIbChlDcmVhdGVDb252ZXJzYXRpb25SZXF1ZXN0IjIKF0NyZWF0ZUNvbnZlcnNhdGlvblJlcGx5EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAyIoCg1DYW5jZWxSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAyINCgtDYW5jZWxSZXBseTKrBwoVS3dBZ2VudFNlcnZpY2VTZXJ2aWNlEkgKBFBpbmcSIC5rd19hZ2VudF9zZXJ2aWNlLnYxLlBpbmdSZXF1ZXN0Gh4ua3dfYWdlbnRfc2VydmljZS52MS5QaW5nUmVwbHkSTgoKQ2hhdFN0cmVhbRIhLmt3X2FnZW50X3NlcnZpY2UudjEuQWdlbnRSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJNCgpQaXhhU3RyZWFtEiAua3dfYWdlbnRfc2VydmljZS52MS5QaXhhUmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESewoWR2V0Q29udmVyc2F0aW9uSGlzdG9yeRIvLmt3X2FnZW50X3NlcnZpY2UudjEuQ29udmVyc2F0aW9uSGlzdG9yeVJlcXVlc3QaMC5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnZlcnNhdGlvbkhpc3RvcnlSZXNwb25zZRJyChJDcmVhdGVDb252ZXJzYXRpb24SLi5rd19hZ2VudF9zZXJ2aWNlLnYxLkNyZWF0ZUNvbnZlcnNhdGlvblJlcXVlc3QaLC5rd19hZ2VudF9zZXJ2aWNlLnYxLkNyZWF0ZUNvbnZlcnNhdGlvblJlcGx5ElEKDFJlc3VtZVN0cmVhbRIiLmt3X2FnZW50X3NlcnZpY2UudjEuUmVzdW1lUmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESWQoQSGl0bFJlc3VtZVN0cmVhbRImLmt3X2FnZW50X3NlcnZpY2UudjEuSGl0bFJlc3VtZVJlcXVlc3QaGy5jb21tb24udjEuQWdlbnRTdHJlYW1FdmVudDABElkKEEVkaXRSZXNlbmRTdHJlYW0SJi5rd19hZ2VudF9zZXJ2aWNlLnYxLkVkaXRSZXNlbmRSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJZChBSZWdlbmVyYXRlU3RyZWFtEiYua3dfYWdlbnRfc2VydmljZS52MS5SZWdlbmVyYXRlUmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESVAoMQ2FuY2VsU3RyZWFtEiIua3dfYWdlbnRfc2VydmljZS52MS5DYW5jZWxSZXF1ZXN0GiAua3dfYWdlbnRfc2VydmljZS52MS5DYW5jZWxSZXBseUI8WjphZ25lcy9wcm90by9nZW4vZ28va3dfYWdlbnRfc2VydmljZS92MTtrd19hZ2VudF9zZXJ2aWNlX3YxYgZwcm90bzM", [file_common_v1_agent_stream, file_google_protobuf_struct]);
+  fileDesc("Ciprd19hZ2VudF9zZXJ2aWNlL3YxL2t3X2FnZW50X3NlcnZpY2UucHJvdG8SE2t3X2FnZW50X3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSJLCglGaWxlSW5wdXQSEQoJbWltZV90eXBlGAEgASgJEgsKA3VybBgCIAEoCRIMCgRkYXRhGAMgASgMEhAKCGZpbGVuYW1lGAQgASgJIh0KDEFsbG93ZWRUb29scxINCgV0b29scxgBIAMoCSLCAgoMQWdlbnRSZXF1ZXN0EhIKCnJlcXVlc3RfaWQYASABKAkSFwoPY29udmVyc2F0aW9uX2lkGAIgASgDEg0KBXF1ZXJ5GAMgASgJEhIKCmFnZW50X3R5cGUYBCABKAkSLQoFZmlsZXMYBSADKAsyHi5rd19hZ2VudF9zZXJ2aWNlLnYxLkZpbGVJbnB1dBI4Cg1hbGxvd2VkX3Rvb2xzGAYgASgLMiEua3dfYWdlbnRfc2VydmljZS52MS5BbGxvd2VkVG9vbHMSFgoObW9kZWxfb3ZlcnJpZGUYByABKAkSFwoPdGltZW91dF9zZWNvbmRzGAggASgFEi4KDWV4dHJhX2NvbnRleHQYCSABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EhgKEHN5c3RlbV9wcm9tcHRfaWQYCiABKAMiKgoNUGl4YUltYWdlSXRlbRILCgN1cmwYASABKAkSDAoEcm9sZRgCIAEoCSLJAgoLUGl4YVJlcXVlc3QSMAoFYWdlbnQYASABKAsyIS5rd19hZ2VudF9zZXJ2aWNlLnYxLkFnZW50UmVxdWVzdBISCgptZWRpYV90eXBlGAIgASgJEg0KBW1vZGVsGAMgASgJEg0KBXJhdGlvGAQgASgJEhAKCGR1cmF0aW9uGAUgASgFEhYKDmR1cmF0aW9uX3BhcmFtGA0gASgJEg4KBmltYWdlcxgGIAMoCRINCgVjb3VudBgHIAEoBRISCgpyZXNvbHV0aW9uGAggASgJEg0KBXNvdW5kGAkgASgIEhMKC3NvdW5kX3BhcmFtGA4gASgJEjcKC2ltYWdlX2l0ZW1zGAogAygLMiIua3dfYWdlbnRfc2VydmljZS52MS5QaXhhSW1hZ2VJdGVtEgwKBG1vZGUYCyABKAkSDgoGdmlkZW9zGAwgAygJIjUKGkNvbnZlcnNhdGlvbkhpc3RvcnlSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAyIoCg1SZXN1bWVSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAyJBChFIaXRsUmVzdW1lUmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAMSEwoLcmVzdW1lX2RhdGEYAiABKAwimgEKG0NvbnZlcnNhdGlvbkhpc3RvcnlSZXNwb25zZRI0CgV0dXJucxgBIAMoCzIlLmt3X2FnZW50X3NlcnZpY2UudjEuQ29udmVyc2F0aW9uVHVybhISCgppc19ydW5uaW5nGAIgASgIEhYKDnBlbmRpbmdfcmV2aWV3GAMgASgIEhkKEWludGVycnVwdF9wYXlsb2FkGAQgASgMIqEBChBDb252ZXJzYXRpb25UdXJuEhIKCnJlcXVlc3RfaWQYASABKAkSLwoEdXNlchgCIAMoCzIhLmt3X2FnZW50X3NlcnZpY2UudjEuQ29udGVudEJsb2NrEjQKCWFzc2lzdGFudBgDIAMoCzIhLmt3X2FnZW50X3NlcnZpY2UudjEuQ29udGVudEJsb2NrEhIKCmNyZWF0ZWRfYXQYBCABKAMibQoMQ29udGVudEJsb2NrEhIKCm1lc3NhZ2VfaWQYASABKAkSFAoMdG9vbF9jYWxsX2lkGAIgASgJEgwKBHR5cGUYAyABKAkSJQoEZGF0YRgEIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiOwoRRWRpdFJlc2VuZFJlcXVlc3QSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDEg0KBXF1ZXJ5GAIgASgJIlsKEVJlZ2VuZXJhdGVSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAxItCgxleHRyYV9wYXJhbXMYAiABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IhsKGUNyZWF0ZUNvbnZlcnNhdGlvblJlcXVlc3QiMgoXQ3JlYXRlQ29udmVyc2F0aW9uUmVwbHkSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDIigKDUNhbmNlbFJlcXVlc3QSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDIg0KC0NhbmNlbFJlcGx5IjoKGUNyZWF0ZVN5c3RlbVByb21wdFJlcXVlc3QSDAoEbmFtZRgBIAEoCRIPCgdjb250ZW50GAIgASgJIkYKGVVwZGF0ZVN5c3RlbVByb21wdFJlcXVlc3QSCgoCaWQYASABKAMSDAoEbmFtZRgCIAEoCRIPCgdjb250ZW50GAMgASgJIicKGURlbGV0ZVN5c3RlbVByb21wdFJlcXVlc3QSCgoCaWQYASABKAMiJAoWR2V0U3lzdGVtUHJvbXB0UmVxdWVzdBIKCgJpZBgBIAEoAyIaChhMaXN0U3lzdGVtUHJvbXB0c1JlcXVlc3QidQoQU3lzdGVtUHJvbXB0SW5mbxIKCgJpZBgBIAEoAxIOCgZhcHBfaWQYAiABKAkSDAoEbmFtZRgDIAEoCRIPCgdjb250ZW50GAQgASgJEhIKCmNyZWF0ZWRfYXQYBSABKAMSEgoKdXBkYXRlZF9hdBgGIAEoAyJTChlMaXN0U3lzdGVtUHJvbXB0c1Jlc3BvbnNlEjYKB3Byb21wdHMYASADKAsyJS5rd19hZ2VudF9zZXJ2aWNlLnYxLlN5c3RlbVByb21wdEluZm8iGQoXRGVsZXRlU3lzdGVtUHJvbXB0UmVwbHkiVgoPUHJvZmlsZUZhY3RJbmZvEgoKAmlkGAEgASgFEg8KB2NvbnRlbnQYAiABKAkSEgoKY3JlYXRlZF9hdBgDIAEoCRISCgp1cGRhdGVkX2F0GAQgASgJIjkKF0xpc3RQcm9maWxlRmFjdHNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSDQoFZmllbGQYAiABKAkiTwoYTGlzdFByb2ZpbGVGYWN0c1Jlc3BvbnNlEjMKBWZhY3RzGAEgAygLMiQua3dfYWdlbnRfc2VydmljZS52MS5Qcm9maWxlRmFjdEluZm8iSwoYQ3JlYXRlUHJvZmlsZUZhY3RSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSDQoFZmllbGQYAiABKAkSDwoHY29udGVudBgDIAEoCSJcChhVcGRhdGVQcm9maWxlRmFjdFJlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCRINCgVmaWVsZBgCIAEoCRIPCgdmYWN0X2lkGAMgASgFEg8KB2NvbnRlbnQYBCABKAkiSwoYRGVsZXRlUHJvZmlsZUZhY3RSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSDQoFZmllbGQYAiABKAkSDwoHZmFjdF9pZBgDIAEoBSIYChZEZWxldGVQcm9maWxlRmFjdFJlcGx5MooPChVLd0FnZW50U2VydmljZVNlcnZpY2USSAoEUGluZxIgLmt3X2FnZW50X3NlcnZpY2UudjEuUGluZ1JlcXVlc3QaHi5rd19hZ2VudF9zZXJ2aWNlLnYxLlBpbmdSZXBseRJOCgpDaGF0U3RyZWFtEiEua3dfYWdlbnRfc2VydmljZS52MS5BZ2VudFJlcXVlc3QaGy5jb21tb24udjEuQWdlbnRTdHJlYW1FdmVudDABEk0KClBpeGFTdHJlYW0SIC5rd19hZ2VudF9zZXJ2aWNlLnYxLlBpeGFSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJ7ChZHZXRDb252ZXJzYXRpb25IaXN0b3J5Ei8ua3dfYWdlbnRfc2VydmljZS52MS5Db252ZXJzYXRpb25IaXN0b3J5UmVxdWVzdBowLmt3X2FnZW50X3NlcnZpY2UudjEuQ29udmVyc2F0aW9uSGlzdG9yeVJlc3BvbnNlEnIKEkNyZWF0ZUNvbnZlcnNhdGlvbhIuLmt3X2FnZW50X3NlcnZpY2UudjEuQ3JlYXRlQ29udmVyc2F0aW9uUmVxdWVzdBosLmt3X2FnZW50X3NlcnZpY2UudjEuQ3JlYXRlQ29udmVyc2F0aW9uUmVwbHkSUQoMUmVzdW1lU3RyZWFtEiIua3dfYWdlbnRfc2VydmljZS52MS5SZXN1bWVSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJZChBIaXRsUmVzdW1lU3RyZWFtEiYua3dfYWdlbnRfc2VydmljZS52MS5IaXRsUmVzdW1lUmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESWQoQRWRpdFJlc2VuZFN0cmVhbRImLmt3X2FnZW50X3NlcnZpY2UudjEuRWRpdFJlc2VuZFJlcXVlc3QaGy5jb21tb24udjEuQWdlbnRTdHJlYW1FdmVudDABElkKEFJlZ2VuZXJhdGVTdHJlYW0SJi5rd19hZ2VudF9zZXJ2aWNlLnYxLlJlZ2VuZXJhdGVSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJUCgxDYW5jZWxTdHJlYW0SIi5rd19hZ2VudF9zZXJ2aWNlLnYxLkNhbmNlbFJlcXVlc3QaIC5rd19hZ2VudF9zZXJ2aWNlLnYxLkNhbmNlbFJlcGx5EmsKEkNyZWF0ZVN5c3RlbVByb21wdBIuLmt3X2FnZW50X3NlcnZpY2UudjEuQ3JlYXRlU3lzdGVtUHJvbXB0UmVxdWVzdBolLmt3X2FnZW50X3NlcnZpY2UudjEuU3lzdGVtUHJvbXB0SW5mbxJrChJVcGRhdGVTeXN0ZW1Qcm9tcHQSLi5rd19hZ2VudF9zZXJ2aWNlLnYxLlVwZGF0ZVN5c3RlbVByb21wdFJlcXVlc3QaJS5rd19hZ2VudF9zZXJ2aWNlLnYxLlN5c3RlbVByb21wdEluZm8ScgoSRGVsZXRlU3lzdGVtUHJvbXB0Ei4ua3dfYWdlbnRfc2VydmljZS52MS5EZWxldGVTeXN0ZW1Qcm9tcHRSZXF1ZXN0Giwua3dfYWdlbnRfc2VydmljZS52MS5EZWxldGVTeXN0ZW1Qcm9tcHRSZXBseRJlCg9HZXRTeXN0ZW1Qcm9tcHQSKy5rd19hZ2VudF9zZXJ2aWNlLnYxLkdldFN5c3RlbVByb21wdFJlcXVlc3QaJS5rd19hZ2VudF9zZXJ2aWNlLnYxLlN5c3RlbVByb21wdEluZm8ScgoRTGlzdFN5c3RlbVByb21wdHMSLS5rd19hZ2VudF9zZXJ2aWNlLnYxLkxpc3RTeXN0ZW1Qcm9tcHRzUmVxdWVzdBouLmt3X2FnZW50X3NlcnZpY2UudjEuTGlzdFN5c3RlbVByb21wdHNSZXNwb25zZRJvChBMaXN0UHJvZmlsZUZhY3RzEiwua3dfYWdlbnRfc2VydmljZS52MS5MaXN0UHJvZmlsZUZhY3RzUmVxdWVzdBotLmt3X2FnZW50X3NlcnZpY2UudjEuTGlzdFByb2ZpbGVGYWN0c1Jlc3BvbnNlEmgKEUNyZWF0ZVByb2ZpbGVGYWN0Ei0ua3dfYWdlbnRfc2VydmljZS52MS5DcmVhdGVQcm9maWxlRmFjdFJlcXVlc3QaJC5rd19hZ2VudF9zZXJ2aWNlLnYxLlByb2ZpbGVGYWN0SW5mbxJoChFVcGRhdGVQcm9maWxlRmFjdBItLmt3X2FnZW50X3NlcnZpY2UudjEuVXBkYXRlUHJvZmlsZUZhY3RSZXF1ZXN0GiQua3dfYWdlbnRfc2VydmljZS52MS5Qcm9maWxlRmFjdEluZm8SbwoRRGVsZXRlUHJvZmlsZUZhY3QSLS5rd19hZ2VudF9zZXJ2aWNlLnYxLkRlbGV0ZVByb2ZpbGVGYWN0UmVxdWVzdBorLmt3X2FnZW50X3NlcnZpY2UudjEuRGVsZXRlUHJvZmlsZUZhY3RSZXBseUI8WjphZ25lcy9wcm90by9nZW4vZ28va3dfYWdlbnRfc2VydmljZS92MTtrd19hZ2VudF9zZXJ2aWNlX3YxYgZwcm90bzM", [file_common_v1_agent_stream, file_google_protobuf_struct]);
 
 /**
  * @generated from message kw_agent_service.v1.PingRequest
@@ -178,6 +178,13 @@ export type AgentRequest = Message<"kw_agent_service.v1.AgentRequest"> & {
    * @generated from field: google.protobuf.Struct extra_context = 9;
    */
   extraContext?: JsonObject;
+
+  /**
+   * 可选：调用方自定义 system prompt ID
+   *
+   * @generated from field: int64 system_prompt_id = 10;
+   */
+  systemPromptId: bigint;
 };
 
 /**
@@ -281,11 +288,18 @@ export type PixaRequest = Message<"kw_agent_service.v1.PixaRequest"> & {
   resolution: string;
 
   /**
-   * 是否生成音频，仅视频
+   * 是否生成音频，仅视频；显式 auto 须配合 sound_param
    *
    * @generated from field: bool sound = 9;
    */
   sound: boolean;
+
+  /**
+   * 非空时优先解析，如 "auto" 表示显式自动（避免仅用 bool 与未传混淆）
+   *
+   * @generated from field: string sound_param = 14;
+   */
+  soundParam: string;
 
   /**
    * 带 role 的图列表，优先于 images
@@ -617,6 +631,386 @@ export const CancelReplySchema: GenMessage<CancelReply> = /*@__PURE__*/
   messageDesc(file_kw_agent_service_v1_kw_agent_service, 18);
 
 /**
+ * @generated from message kw_agent_service.v1.CreateSystemPromptRequest
+ */
+export type CreateSystemPromptRequest = Message<"kw_agent_service.v1.CreateSystemPromptRequest"> & {
+  /**
+   * 必填：可读名称
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * 必填：prompt 正文
+   *
+   * @generated from field: string content = 2;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.CreateSystemPromptRequest.
+ * Use `create(CreateSystemPromptRequestSchema)` to create a new message.
+ */
+export const CreateSystemPromptRequestSchema: GenMessage<CreateSystemPromptRequest> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 19);
+
+/**
+ * @generated from message kw_agent_service.v1.UpdateSystemPromptRequest
+ */
+export type UpdateSystemPromptRequest = Message<"kw_agent_service.v1.UpdateSystemPromptRequest"> & {
+  /**
+   * 必填：prompt ID
+   *
+   * @generated from field: int64 id = 1;
+   */
+  id: bigint;
+
+  /**
+   * 可选：空则不更新
+   *
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * 可选：空则不更新
+   *
+   * @generated from field: string content = 3;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.UpdateSystemPromptRequest.
+ * Use `create(UpdateSystemPromptRequestSchema)` to create a new message.
+ */
+export const UpdateSystemPromptRequestSchema: GenMessage<UpdateSystemPromptRequest> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 20);
+
+/**
+ * @generated from message kw_agent_service.v1.DeleteSystemPromptRequest
+ */
+export type DeleteSystemPromptRequest = Message<"kw_agent_service.v1.DeleteSystemPromptRequest"> & {
+  /**
+   * @generated from field: int64 id = 1;
+   */
+  id: bigint;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.DeleteSystemPromptRequest.
+ * Use `create(DeleteSystemPromptRequestSchema)` to create a new message.
+ */
+export const DeleteSystemPromptRequestSchema: GenMessage<DeleteSystemPromptRequest> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 21);
+
+/**
+ * @generated from message kw_agent_service.v1.GetSystemPromptRequest
+ */
+export type GetSystemPromptRequest = Message<"kw_agent_service.v1.GetSystemPromptRequest"> & {
+  /**
+   * @generated from field: int64 id = 1;
+   */
+  id: bigint;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.GetSystemPromptRequest.
+ * Use `create(GetSystemPromptRequestSchema)` to create a new message.
+ */
+export const GetSystemPromptRequestSchema: GenMessage<GetSystemPromptRequest> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 22);
+
+/**
+ * @generated from message kw_agent_service.v1.ListSystemPromptsRequest
+ */
+export type ListSystemPromptsRequest = Message<"kw_agent_service.v1.ListSystemPromptsRequest"> & {
+};
+
+/**
+ * Describes the message kw_agent_service.v1.ListSystemPromptsRequest.
+ * Use `create(ListSystemPromptsRequestSchema)` to create a new message.
+ */
+export const ListSystemPromptsRequestSchema: GenMessage<ListSystemPromptsRequest> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 23);
+
+/**
+ * @generated from message kw_agent_service.v1.SystemPromptInfo
+ */
+export type SystemPromptInfo = Message<"kw_agent_service.v1.SystemPromptInfo"> & {
+  /**
+   * @generated from field: int64 id = 1;
+   */
+  id: bigint;
+
+  /**
+   * @generated from field: string app_id = 2;
+   */
+  appId: string;
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string content = 4;
+   */
+  content: string;
+
+  /**
+   * unix timestamp ms
+   *
+   * @generated from field: int64 created_at = 5;
+   */
+  createdAt: bigint;
+
+  /**
+   * unix timestamp ms
+   *
+   * @generated from field: int64 updated_at = 6;
+   */
+  updatedAt: bigint;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.SystemPromptInfo.
+ * Use `create(SystemPromptInfoSchema)` to create a new message.
+ */
+export const SystemPromptInfoSchema: GenMessage<SystemPromptInfo> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 24);
+
+/**
+ * @generated from message kw_agent_service.v1.ListSystemPromptsResponse
+ */
+export type ListSystemPromptsResponse = Message<"kw_agent_service.v1.ListSystemPromptsResponse"> & {
+  /**
+   * @generated from field: repeated kw_agent_service.v1.SystemPromptInfo prompts = 1;
+   */
+  prompts: SystemPromptInfo[];
+};
+
+/**
+ * Describes the message kw_agent_service.v1.ListSystemPromptsResponse.
+ * Use `create(ListSystemPromptsResponseSchema)` to create a new message.
+ */
+export const ListSystemPromptsResponseSchema: GenMessage<ListSystemPromptsResponse> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 25);
+
+/**
+ * @generated from message kw_agent_service.v1.DeleteSystemPromptReply
+ */
+export type DeleteSystemPromptReply = Message<"kw_agent_service.v1.DeleteSystemPromptReply"> & {
+};
+
+/**
+ * Describes the message kw_agent_service.v1.DeleteSystemPromptReply.
+ * Use `create(DeleteSystemPromptReplySchema)` to create a new message.
+ */
+export const DeleteSystemPromptReplySchema: GenMessage<DeleteSystemPromptReply> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 26);
+
+/**
+ * @generated from message kw_agent_service.v1.ProfileFactInfo
+ */
+export type ProfileFactInfo = Message<"kw_agent_service.v1.ProfileFactInfo"> & {
+  /**
+   * @generated from field: int32 id = 1;
+   */
+  id: number;
+
+  /**
+   * @generated from field: string content = 2;
+   */
+  content: string;
+
+  /**
+   * YYYY-MM-DD
+   *
+   * @generated from field: string created_at = 3;
+   */
+  createdAt: string;
+
+  /**
+   * YYYY-MM-DD
+   *
+   * @generated from field: string updated_at = 4;
+   */
+  updatedAt: string;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.ProfileFactInfo.
+ * Use `create(ProfileFactInfoSchema)` to create a new message.
+ */
+export const ProfileFactInfoSchema: GenMessage<ProfileFactInfo> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 27);
+
+/**
+ * @generated from message kw_agent_service.v1.ListProfileFactsRequest
+ */
+export type ListProfileFactsRequest = Message<"kw_agent_service.v1.ListProfileFactsRequest"> & {
+  /**
+   * 必填
+   *
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * 必填："soul" 或 "identity"
+   *
+   * @generated from field: string field = 2;
+   */
+  field: string;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.ListProfileFactsRequest.
+ * Use `create(ListProfileFactsRequestSchema)` to create a new message.
+ */
+export const ListProfileFactsRequestSchema: GenMessage<ListProfileFactsRequest> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 28);
+
+/**
+ * @generated from message kw_agent_service.v1.ListProfileFactsResponse
+ */
+export type ListProfileFactsResponse = Message<"kw_agent_service.v1.ListProfileFactsResponse"> & {
+  /**
+   * @generated from field: repeated kw_agent_service.v1.ProfileFactInfo facts = 1;
+   */
+  facts: ProfileFactInfo[];
+};
+
+/**
+ * Describes the message kw_agent_service.v1.ListProfileFactsResponse.
+ * Use `create(ListProfileFactsResponseSchema)` to create a new message.
+ */
+export const ListProfileFactsResponseSchema: GenMessage<ListProfileFactsResponse> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 29);
+
+/**
+ * @generated from message kw_agent_service.v1.CreateProfileFactRequest
+ */
+export type CreateProfileFactRequest = Message<"kw_agent_service.v1.CreateProfileFactRequest"> & {
+  /**
+   * 必填
+   *
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * 必填："soul" 或 "identity"
+   *
+   * @generated from field: string field = 2;
+   */
+  field: string;
+
+  /**
+   * 必填：fact 内容
+   *
+   * @generated from field: string content = 3;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.CreateProfileFactRequest.
+ * Use `create(CreateProfileFactRequestSchema)` to create a new message.
+ */
+export const CreateProfileFactRequestSchema: GenMessage<CreateProfileFactRequest> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 30);
+
+/**
+ * @generated from message kw_agent_service.v1.UpdateProfileFactRequest
+ */
+export type UpdateProfileFactRequest = Message<"kw_agent_service.v1.UpdateProfileFactRequest"> & {
+  /**
+   * 必填
+   *
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * 必填："soul" 或 "identity"
+   *
+   * @generated from field: string field = 2;
+   */
+  field: string;
+
+  /**
+   * 必填：要更新的 fact ID
+   *
+   * @generated from field: int32 fact_id = 3;
+   */
+  factId: number;
+
+  /**
+   * 必填：新内容
+   *
+   * @generated from field: string content = 4;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.UpdateProfileFactRequest.
+ * Use `create(UpdateProfileFactRequestSchema)` to create a new message.
+ */
+export const UpdateProfileFactRequestSchema: GenMessage<UpdateProfileFactRequest> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 31);
+
+/**
+ * @generated from message kw_agent_service.v1.DeleteProfileFactRequest
+ */
+export type DeleteProfileFactRequest = Message<"kw_agent_service.v1.DeleteProfileFactRequest"> & {
+  /**
+   * 必填
+   *
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * 必填："soul" 或 "identity"
+   *
+   * @generated from field: string field = 2;
+   */
+  field: string;
+
+  /**
+   * 必填：要删除的 fact ID
+   *
+   * @generated from field: int32 fact_id = 3;
+   */
+  factId: number;
+};
+
+/**
+ * Describes the message kw_agent_service.v1.DeleteProfileFactRequest.
+ * Use `create(DeleteProfileFactRequestSchema)` to create a new message.
+ */
+export const DeleteProfileFactRequestSchema: GenMessage<DeleteProfileFactRequest> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 32);
+
+/**
+ * @generated from message kw_agent_service.v1.DeleteProfileFactReply
+ */
+export type DeleteProfileFactReply = Message<"kw_agent_service.v1.DeleteProfileFactReply"> & {
+};
+
+/**
+ * Describes the message kw_agent_service.v1.DeleteProfileFactReply.
+ * Use `create(DeleteProfileFactReplySchema)` to create a new message.
+ */
+export const DeleteProfileFactReplySchema: GenMessage<DeleteProfileFactReply> = /*@__PURE__*/
+  messageDesc(file_kw_agent_service_v1_kw_agent_service, 33);
+
+/**
  * @generated from service kw_agent_service.v1.KwAgentServiceService
  */
 export const KwAgentServiceService: GenService<{
@@ -717,6 +1111,78 @@ export const KwAgentServiceService: GenService<{
     methodKind: "unary";
     input: typeof CancelRequestSchema;
     output: typeof CancelReplySchema;
+  },
+  /**
+   * @generated from rpc kw_agent_service.v1.KwAgentServiceService.CreateSystemPrompt
+   */
+  createSystemPrompt: {
+    methodKind: "unary";
+    input: typeof CreateSystemPromptRequestSchema;
+    output: typeof SystemPromptInfoSchema;
+  },
+  /**
+   * @generated from rpc kw_agent_service.v1.KwAgentServiceService.UpdateSystemPrompt
+   */
+  updateSystemPrompt: {
+    methodKind: "unary";
+    input: typeof UpdateSystemPromptRequestSchema;
+    output: typeof SystemPromptInfoSchema;
+  },
+  /**
+   * @generated from rpc kw_agent_service.v1.KwAgentServiceService.DeleteSystemPrompt
+   */
+  deleteSystemPrompt: {
+    methodKind: "unary";
+    input: typeof DeleteSystemPromptRequestSchema;
+    output: typeof DeleteSystemPromptReplySchema;
+  },
+  /**
+   * @generated from rpc kw_agent_service.v1.KwAgentServiceService.GetSystemPrompt
+   */
+  getSystemPrompt: {
+    methodKind: "unary";
+    input: typeof GetSystemPromptRequestSchema;
+    output: typeof SystemPromptInfoSchema;
+  },
+  /**
+   * @generated from rpc kw_agent_service.v1.KwAgentServiceService.ListSystemPrompts
+   */
+  listSystemPrompts: {
+    methodKind: "unary";
+    input: typeof ListSystemPromptsRequestSchema;
+    output: typeof ListSystemPromptsResponseSchema;
+  },
+  /**
+   * @generated from rpc kw_agent_service.v1.KwAgentServiceService.ListProfileFacts
+   */
+  listProfileFacts: {
+    methodKind: "unary";
+    input: typeof ListProfileFactsRequestSchema;
+    output: typeof ListProfileFactsResponseSchema;
+  },
+  /**
+   * @generated from rpc kw_agent_service.v1.KwAgentServiceService.CreateProfileFact
+   */
+  createProfileFact: {
+    methodKind: "unary";
+    input: typeof CreateProfileFactRequestSchema;
+    output: typeof ProfileFactInfoSchema;
+  },
+  /**
+   * @generated from rpc kw_agent_service.v1.KwAgentServiceService.UpdateProfileFact
+   */
+  updateProfileFact: {
+    methodKind: "unary";
+    input: typeof UpdateProfileFactRequestSchema;
+    output: typeof ProfileFactInfoSchema;
+  },
+  /**
+   * @generated from rpc kw_agent_service.v1.KwAgentServiceService.DeleteProfileFact
+   */
+  deleteProfileFact: {
+    methodKind: "unary";
+    input: typeof DeleteProfileFactRequestSchema;
+    output: typeof DeleteProfileFactReplySchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_kw_agent_service_v1_kw_agent_service, 0);

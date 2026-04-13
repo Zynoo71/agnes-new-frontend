@@ -5,6 +5,7 @@ import { useChat } from "@/hooks/useChat";
 import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
 import { MessageBubble } from "@/components/MessageBubble";
 import { EventStream } from "@/components/EventStream";
+import { SystemPromptSelector } from "@/components/SystemPromptSelector";
 
 const AGENT_TYPES = ["super", "search", "research", "slide", "pixa"] as const;
 
@@ -122,7 +123,7 @@ function ScrollRow({ items, direction, duration }: { items: string[]; direction:
 }
 
 export function ChatPanel() {
-  const { conversationId, agentType, messages, isStreaming, isLoadingHistory, error, setAgentType } =
+  const { conversationId, agentType, messages, isStreaming, isLoadingHistory, error, setAgentType, systemPromptId, setSystemPromptId } =
     useConversationStore();
   const rawEventsCount = useConversationStore(s => s.rawEvents.length);
   const rawEvents = useConversationStore(s => s.rawEvents);
@@ -146,6 +147,7 @@ export function ChatPanel() {
   );
 
   const isEmpty = messages.length === 0;
+  const hasUserMessages = messages.some((m) => m.role === "user");
 
   // Reset scroll state when conversation changes — force next scroll to bottom.
   useEffect(() => {
@@ -226,24 +228,36 @@ export function ChatPanel() {
     <div className={`relative rounded-[20px] border border-border bg-surface shadow-sm
                     focus-within:shadow-md focus-within:border-border transition-shadow
                     ${isEmpty ? "max-w-xl w-full" : ""}`}>
-      {/* Agent mode selector */}
-      <div className="flex items-center gap-1 px-3 pt-2.5 pb-0">
-        {AGENT_TYPES.map((t) => (
-          <button
-            key={t}
-            onClick={() => {
-              setAgentType(t);
-              if (conversationId) useConversationListStore.getState().update(conversationId, { agentType: t });
-            }}
-            className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all capitalize ${
-              agentType === t
-                ? "bg-accent/10 text-accent"
-                : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
+      {/* Agent mode selector + Prompt selector */}
+      <div className="flex items-center justify-between px-3 pt-2.5 pb-0">
+        <div className="flex items-center gap-1">
+          {AGENT_TYPES.map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                setAgentType(t);
+                if (conversationId) useConversationListStore.getState().update(conversationId, { agentType: t });
+              }}
+              className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all capitalize ${
+                agentType === t
+                  ? "bg-accent/10 text-accent"
+                  : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+        <SystemPromptSelector
+          selectedId={systemPromptId}
+          onChange={(id) => {
+            setSystemPromptId(id);
+            if (conversationId) {
+              useConversationListStore.getState().update(conversationId, { systemPromptId: id });
+            }
+          }}
+          disabled={hasUserMessages}
+        />
       </div>
       <div className="flex items-end">
         <textarea

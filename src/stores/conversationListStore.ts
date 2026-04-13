@@ -11,8 +11,8 @@ interface ConversationListStore {
   conversations: ConvMeta[];
 
   load: () => void;
-  add: (id: string, agentType: string) => void;
-  update: (id: string, fields: Partial<Pick<ConvMeta, "title" | "agentType">>) => void;
+  add: (id: string, agentType: string, systemPromptId?: string) => void;
+  update: (id: string, fields: Partial<Pick<ConvMeta, "title" | "agentType" | "systemPromptId">>) => void;
   remove: (id: string) => void;
 }
 
@@ -21,8 +21,8 @@ export const useConversationListStore = create<ConversationListStore>((set) => (
 
   load: () => set({ conversations: dbList() }),
 
-  add: (id, agentType) => {
-    dbAdd(id, agentType);
+  add: (id, agentType, systemPromptId) => {
+    dbAdd(id, agentType, systemPromptId);
     set({ conversations: dbList() });
   },
 

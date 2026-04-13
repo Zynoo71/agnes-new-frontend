@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ImagePreview } from "@/components/ImagePreview";
 import { ChatPanel } from "@/panels/ChatPanel";
 import { PixaPanel } from "@/panels/PixaPanel";
+import { PromptManagementPage } from "@/pages/PromptManagementPage";
 
 /** Route: /chat/:convId — selects the conversation on mount */
 function ChatRoute() {
@@ -72,6 +73,7 @@ function AppLayout() {
           <Route path="/chat" element={<ErrorBoundary><ChatPanel /></ErrorBoundary>} />
           <Route path="/chat/:convId" element={<ChatRoute />} />
           <Route path="/pixa" element={<ErrorBoundary><PixaPanel /></ErrorBoundary>} />
+          <Route path="/prompts" element={<ErrorBoundary><PromptManagementPage /></ErrorBoundary>} />
           <Route path="*" element={<Navigate to="/chat" replace />} />
         </Routes>
       </main>
