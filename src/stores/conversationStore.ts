@@ -419,6 +419,7 @@ interface PendingTextSegment {
 interface ConversationStore {
   conversationId: string | null;
   agentType: string;
+  systemPromptId: string | null;
   messages: Message[];
   rawEvents: RawEvent[];
   tasks: AgentTask[];
@@ -433,6 +434,7 @@ interface ConversationStore {
 
   setConversationId: (id: string) => void;
   setAgentType: (type: string) => void;
+  setSystemPromptId: (id: string | null) => void;
   setStreaming: (v: boolean) => void;
   setLoadingHistory: (v: boolean) => void;
   setError: (err: string | null) => void;
@@ -470,6 +472,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
   return {
     conversationId: null,
     agentType: "super",
+    systemPromptId: null,
     messages: [],
     rawEvents: [],
     tasks: [],
@@ -482,6 +485,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
 
     setConversationId: (id) => set({ conversationId: id }),
     setAgentType: (type) => set({ agentType: type }),
+    setSystemPromptId: (id) => set({ systemPromptId: id }),
     setStreaming: (v) => set({ isStreaming: v }),
     setLoadingHistory: (v) => set({ isLoadingHistory: v }),
     setError: (err) => set({ error: err }),
@@ -653,6 +657,6 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
     setMessages: (messages) => set({ messages, rawEvents: [] }),
 
     reset: () =>
-      set({ conversationId: null, messages: [], rawEvents: [], tasks: [], isStreaming: false, isLoadingHistory: false, error: null, pendingTextQueue: [], isTyping: false }),
+      set({ conversationId: null, systemPromptId: null, messages: [], rawEvents: [], tasks: [], isStreaming: false, isLoadingHistory: false, error: null, pendingTextQueue: [], isTyping: false }),
   };
 });

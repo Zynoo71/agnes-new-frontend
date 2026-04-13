@@ -167,7 +167,7 @@ export function useChat() {
     const reply = await agentClient.createConversation({});
     const id = String(reply.conversationId);
     getState().setConversationId(id);
-    useConversationListStore.getState().add(id, getState().agentType);
+    useConversationListStore.getState().add(id, getState().agentType, getState().systemPromptId ?? undefined);
     return id;
   }, []);
 
@@ -187,7 +187,12 @@ export function useChat() {
     }
 
     const stream = agentClient.chatStream(
-      { conversationId: BigInt(convId), query, agentType: s.agentType },
+      {
+        conversationId: BigInt(convId),
+        query,
+        agentType: s.agentType,
+        systemPromptId: s.systemPromptId ? BigInt(s.systemPromptId) : 0n,
+      },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -276,7 +281,10 @@ export function useChat() {
 
     // Restore agentType from the conversation list
     const conv = useConversationListStore.getState().conversations.find((c) => c.id === id);
-    if (conv) s.setAgentType(conv.agentType);
+    if (conv) {
+      s.setAgentType(conv.agentType);
+      s.setSystemPromptId(conv.systemPromptId ?? null);
+    }
 
     let resp;
     try {
