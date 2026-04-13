@@ -59,7 +59,7 @@ export function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) 
       </div>
       {visible.length > 0 && (
         <div className="grid grid-cols-3 gap-1.5">
-          {visible.map((r, i) => (
+          {visible.map((r) => (
             <ImageItem key={r.url as string} url={r.url as string} title={r.title as string}
               onLoaded={handleLoaded}
               onFailed={() => setFailedUrls(s => new Set(s).add(r.url as string))} />
@@ -77,4 +77,3 @@ export function ImageSearchRenderer({ toolInput, toolResult }: ToolRenderProps) 
     </div>
   );
 }
-

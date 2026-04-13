@@ -7,7 +7,7 @@ import { MessageBubble } from "@/components/MessageBubble";
 import { EventStream } from "@/components/EventStream";
 import { SystemPromptSelector } from "@/components/SystemPromptSelector";
 
-const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
+const AGENT_TYPES = ["super", "search", "research", "slide", "pixa"] as const;
 
 const SCROLL_HINTS_ROW1 = [
   "Search the latest AI news",
