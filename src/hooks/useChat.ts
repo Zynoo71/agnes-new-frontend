@@ -7,6 +7,16 @@ import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
 const getState = () => useConversationStore.getState();
 
+/** Sheet 模式：每次 ChatStream 默认附带的固定测试文件（用于 sheet_agent 端到端联调） */
+const SHEET_DEFAULT_FILES = [
+  {
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    url: "https://storage.googleapis.com/agnes-default/user_e88f2c99-e17d-433b-adf0-32d8792148bc/20260413/85fa4ca7-63b9-4551-b925-5cf9ce619d37.xlsx",
+    filename: "85fa4ca7-63b9-4551-b925-5cf9ce619d37.xlsx",
+    data: new Uint8Array(),
+  },
+] as const;
+
 // ── Module-level singleton abort management ──
 // Shared across all useChat() call sites — fixes the multi-instance bug.
 
@@ -191,7 +201,7 @@ export function useChat() {
         conversationId: BigInt(convId),
         query,
         agentType: s.agentType,
-        systemPromptId: s.systemPromptId ? BigInt(s.systemPromptId) : 0n,
+        ...(s.agentType === "sheet" ? { files: [...SHEET_DEFAULT_FILES] } : {}),
       },
       { signal },
     );
