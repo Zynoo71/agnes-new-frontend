@@ -71,13 +71,23 @@ export const PLANNING_TOOL_NAMES = new Set([
   "create_task", "update_task", "list_tasks", "get_task",
 ]);
 
+export interface SlideOutlineData {
+  outline: Record<string, unknown>;
+}
+
+export interface SlideDesignSystemData {
+  summary: string;
+}
+
 export type ContentBlock =
   | { type: "Message"; content: string }
   | { type: "Reasoning"; content: string }
   | { type: "ToolCallStart"; data: ToolCallData }
   | { type: "human_review"; data: HumanReviewData }
   | { type: "TaskList" }
-  | { type: "ContextCompacting"; done: boolean };
+  | { type: "ContextCompacting"; done: boolean }
+  | { type: "SlideOutline"; data: SlideOutlineData }
+  | { type: "SlideDesignSystem"; data: SlideDesignSystemData };
 
 export interface Message {
   id: string;
@@ -250,13 +260,27 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
       if (custom.type === "TaskUpdate") {
         const action = payload.action as string;
         if (action === "create") {
-          // Insert TaskList anchor block on first task creation
           const hasAnchor = updated.blocks.some((b) => b.type === "TaskList");
           if (!hasAnchor) {
             updated.blocks.push({ type: "TaskList" });
           }
         }
-        // Note: store.tasks is updated separately in processEventForConv
+        break;
+      }
+
+      if (custom.type === "OutlineGenerated") {
+        updated.blocks.push({
+          type: "SlideOutline",
+          data: { outline: (payload.outline as Record<string, unknown>) ?? {} },
+        });
+        break;
+      }
+
+      if (custom.type === "DesignSystemGenerated") {
+        updated.blocks.push({
+          type: "SlideDesignSystem",
+          data: { summary: (payload.summary as string) ?? "" },
+        });
         break;
       }
 

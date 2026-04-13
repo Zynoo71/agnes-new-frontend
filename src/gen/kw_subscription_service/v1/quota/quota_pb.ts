@@ -1787,7 +1787,7 @@ export const GetTemplateConsumptionCostResponseSchema: GenMessage<GetTemplateCon
 
 /**
  * UpdateTemplateConsumptionConfigRequest 按模板 ID 更新 aigc_template 消耗规则（与 BatchGetTemplateConsumptionCosts 命中口径一致：全局 scope、model/resolution/audio 通配）。
- * 须至少提供一个可更新字段。
+ * 规则已存在时须至少提供一个可更新字段；不存在时自动插入一行：未传的计价字段从 app_id=0 默认模板行（template_defafule_000）复制。
  *
  * @generated from message kw_subscription_service.v1.quota.UpdateTemplateConsumptionConfigRequest
  */

@@ -259,7 +259,7 @@ export type ToolCallStart = Message<"common.v1.ToolCallStart"> & {
   toolCallId: string;
 
   /**
-   * JSON-encoded tool input args (may be empty in streaming)
+   * JSON-encoded tool input arguments
    *
    * @generated from field: bytes tool_input = 3;
    */

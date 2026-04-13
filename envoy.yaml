@@ -42,6 +42,7 @@ static_resources:
   clusters:
     - name: grpc_service
       type: LOGICAL_DNS
+      dns_lookup_family: V4_ONLY
       lb_policy: ROUND_ROBIN
       typed_extension_protocol_options:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

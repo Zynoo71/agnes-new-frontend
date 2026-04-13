@@ -6,7 +6,7 @@ import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
 import { MessageBubble } from "@/components/MessageBubble";
 import { EventStream } from "@/components/EventStream";
 
-const AGENT_TYPES = ["super", "search", "research", "pixa"] as const;
+const AGENT_TYPES = ["super", "search", "research", "slide", "pixa"] as const;
 
 const HEALTH_CONFIG = {
   ok: { dot: "bg-green-500", color: "#22c55e", label: "Connected" },

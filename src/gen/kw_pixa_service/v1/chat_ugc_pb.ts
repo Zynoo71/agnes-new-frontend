@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kw_pixa_service/v1/chat_ugc.proto.
  */
 export const file_kw_pixa_service_v1_chat_ugc: GenFile = /*@__PURE__*/
-  fileDesc("CiFrd19waXhhX3NlcnZpY2UvdjEvY2hhdF91Z2MucHJvdG8SEmt3X3BpeGFfc2VydmljZS52MSKhAQoYU2F2ZUNoYXRTdHJlYW1VZ2NSZXF1ZXN0EhcKD2lucHV0X3Jhd3NfanNvbhgBIAEoCRIfChdnZW5lcmF0aW9uX3N1Y2Nlc3NfanNvbhgCIAEoCRIjChtwaXhhX21vZGVsX2NvbmZpZ19kb25lX2pzb24YAyABKAkSEQoJdXNlcl9uYW1lGAQgASgJEhMKC3VzZXJfYXZhdGFyGAUgASgJIisKGVNhdmVDaGF0U3RyZWFtVWdjUmVzcG9uc2USDgoGdWdjX2lkGAEgASgJMoIBCg5DaGF0VWdjU2VydmljZRJwChFTYXZlQ2hhdFN0cmVhbVVnYxIsLmt3X3BpeGFfc2VydmljZS52MS5TYXZlQ2hhdFN0cmVhbVVnY1JlcXVlc3QaLS5rd19waXhhX3NlcnZpY2UudjEuU2F2ZUNoYXRTdHJlYW1VZ2NSZXNwb25zZUI6WjhhZ25lcy9wcm90by9nZW4vZ28va3dfcGl4YV9zZXJ2aWNlL3YxO2t3X3BpeGFfc2VydmljZV92MWIGcHJvdG8z");
+  fileDesc("CiFrd19waXhhX3NlcnZpY2UvdjEvY2hhdF91Z2MucHJvdG8SEmt3X3BpeGFfc2VydmljZS52MSKwAQoYU2F2ZUNoYXRTdHJlYW1VZ2NSZXF1ZXN0EhcKD2lucHV0X3Jhd3NfanNvbhgBIAEoCRIfChdnZW5lcmF0aW9uX3N1Y2Nlc3NfanNvbhgCIAEoCRIjChtwaXhhX21vZGVsX2NvbmZpZ19kb25lX2pzb24YAyABKAkSEQoJdXNlcl9uYW1lGAQgASgJEhMKC3VzZXJfYXZhdGFyGAUgASgJEg0KBXRpdGxlGAYgASgJIisKGVNhdmVDaGF0U3RyZWFtVWdjUmVzcG9uc2USDgoGdWdjX2lkGAEgASgJMoIBCg5DaGF0VWdjU2VydmljZRJwChFTYXZlQ2hhdFN0cmVhbVVnYxIsLmt3X3BpeGFfc2VydmljZS52MS5TYXZlQ2hhdFN0cmVhbVVnY1JlcXVlc3QaLS5rd19waXhhX3NlcnZpY2UudjEuU2F2ZUNoYXRTdHJlYW1VZ2NSZXNwb25zZUI6WjhhZ25lcy9wcm90by9nZW4vZ28va3dfcGl4YV9zZXJ2aWNlL3YxO2t3X3BpeGFfc2VydmljZV92MWIGcHJvdG8z");
 
 /**
  * @generated from message kw_pixa_service.v1.SaveChatStreamUgcRequest
@@ -40,6 +40,13 @@ export type SaveChatStreamUgcRequest = Message<"kw_pixa_service.v1.SaveChatStrea
    * @generated from field: string user_avatar = 5;
    */
   userAvatar: string;
+
+  /**
+   * 落库 pixa_ugc.title（不再从 input_raws.prompt 推导）
+   *
+   * @generated from field: string title = 6;
+   */
+  title: string;
 };
 
 /**
