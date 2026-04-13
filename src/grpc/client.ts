@@ -4,6 +4,7 @@ import { KwAgentServiceService } from "@/gen/kw_agent_service/v1/kw_agent_servic
 
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
+const APP_ID = import.meta.env.VITE_APP_ID ?? "";
 
 function generateTraceId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -17,6 +18,9 @@ const injectHeadersInterceptor: Interceptor = (next) => (req) => {
   }
   if (DEV_LANE) {
     req.header.set("x-dev-lane", DEV_LANE);
+  }
+  if (APP_ID) {
+    req.header.set("x-app-id", APP_ID);
   }
   return next(req);
 };
