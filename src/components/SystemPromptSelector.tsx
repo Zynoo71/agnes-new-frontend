@@ -62,7 +62,7 @@ export function SystemPromptSelector({ selectedId, onChange, disabled }: Props) 
 
       {/* Hover tooltip for frozen state */}
       {showTooltip && disabled && selected && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-72 p-3 bg-surface border border-border
+        <div className="absolute right-0 bottom-full mb-1 z-50 w-72 p-3 bg-surface border border-border
                         rounded-xl shadow-lg text-xs text-text-secondary leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
           <div className="font-medium text-text-primary mb-1">{selected.name}</div>
           {selected.content}
@@ -71,7 +71,7 @@ export function SystemPromptSelector({ selectedId, onChange, disabled }: Props) 
 
       {/* Dropdown */}
       {open && !disabled && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-surface border border-border
+        <div className="absolute right-0 bottom-full mb-1 z-50 w-64 bg-surface border border-border
                         rounded-xl shadow-lg py-1 max-h-60 overflow-y-auto">
           <button
             onClick={() => { onChange(null); setOpen(false); }}
