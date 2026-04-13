@@ -6,6 +6,7 @@ import { useChat } from "@/hooks/useChat";
 import { Sidebar } from "@/components/Sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ImagePreview } from "@/components/ImagePreview";
+import { LocalSlidePreview } from "@/components/LocalSlidePreview";
 import { ChatPanel } from "@/panels/ChatPanel";
 import { PixaPanel } from "@/panels/PixaPanel";
 import { PromptManagementPage } from "@/pages/PromptManagementPage";
@@ -80,6 +81,7 @@ function AppLayout() {
         </Routes>
       </main>
       <ImagePreview />
+      <LocalSlidePreview />
     </div>
   );
 }

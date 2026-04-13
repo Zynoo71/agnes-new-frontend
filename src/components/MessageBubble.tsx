@@ -11,7 +11,7 @@ import type {
   SlideOutlineData,
   SlideDesignSystemData,
 } from "@/stores/conversationStore";
-import { PLANNING_TOOL_NAMES } from "@/stores/conversationStore";
+import { PLANNING_TOOL_NAMES, useConversationStore } from "@/stores/conversationStore";
 import { CitationSources } from "@/components/CitationSources";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
@@ -19,6 +19,7 @@ import { TaskListPanel } from "./TaskListPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
 import { useImagePreviewStore } from "@/stores/imagePreviewStore";
+import { useLocalSlidePreviewStore } from "@/stores/localSlidePreviewStore";
 
 // ── Stable references for Markdown (avoid remounting custom elements on re-render) ──
 const REMARK_PLUGINS = [remarkGfm, remarkCjkFriendly];
@@ -100,9 +101,26 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
   const [copied, setCopied] = useState(false);
+  const conversationId = useConversationStore((s) => s.conversationId);
+  const openLocalPreview = useLocalSlidePreviewStore((s) => s.open);
 
   const canEdit = isUser && isLast && onEditResend && !isStreaming;
   const canRegenerate = !isUser && isLast && onRegenerate && !isStreaming;
+  const slideOutlineBlock = !isUser
+    ? [...message.blocks]
+        .reverse()
+        .find((block): block is { type: "SlideOutline"; data: SlideOutlineData } => block.type === "SlideOutline")
+    : undefined;
+  const assistantText = !isUser
+    ? message.blocks
+        .filter((block): block is { type: "Message"; content: string } => block.type === "Message")
+        .map((block) => block.content)
+        .join("\n")
+    : "";
+  const hasSlideArtifactHint =
+    /\/deck\/deck_outline\.json|\/deck\/slides\/slide-\d+\/index\.html|产物路径|PPT 结构概览/i.test(assistantText);
+  const shouldShowLocalPreview = !isUser && isLast && (!!slideOutlineBlock || hasSlideArtifactHint);
+  const canOpenLocalPreview = shouldShowLocalPreview && !isStreaming && !!conversationId;
 
   const handleCopy = useCallback(() => {
     const text = message.blocks
@@ -314,6 +332,38 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
               )}
             </div>
           </div>
+        )}
+
+        {shouldShowLocalPreview && (
+          <button
+            onClick={() => {
+              if (!conversationId) return;
+              openLocalPreview(conversationId, slideOutlineBlock?.data.outline ?? null);
+            }}
+            disabled={!canOpenLocalPreview}
+            className="mt-4 flex w-full items-center justify-between rounded-2xl border border-teal-200/80 bg-gradient-to-r from-teal-50 to-cyan-50 px-4 py-3 text-left transition-colors hover:border-teal-300 hover:from-teal-100 hover:to-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-teal-700">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-text-primary">本地预览</p>
+                <p className="truncate text-xs text-text-secondary">
+                  {canOpenLocalPreview
+                    ? "流式输出结束后可直接查看本地生成的整套 slides"
+                    : isStreaming
+                      ? "正在等待本地 slides 生成完成"
+                      : "当前没有可用的会话 ID，暂时无法读取本地 slides 目录"}
+                </p>
+              </div>
+            </div>
+            <svg className="h-4 w-4 shrink-0 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         )}
 
         {!isStreaming && (
@@ -694,15 +744,17 @@ function SlideOutlineBlock({ data }: { data: SlideOutlineData }) {
 
   return (
     <div className="my-3 rounded-xl border border-teal-200/60 bg-teal-50/30 p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-5 h-5 rounded-md bg-teal-500/20 flex items-center justify-center shrink-0">
-          <svg className="w-3 h-3 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-          </svg>
-        </div>
-        <div>
-          <span className="text-sm font-semibold text-text-primary">{title}</span>
-          <span className="text-[11px] text-text-tertiary ml-2">{slides.length} pages</span>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="w-5 h-5 rounded-md bg-teal-500/20 flex items-center justify-center shrink-0">
+            <svg className="w-3 h-3 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <span className="text-sm font-semibold text-text-primary">{title}</span>
+            <span className="text-[11px] text-text-tertiary ml-2">{slides.length} pages</span>
+          </div>
         </div>
       </div>
       {goal && (
@@ -710,7 +762,10 @@ function SlideOutlineBlock({ data }: { data: SlideOutlineData }) {
       )}
       <div className="space-y-1.5">
         {slides.map((slide) => (
-          <div key={slide.slide_id} className="flex items-center gap-2 rounded-lg bg-surface/60 px-3 py-2">
+          <div
+            key={slide.slide_id}
+            className="flex w-full items-center gap-2 rounded-lg bg-surface/60 px-3 py-2 text-left"
+          >
             <span className="text-[10px] font-mono text-text-tertiary w-5 text-right shrink-0">
               {slide.index}
             </span>
