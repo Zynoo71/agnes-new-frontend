@@ -120,6 +120,28 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
             existing.data.toolName = data.tool_name;
           }
         }
+      } else if (block.type === "OutlineGenerated") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        assistantBlocks.push({
+          type: "SlideOutline",
+          data: { outline: (data.outline as Record<string, unknown>) ?? {} },
+        });
+      } else if (block.type === "DesignSystemGenerated") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        assistantBlocks.push({
+          type: "SlideDesignSystem",
+          data: { summary: (data.summary as string) ?? "" },
+        });
+      } else if (block.type === "MemoryUpdate") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const field = data.field as string | undefined;
+        const content = data.content as string | undefined;
+        if ((field === "soul" || field === "identity") && content) {
+          assistantBlocks.push({
+            type: "MemoryUpdate",
+            data: { field, content },
+          });
+        }
       }
     }
     // Inject TaskList anchor if this message has a create_task tool call
