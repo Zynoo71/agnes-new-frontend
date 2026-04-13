@@ -81,15 +81,22 @@ export function SystemPromptSelector({ selectedId, onChange, disabled }: Props) 
             No prompt
           </button>
           {prompts.map((p) => (
-            <button
-              key={String(p.id)}
-              onClick={() => { onChange(String(p.id)); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-xs transition-colors
-                ${String(p.id) === selectedId ? "text-accent bg-accent/5" : "text-text-secondary hover:bg-surface-hover"}`}
-            >
-              <div className="font-medium truncate">{p.name}</div>
-              <div className="text-text-tertiary truncate mt-0.5">{p.content.length > 60 ? p.content.slice(0, 60) + "..." : p.content}</div>
-            </button>
+            <div key={String(p.id)} className="group/item relative">
+              <button
+                onClick={() => { onChange(String(p.id)); setOpen(false); }}
+                className={`w-full text-left px-3 py-2 text-xs transition-colors
+                  ${String(p.id) === selectedId ? "text-accent bg-accent/5" : "text-text-secondary hover:bg-surface-hover"}`}
+              >
+                <div className="font-medium truncate">{p.name}</div>
+                <div className="text-text-tertiary truncate mt-0.5">{p.content.length > 60 ? p.content.slice(0, 60) + "..." : p.content}</div>
+              </button>
+              {/* Hover preview */}
+              <div className="hidden group-hover/item:block absolute right-full top-0 mr-1 z-50 w-72 p-3 bg-surface border border-border
+                              rounded-xl shadow-lg text-xs text-text-secondary leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
+                <div className="font-medium text-text-primary mb-1">{p.name}</div>
+                {p.content}
+              </div>
+            </div>
           ))}
         </div>
       )}
