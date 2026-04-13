@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { ToolRenderProps } from "../registry";
+import { ExpandableInput } from "../ExpandableInput";
 
 const AUTO_COLLAPSE_MS = 3000;
 
@@ -40,7 +41,7 @@ export function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
         </div>
         <span className="text-xs font-semibold text-text-primary tracking-tight shrink-0">Web Search</span>
         {query && (
-          <span className="text-[11px] text-text-secondary truncate min-w-0 flex-1">&ldquo;{query}&rdquo;</span>
+          <ExpandableInput value={query} variant="text" className="flex-1 min-w-0" />
         )}
         {!toolResult && (
           <span className="text-[10px] text-text-tertiary animate-gentle-pulse ml-auto">Searching...</span>

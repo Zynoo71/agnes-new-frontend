@@ -2,13 +2,67 @@ import { useState, useEffect, useRef, useCallback, memo } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
-import type { Message, ContentBlock, HumanReviewData, ToolCallData, SlideOutlineData, SlideDesignSystemData } from "@/stores/conversationStore";
+import type {
+  Message,
+  ContentBlock,
+  HumanReviewData,
+  ToolCallData,
+  MemoryUpdateData,
+  SlideOutlineData,
+  SlideDesignSystemData,
+} from "@/stores/conversationStore";
 import { PLANNING_TOOL_NAMES } from "@/stores/conversationStore";
+import { CitationSources } from "@/components/CitationSources";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { TaskListPanel } from "./TaskListPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
+import { useImagePreviewStore } from "@/stores/imagePreviewStore";
+
+// ── Stable references for Markdown (avoid remounting custom elements on re-render) ──
+const REMARK_PLUGINS = [remarkGfm, remarkCjkFriendly];
+
+function MarkdownImage({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const openPreview = useImagePreviewStore((s) => s.open);
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onLoad={(e) => {
+        const target = e.target as HTMLElement;
+        target.classList.remove("opacity-0", "h-0");
+        target.classList.add("opacity-100");
+      }}
+      onError={(e) => {
+        (e.target as HTMLElement).style.display = "none";
+      }}
+      onClick={() => src && openPreview(src, alt)}
+      className="rounded-lg max-w-full transition-opacity duration-300 opacity-0 h-0 cursor-zoom-in hover:opacity-90 active:scale-[0.99]"
+      {...props}
+    />
+  );
+}
+
+const MARKDOWN_COMPONENTS = {
+  pre({ children }: { children?: React.ReactNode }) {
+    return <>{children}</>;
+  },
+  code({ className, children }: { className?: string; children?: React.ReactNode }) {
+    const match = /language-(\w+)/.exec(className || "");
+    const code = String(children).replace(/\n$/, "");
+    if (match) {
+      return <CodeBlock language={match[1]}>{code}</CodeBlock>;
+    }
+    return <code className={className}>{children}</code>;
+  },
+  img(props: React.ImgHTMLAttributes<HTMLImageElement>) {
+    return <MarkdownImage {...props} />;
+  },
+  a({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+    return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+  },
+};
 
 interface MessageBubbleProps {
   message: Message;
@@ -121,17 +175,34 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
               ))
             )}
           </div>
-          {canEdit && !editing && (
-            <div className="flex justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {!editing && (
+            <div className="flex justify-end mt-1 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                onClick={handleStartEdit}
+                onClick={handleCopy}
                 className="w-7 h-7 rounded-lg flex items-center justify-center text-text-tertiary hover:text-text-secondary hover:bg-surface-hover transition-all"
-                title="Edit"
+                title={copied ? "Copied!" : "Copy"}
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
-                </svg>
+                {copied ? (
+                  <svg className="w-3.5 h-3.5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                  </svg>
+                )}
               </button>
+              {canEdit && (
+                <button
+                  onClick={handleStartEdit}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-text-tertiary hover:text-text-secondary hover:bg-surface-hover transition-all"
+                  title="Edit"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                  </svg>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -173,7 +244,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
             (b) => b.type === "ToolCallStart" && b.data.toolName === "spawn_worker",
           );
 
-          return message.blocks.map((block, i) => {
+          const rendered = message.blocks.map((block, i) => {
             const isSpawn = block.type === "ToolCallStart" && block.data.toolName === "spawn_worker";
 
             if (isSpawn) {
@@ -187,8 +258,8 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
               );
             }
 
-            // Planning tools → filter out (data stays in blocks, just not rendered)
-            if (block.type === "ToolCallStart" && PLANNING_TOOL_NAMES.has(block.data.toolName)) {
+            // Planning tools & cite_sources → filter out
+            if (block.type === "ToolCallStart" && (PLANNING_TOOL_NAMES.has(block.data.toolName) || block.data.toolName === "cite_sources")) {
               return null;
             }
 
@@ -221,6 +292,13 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
               </div>
             );
           });
+
+          return (
+            <>
+              {rendered}
+              {message.sources.length > 0 && <CitationSources sources={message.sources} />}
+            </>
+          );
         })()}
 
         {message.error && (
@@ -273,7 +351,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
   );
 });
 
-function BlockRenderer({
+const BlockRenderer = memo(function BlockRenderer({
   block,
   onHitlResume,
   isStreaming,
@@ -289,32 +367,8 @@ function BlockRenderer({
       return (
         <div className="prose-agent text-[14px] leading-[1.7] text-text-primary">
           <Markdown
-            remarkPlugins={[remarkGfm, remarkCjkFriendly]}
-            components={{
-              pre({ children }) {
-                return <>{children}</>;
-              },
-              code({ className, children }) {
-                const match = /language-(\w+)/.exec(className || "");
-                const code = String(children).replace(/\n$/, "");
-                if (match) {
-                  return <CodeBlock language={match[1]}>{code}</CodeBlock>;
-                }
-                return <code className={className}>{children}</code>;
-              },
-              img({ src, alt, ...props }) {
-                return (
-                  <img
-                    src={src}
-                    alt={alt}
-                    onLoad={(e) => { (e.target as HTMLElement).classList.remove("opacity-0", "h-0"); (e.target as HTMLElement).classList.add("opacity-100"); }}
-                    onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                    className="rounded-lg max-w-full transition-opacity duration-300 opacity-0 h-0"
-                    {...props}
-                  />
-                );
-              },
-            }}
+            remarkPlugins={REMARK_PLUGINS}
+            components={MARKDOWN_COMPONENTS}
           >{block.content}</Markdown>
         </div>
       );
@@ -338,12 +392,14 @@ function BlockRenderer({
       return <TaskListPanel />;
     case "ContextCompacting":
       return <ContextCompactingBlock done={block.done || !isStreaming} />;
+    case "MemoryUpdate":
+      return <MemoryUpdateBlock data={block.data} />;
     case "SlideOutline":
       return <SlideOutlineBlock data={block.data} />;
     case "SlideDesignSystem":
       return <SlideDesignSystemBlock data={block.data} />;
   }
-}
+});
 
 // ── Reasoning block with smooth transition ──
 const AUTO_COLLAPSE_DELAY = 2000;
@@ -418,6 +474,47 @@ function ContextCompactingBlock({ done }: { done: boolean }) {
         <span>{done ? "Context compacted" : "Compacting context..."}</span>
       </div>
       <div className="h-px flex-1 bg-border-light" />
+    </div>
+  );
+}
+
+// ── Memory update indicator ──
+
+const MEMORY_FIELD_LABEL: Record<string, string> = {
+  soul: "Soul",
+  identity: "Identity",
+};
+
+function MemoryUpdateBlock({ data }: { data: MemoryUpdateData }) {
+  const [open, setOpen] = useState(false);
+  const label = MEMORY_FIELD_LABEL[data.field] ?? data.field;
+
+  return (
+    <div className="my-3">
+      <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
+        <div className="h-px flex-1 bg-border-light" />
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex items-center gap-1.5 px-2 hover:text-text-secondary transition-colors"
+        >
+          <svg className="w-3 h-3 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+          </svg>
+          <span>{label} memory updated</span>
+          <svg
+            className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+        <div className="h-px flex-1 bg-border-light" />
+      </div>
+      {open && (
+        <div className="mt-2 pl-4 border-l-2 border-violet-300 text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
+          {data.content}
+        </div>
+      )}
     </div>
   );
 }

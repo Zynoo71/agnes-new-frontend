@@ -14,19 +14,23 @@ const TOOL_CONFIG: Record<string, { label: string; color: string }> = {
 export function SlideToolRenderer({ toolName, toolInput, toolResult, autoCollapse }: ToolRenderProps) {
   const config = TOOL_CONFIG[toolName] ?? { label: toolName, color: "gray" };
   const [open, setOpen] = useState(!autoCollapse);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!autoCollapse) return;
     timerRef.current = setTimeout(() => setOpen(false), AUTO_COLLAPSE_MS);
-    return () => clearTimeout(timerRef.current);
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+      }
+    };
   }, [autoCollapse]);
 
   const isDone = !!toolResult;
   const resultText = isDone
     ? typeof toolResult.output === "string"
       ? toolResult.output
-      : JSON.stringify(toolResult, null, 2)
+      : JSON.stringify(toolResult, null, 2) ?? ""
     : null;
 
   const colorMap: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -48,7 +52,7 @@ export function SlideToolRenderer({ toolName, toolInput, toolResult, autoCollaps
       >
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDone ? c.dot : "bg-amber-400 animate-pulse"}`} />
         <span className={`text-xs font-medium ${c.text}`}>{config.label}</span>
-        {toolInput.slide_id && (
+        {toolInput.slide_id != null && (
           <span className="text-[10px] font-mono text-text-tertiary">{String(toolInput.slide_id)}</span>
         )}
         <svg

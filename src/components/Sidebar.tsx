@@ -31,14 +31,6 @@ function groupByDate(conversations: ConvMeta[]): { label: string; items: ConvMet
   return order.filter((l) => groups[l]?.length).map((label) => ({ label, items: groups[label] }));
 }
 
-const AGENT_BADGE_COLORS: Record<string, string> = {
-  search: "bg-blue-100 text-blue-700",
-  super: "bg-purple-100 text-purple-700",
-  research: "bg-green-100 text-green-700",
-  slide: "bg-teal-100 text-teal-700",
-  pixa: "bg-orange-100 text-orange-700",
-};
-
 export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation }: SidebarProps) {
   const { conversationId, streamingConvIds } = useConversationStore(
     useShallow((s) => ({ conversationId: s.conversationId, streamingConvIds: s.streamingConvIds })),

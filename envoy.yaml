@@ -26,7 +26,7 @@ static_resources:
                         allow_origin_string_match:
                           - prefix: "*"
                         allow_methods: GET, PUT, DELETE, POST, OPTIONS
-                        allow_headers: keep-alive,user-agent,cache-control,content-type,content-transfer-encoding,x-accept-content-transfer-encoding,x-accept-response-streaming,x-user-agent,x-grpc-web,grpc-timeout,x-user-id
+                        allow_headers: keep-alive,user-agent,cache-control,content-type,content-transfer-encoding,x-accept-content-transfer-encoding,x-accept-response-streaming,x-user-agent,x-grpc-web,grpc-timeout,x-user-id,x-trace-id,x-dev-lane
                         max_age: "1728000"
                         expose_headers: grpc-status,grpc-message
                 http_filters:
@@ -57,4 +57,4 @@ static_resources:
                   address:
                     socket_address:
                       address: host.docker.internal
-                      port_value: 9201
+                      port_value: 9200

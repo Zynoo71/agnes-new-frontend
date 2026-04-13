@@ -8,6 +8,27 @@ import { EventStream } from "@/components/EventStream";
 
 const AGENT_TYPES = ["super", "search", "research", "slide", "pixa"] as const;
 
+const SCROLL_HINTS_ROW1 = [
+  "Search the latest AI news",
+  "Summarize a research paper",
+  "Draft a professional email",
+  "Compare product features",
+  "Plan a weekend trip to Kyoto",
+  "Explain quantum computing simply",
+  "Debug my React component",
+  "Write a product launch plan",
+];
+const SCROLL_HINTS_ROW2 = [
+  "Analyze a financial report",
+  "Create a competitive analysis",
+  "Translate this into French",
+  "Design a database schema",
+  "Review my pull request",
+  "Generate test cases for an API",
+  "Brainstorm startup ideas",
+  "Optimize this SQL query",
+];
+
 const HEALTH_CONFIG = {
   ok: { dot: "bg-green-500", color: "#22c55e", label: "Connected" },
   error: { dot: "bg-red-500", color: "#ef4444", label: "Disconnected" },
@@ -72,23 +93,51 @@ function MessageSkeleton() {
   );
 }
 
-const SUGGESTIONS = [
-  "Search the latest AI news",
-  "Summarize a research paper",
-  "Help me draft an email",
-];
+function ScrollingHints() {
+  const row1 = SCROLL_HINTS_ROW1;
+  const row2 = SCROLL_HINTS_ROW2;
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none flex flex-col justify-center gap-4">
+      <ScrollRow items={row1} direction="left" duration={35} />
+      <ScrollRow items={row2} direction="right" duration={40} />
+    </div>
+  );
+}
+
+function ScrollRow({ items, direction, duration }: { items: string[]; direction: "left" | "right"; duration: number }) {
+  // Triple for seamless loop
+  const repeated = [...items, ...items, ...items];
+  return (
+    <div className="scroll-row-mask">
+      <div
+        className={direction === "left" ? "scroll-row-left" : "scroll-row-right"}
+        style={{ animationDuration: `${duration}s` }}
+      >
+        {repeated.map((hint, i) => (
+          <span key={i} className="scroll-hint-pill">{hint}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function ChatPanel() {
-  const { conversationId, agentType, messages, rawEvents, isStreaming, isLoadingHistory, error, setAgentType } =
+  const { conversationId, agentType, messages, isStreaming, isLoadingHistory, error, setAgentType } =
     useConversationStore();
+  const rawEventsCount = useConversationStore(s => s.rawEvents.length);
+  const rawEvents = useConversationStore(s => s.rawEvents);
+  
   const { createConversation, sendMessage, hitlResume, editResend, regenerate, cancelStream } = useChat();
   const [showEvents, setShowEvents] = useState(false);
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const isNearBottomRef = useRef(true);
+  const pendingScrollRef = useRef(false);
+  const lastAutoScrollRef = useRef(0);
 
   const health = useHealthCheck();
 
@@ -98,33 +147,42 @@ export function ChatPanel() {
 
   const isEmpty = messages.length === 0;
 
-  // Reset scroll state when conversation changes
-  const pendingScrollRef = useRef(false);
+  // Reset scroll state when conversation changes — force next scroll to bottom.
   useEffect(() => {
     isNearBottomRef.current = true;
     pendingScrollRef.current = true;
     setShowScrollBtn(false);
   }, [conversationId]);
 
-  // Auto-scroll when messages update (streaming / new message / history load)
+  // Auto-scroll via ResizeObserver: fires whenever the content div changes
+  // height (new messages rendered, streaming text appended, images loaded, etc).
   useEffect(() => {
-    if (isLoadingHistory) return;
-    if (!isNearBottomRef.current) return;
-    const el = scrollContainerRef.current;
-    if (!el || messages.length === 0) return;
-    if (pendingScrollRef.current || isStreaming) {
-      // Instant scroll after conversation switch or during streaming
-      pendingScrollRef.current = false;
-      // rAF ensures layout is complete before reading scrollHeight
-      requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
-    } else {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, isStreaming, isLoadingHistory]);
+    const container = scrollContainerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const observer = new ResizeObserver(() => {
+      if (pendingScrollRef.current || isNearBottomRef.current) {
+        pendingScrollRef.current = false;
+        container.scrollTop = container.scrollHeight;
+        // Mark as programmatic scroll so handleScroll won't
+        // invalidate isNearBottomRef before the next resize fires.
+        lastAutoScrollRef.current = Date.now();
+        isNearBottomRef.current = true;
+      }
+    });
+
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
 
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
+    // Ignore scroll events triggered by programmatic scrolling —
+    // the async onScroll fires after content has grown further,
+    // giving a stale distanceFromBottom that falsely clears isNearBottom.
+    if (Date.now() - lastAutoScrollRef.current < 200) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     isNearBottomRef.current = distanceFromBottom < 100;
     setShowScrollBtn(distanceFromBottom > 200);
@@ -135,10 +193,13 @@ export function ChatPanel() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const isComposingRef = useRef(false);
+
   const handleSend = async (text?: string) => {
     const trimmed = (text ?? input).trim();
     if (!trimmed || isStreaming) return;
     setInput("");
+    isNearBottomRef.current = true;
     if (!conversationId) {
       await createConversation();
     }
@@ -147,10 +208,13 @@ export function ChatPanel() {
     } else {
       sendMessage(trimmed);
     }
+    // ResizeObserver handles the scroll when content appears.
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Check both standard isComposing and our ref for broader compatibility
+    const isComposing = e.nativeEvent.isComposing || isComposingRef.current;
+    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
       e.preventDefault();
       handleSend();
     }
@@ -187,6 +251,8 @@ export function ChatPanel() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onCompositionStart={() => { isComposingRef.current = true; }}
+          onCompositionEnd={() => { isComposingRef.current = false; }}
           placeholder={hasPendingReview ? "Type feedback to modify..." : "Ask Agnes anything..."}
           rows={1}
           className="flex-1 resize-none bg-transparent py-2.5 pl-4 pr-14 text-sm
@@ -224,7 +290,7 @@ export function ChatPanel() {
 
   return (
     <div className="h-full flex">
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Top controls */}
         <div className="flex items-center gap-3 px-5 py-2.5 border-b border-border-light bg-surface-alt">
           <HealthBadge info={health} />
@@ -244,7 +310,7 @@ export function ChatPanel() {
                   : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
               }`}
             >
-              Events{rawEvents.length > 0 ? ` (${rawEvents.length})` : ""}
+              Events{rawEventsCount > 0 ? ` (${rawEventsCount})` : ""}
             </button>
           </div>
         </div>
@@ -253,44 +319,14 @@ export function ChatPanel() {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto relative"
+          className="flex-1 overflow-y-auto min-h-0 relative"
         >
-          <div className="max-w-2xl mx-auto px-5 py-8">
+          {isEmpty && !isLoadingHistory && <ScrollingHints />}
+          <div ref={contentRef} className="max-w-2xl mx-auto px-5 py-8">
             {isLoadingHistory ? (
               <MessageSkeleton />
             ) : isEmpty ? (
-              <div className="flex flex-col items-center justify-center pt-24 text-center">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(315deg, #a84e1e, #e8985a)" }}>
-                  <svg width="36" height="36" viewBox="0 0 72 72" fill="none">
-                    <circle cx="30" cy="30" r="18" stroke="white" strokeWidth="3.5" strokeOpacity="0.4" fill="none"/>
-                    <circle cx="42" cy="42" r="18" stroke="white" strokeWidth="3.5" strokeOpacity="0.8" fill="none"/>
-                    <circle cx="36" cy="36" r="6" fill="white" fillOpacity="0.9"/>
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-text-primary mb-1">Hi, how can I help?</h2>
-                <p className="text-sm text-text-tertiary mb-6">Ask me anything or try a suggestion below</p>
-
-                <div className="flex flex-wrap gap-2 justify-center mb-8 max-w-md">
-                  {SUGGESTIONS.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => handleSend(s)}
-                      disabled={isStreaming}
-                      className="text-xs px-4 py-2 bg-surface border border-border rounded-full text-text-secondary
-                                 hover:bg-surface-hover hover:text-text-primary hover:border-border
-                                 disabled:opacity-40 transition-all"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-
-                {inputArea}
-
-                <p className="text-[10px] text-text-tertiary mt-3">
-                  Agnes may make mistakes. Please verify important information.
-                </p>
-              </div>
+              null
             ) : (
               <>
                 {(() => {
@@ -343,16 +379,11 @@ export function ChatPanel() {
           )}
         </div>
 
-        {!isEmpty && (
-          <div className="shrink-0 px-5 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
-            <div className="max-w-2xl mx-auto">
-              {inputArea}
-              <p className="text-[10px] text-text-tertiary text-center mt-2">
-                Agnes may make mistakes. Please verify important information.
-              </p>
-            </div>
+        <div className="shrink-0 px-5 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
+          <div className="max-w-2xl mx-auto">
+            {inputArea}
           </div>
-        )}
+        </div>
       </div>
 
       <div
@@ -360,7 +391,7 @@ export function ChatPanel() {
         style={{ width: showEvents ? 400 : 0 }}
       >
         <div className="w-[400px] h-full">
-          <EventStream events={rawEvents} />
+          {showEvents && <EventStream events={rawEvents} />}
         </div>
       </div>
     </div>
