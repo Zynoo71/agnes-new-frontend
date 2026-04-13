@@ -9,7 +9,7 @@ interface SystemPromptStore {
 
   load: () => Promise<void>;
   create: (name: string, content: string) => Promise<SystemPromptInfo>;
-  update: (id: bigint, fields: { name?: string; content?: string }) => Promise<void>;
+  update: (id: bigint, fields: { name: string; content: string }) => Promise<void>;
   remove: (id: bigint) => Promise<void>;
 }
 

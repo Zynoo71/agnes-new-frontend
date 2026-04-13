@@ -88,7 +88,7 @@ export function SystemPromptSelector({ selectedId, onChange, disabled }: Props) 
                 ${String(p.id) === selectedId ? "text-accent bg-accent/5" : "text-text-secondary hover:bg-surface-hover"}`}
             >
               <div className="font-medium truncate">{p.name}</div>
-              <div className="text-text-tertiary truncate mt-0.5">{p.content.slice(0, 60)}...</div>
+              <div className="text-text-tertiary truncate mt-0.5">{p.content.length > 60 ? p.content.slice(0, 60) + "..." : p.content}</div>
             </button>
           ))}
         </div>
