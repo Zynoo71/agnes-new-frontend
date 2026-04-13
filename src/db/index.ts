@@ -4,6 +4,7 @@ export interface ConvMeta {
   id: string;  // stored as TEXT to preserve BigInt precision
   title: string;
   agentType: string;
+  systemPromptId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -64,31 +65,40 @@ export async function initDb(): Promise<void> {
 
   db.run(`
     CREATE TABLE IF NOT EXISTS conversations (
-      id         TEXT PRIMARY KEY,
-      title      TEXT NOT NULL DEFAULT 'New Conversation',
-      agent_type TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+      id                TEXT PRIMARY KEY,
+      title             TEXT NOT NULL DEFAULT 'New Conversation',
+      agent_type        TEXT NOT NULL,
+      system_prompt_id  TEXT,
+      created_at        TEXT NOT NULL,
+      updated_at        TEXT NOT NULL
     )
   `);
+
+  // Migration: add system_prompt_id column for existing databases
+  const cols = db.exec("PRAGMA table_info(conversations)");
+  const hasCol = cols[0]?.values.some((row) => row[1] === "system_prompt_id");
+  if (!hasCol) {
+    db.run("ALTER TABLE conversations ADD COLUMN system_prompt_id TEXT");
+  }
 }
 
-export function addConversation(id: string, agentType: string): void {
+export function addConversation(id: string, agentType: string, systemPromptId?: string): void {
   if (!db) return;
   const now = new Date().toISOString();
   db.run(
-    "INSERT OR IGNORE INTO conversations (id, title, agent_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-    [id, "New Conversation", agentType, now, now],
+    "INSERT OR IGNORE INTO conversations (id, title, agent_type, system_prompt_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    [id, "New Conversation", agentType, systemPromptId ?? null, now, now],
   );
   schedulePersist();
 }
 
-export function updateConversation(id: string, fields: Partial<Pick<ConvMeta, "title" | "agentType">>): void {
+export function updateConversation(id: string, fields: Partial<Pick<ConvMeta, "title" | "agentType" | "systemPromptId">>): void {
   if (!db) return;
   const sets: string[] = ["updated_at = ?"];
-  const vals: (string | number)[] = [new Date().toISOString()];
+  const vals: (string | number | null)[] = [new Date().toISOString()];
   if (fields.title !== undefined) { sets.push("title = ?"); vals.push(fields.title); }
   if (fields.agentType !== undefined) { sets.push("agent_type = ?"); vals.push(fields.agentType); }
+  if (fields.systemPromptId !== undefined) { sets.push("system_prompt_id = ?"); vals.push(fields.systemPromptId); }
   vals.push(id);
   db.run(`UPDATE conversations SET ${sets.join(", ")} WHERE id = ?`, vals);
   schedulePersist();
@@ -96,14 +106,15 @@ export function updateConversation(id: string, fields: Partial<Pick<ConvMeta, "t
 
 export function listConversations(): ConvMeta[] {
   if (!db) return [];
-  const rows = db.exec("SELECT id, title, agent_type, created_at, updated_at FROM conversations ORDER BY updated_at DESC");
+  const rows = db.exec("SELECT id, title, agent_type, system_prompt_id, created_at, updated_at FROM conversations ORDER BY updated_at DESC");
   if (!rows.length) return [];
   return rows[0].values.map((r) => ({
     id: String(r[0]),
     title: r[1] as string,
     agentType: r[2] as string,
-    createdAt: r[3] as string,
-    updatedAt: r[4] as string,
+    systemPromptId: (r[3] as string) ?? null,
+    createdAt: r[4] as string,
+    updatedAt: r[5] as string,
   }));
 }
 
