@@ -335,6 +335,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             };
             break;
           }
+          case "WorkerDelta":
           case "MessageDelta": {
             const w = updated.workers[workerId];
             if (w) {
@@ -342,6 +343,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             }
             break;
           }
+          case "WorkerToolCall":
           case "ToolCallStart": {
             const w = updated.workers[workerId];
             if (w) {
@@ -352,6 +354,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             }
             break;
           }
+          case "WorkerToolResult":
           case "ToolCallResult": {
             const w = updated.workers[workerId];
             if (w) {
@@ -366,6 +369,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             }
             break;
           }
+          case "WorkerComplete":
           case "WorkerEnd": {
             const w = updated.workers[workerId];
             if (w) {
