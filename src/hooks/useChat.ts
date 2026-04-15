@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
-import { useConversationStore, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory } from "@/stores/conversationStore";
+import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq } from "@/stores/conversationStore";
 import type { SourceCitation } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
@@ -20,6 +20,14 @@ function beginStream(convId: string): AbortSignal {
   getState().setStreaming(true);
   getState().setError(null);
   return ac.signal;
+}
+
+// Reset per-turn seq tracker before initiating a new turn
+// (ChatStream / EditResend / Regenerate / HitlResume-modify).
+// Note: HitlResume-approve keeps seq since the backend reuses the request_id.
+function beginNewTurn(convId: string): AbortSignal {
+  resetLatestSeq(convId);
+  return beginStream(convId);
 }
 
 async function runStream(
@@ -66,6 +74,33 @@ function turnsToRawEvents(turns: { user: unknown[]; assistant: unknown[] }[]): R
     }
   }
   return events;
+}
+
+/**
+ * Rebuild tasks from TaskUpdate custom events in raw history turns.
+ * This handles agents (e.g. SuperAgent) that hide planning tools via _hidden_tools,
+ * where ToolCallStart/ToolCallResult for create_task/update_task are absent from history
+ * but TaskUpdate custom events are still recorded.
+ */
+function rebuildTasksFromTurns(turns: { user: unknown[]; assistant: unknown[] }[]): AgentTask[] {
+  let tasks: AgentTask[] = [];
+  for (const turn of turns) {
+    for (const block of turn.assistant as { type: string; data: unknown }[]) {
+      if (block.type !== "TaskUpdate") continue;
+      const data = (block.data ?? {}) as Record<string, unknown>;
+      const action = data.action as string;
+      if (action === "create" && Array.isArray(data.tasks)) {
+        tasks = data.tasks as AgentTask[];
+      } else if (action === "update" && typeof data.task_id === "number" && data.status) {
+        tasks = tasks.map((t) =>
+          t.id === data.task_id ? { ...t, status: data.status as AgentTask["status"] } : t,
+        );
+      } else if (action === "reset") {
+        tasks = [];
+      }
+    }
+  }
+  return tasks;
 }
 
 function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): Message[] {
@@ -145,10 +180,14 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       }
     }
     // Inject TaskList anchor if this message has a create_task tool call
+    // or a TaskUpdate "create" custom event (for agents that hide planning tools)
     const hasCreateTask = assistantBlocks.some(
       (b) => b.type === "ToolCallStart" && b.data.toolName === "create_task",
     );
-    if (hasCreateTask && !assistantBlocks.some((b) => b.type === "TaskList")) {
+    const hasTaskUpdateCreate = aBlocks.some(
+      (b) => b.type === "TaskUpdate" && (b.data as Record<string, unknown>)?.action === "create",
+    );
+    if ((hasCreateTask || hasTaskUpdateCreate) && !assistantBlocks.some((b) => b.type === "TaskList")) {
       assistantBlocks.push({ type: "TaskList" });
     }
     if (assistantBlocks.length > 0) {
@@ -178,7 +217,12 @@ export function useChat() {
       }
     }
     // Set messages, tasks, and history events in a single state update
-    const tasks = rebuildTasksFromHistory(messages);
+    // Try tool-result-based reconstruction first, then fall back to TaskUpdate custom events
+    // (needed for agents like SuperAgent that hide planning tools via _hidden_tools)
+    let tasks = rebuildTasksFromHistory(messages);
+    if (tasks.length === 0) {
+      tasks = rebuildTasksFromTurns(resp.turns as { user: unknown[]; assistant: unknown[] }[]);
+    }
     const rawEvents = turnsToRawEvents(resp.turns as { user: unknown[]; assistant: unknown[] }[]);
     useConversationStore.setState({ messages, rawEvents, tasks });
     return resp;
@@ -202,7 +246,7 @@ export function useChat() {
 
     s.addUserMessage(query);
     s.startAssistantMessage(requestStartedAt);
-    const signal = beginStream(convId);
+    const signal = beginNewTurn(convId);
 
     if (isFirstMessage) {
       const title = query.length > 50 ? query.slice(0, 50) + "..." : query;
@@ -229,7 +273,9 @@ export function useChat() {
 
     s.resolveHumanReview();
     s.startAssistantMessage(requestStartedAt);
-    const signal = beginStream(convId);
+    // `modify` starts a new turn (new request_id, seq resets to 1 on backend).
+    // `approve` continues the current turn (same request_id), so keep seq.
+    const signal = action === "modify" ? beginNewTurn(convId) : beginStream(convId);
 
     const resumePayload: Record<string, unknown> = { action };
     if (action === "modify" && feedback) resumePayload.feedback = feedback;
@@ -253,7 +299,7 @@ export function useChat() {
     s.removeLastRound();
     s.addUserMessage(newQuery);
     s.startAssistantMessage(requestStartedAt);
-    const signal = beginStream(convId);
+    const signal = beginNewTurn(convId);
 
     const stream = agentClient.editResendStream(
       { conversationId: BigInt(convId), query: newQuery },
@@ -270,7 +316,7 @@ export function useChat() {
 
     s.removeLastAssistantMessage();
     s.startAssistantMessage(requestStartedAt);
-    const signal = beginStream(convId);
+    const signal = beginNewTurn(convId);
 
     const stream = agentClient.regenerateStream(
       { conversationId: BigInt(convId) },
@@ -328,8 +374,14 @@ export function useChat() {
 
     if (shouldResume) {
       getState().startAssistantMessage();
+      // Preserve seq across selectConversation so resume picks up where we left off.
+      // 0n means we never received an event with seq (or legacy server) → full replay.
+      const fromSeq = getLatestSeq(id);
       const signal = beginStream(id);
-      const stream = agentClient.resumeStream({ conversationId: BigInt(id) }, { signal });
+      const stream = agentClient.resumeStream(
+        { conversationId: BigInt(id), fromSeq },
+        { signal },
+      );
       runStream(stream, signal, id);
     } else {
       getState().setStreaming(false);

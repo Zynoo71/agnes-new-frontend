@@ -136,8 +136,10 @@ const SubEventRow = memo(function SubEventRow({ ev, index }: { ev: RawEvent; ind
         className="flex items-baseline gap-2 cursor-pointer hover:bg-white/5 rounded px-1 -mx-1 py-0.5"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="text-[10px] font-mono text-console-dim w-5 text-right shrink-0">
-          {isHistory ? "" : timeStr ? (
+        <span className="text-[10px] font-mono text-console-dim w-10 text-right shrink-0">
+          {isHistory ? "" : ev.seq !== undefined ? (
+            <span className="text-console-accent">#{ev.seq}</span>
+          ) : timeStr ? (
             <span className="text-console-dim">{timeStr.slice(-6)}</span>
           ) : (
             <span>{index + 1}</span>
@@ -175,7 +177,15 @@ const SubEventRow = memo(function SubEventRow({ ev, index }: { ev: RawEvent; ind
       {expanded && (
         <pre className="text-[11px] font-mono text-console-text/70 whitespace-pre-wrap overflow-x-auto
                         ml-7 pl-3 my-1 border-l-2 border-white/5 leading-relaxed max-h-60 overflow-y-auto">
-          {JSON.stringify(ev.data, null, 2)}
+          {JSON.stringify(
+            {
+              ...(ev.seq !== undefined ? { seq: ev.seq } : {}),
+              ...(ev.messageId ? { message_id: ev.messageId } : {}),
+              data: ev.data,
+            },
+            null,
+            2,
+          )}
         </pre>
       )}
     </div>

@@ -21,6 +21,19 @@ function asRecord(val: unknown): Record<string, unknown> {
   return typeof val === "object" && val !== null ? (val as Record<string, unknown>) : {};
 }
 
+// Per-turn max seq tracking for ResumeStream(from_seq).
+// Lives outside the store (non-reactive); cleared on turn-end events
+// (AgentEnd/AgentError/AgentCancelled) and on new-turn initiation.
+const latestSeqByConv = new Map<string, bigint>();
+
+export function getLatestSeq(convId: string): bigint {
+  return latestSeqByConv.get(convId) ?? 0n;
+}
+
+export function resetLatestSeq(convId: string): void {
+  latestSeqByConv.delete(convId);
+}
+
 // ── Types ──
 
 export interface ToolCallData {
@@ -121,6 +134,8 @@ export interface RawEvent {
   type: string;
   data: unknown;
   role?: "user" | "assistant";
+  seq?: number;
+  messageId?: string;
 }
 
 // ── Event processing (pure functions) ──
@@ -428,7 +443,15 @@ export function buildRawEvent(event: AgentStreamEvent): RawEvent {
       ])
     );
   }
-  return { timestamp: Date.now(), type: event.event.case ?? "unknown", data: cleaned, role: "assistant" };
+  const seq = event.seq > 0n ? Number(event.seq) : undefined;
+  return {
+    timestamp: Date.now(),
+    type: event.event.case ?? "unknown",
+    data: cleaned,
+    role: "assistant",
+    seq,
+    messageId: event.messageId || undefined,
+  };
 }
 
 function pushRawEvent(events: RawEvent[], event: RawEvent): RawEvent[] {
@@ -584,7 +607,19 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
     processEventForConv: (convId, event) => {
       const s = get();
       if (s.conversationId !== convId) return;
-      
+
+      // Track per-turn max seq for ResumeStream resume.
+      // seq === 0n means unpopulated (legacy server or non-resume path); ignore.
+      if (event.seq > 0n) {
+        const cur = latestSeqByConv.get(convId) ?? 0n;
+        if (event.seq > cur) latestSeqByConv.set(convId, event.seq);
+      }
+      // Turn boundary: clear seq so the next turn starts fresh from 0.
+      const caseName = event.event.case;
+      if (caseName === "agentEnd" || caseName === "agentError" || caseName === "agentCancelled") {
+        latestSeqByConv.delete(convId);
+      }
+
       const rawEvent = buildRawEvent(event);
 
       // Handle text deltas via queue
@@ -634,8 +669,18 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         const payload = asRecord(tryDecodeJson(event.event.value.payload));
         const action = payload.action as string;
         if (action === "create") {
-          const tasks = payload.tasks as AgentTask[] | undefined;
-          if (tasks) newTasks = tasks;
+          const existing = get().tasks;
+          const task = payload.task as AgentTask | undefined;
+          if (task && !existing.some((t) => t.id === task.id)) {
+            // Incremental add: append single new task (order-safe for concurrent emits)
+            newTasks = [...existing, task];
+          } else {
+            // Fallback: accept full list only if it's strictly longer (prevents out-of-order overwrites)
+            const tasks = payload.tasks as AgentTask[] | undefined;
+            if (tasks && tasks.length > existing.length) {
+              newTasks = tasks;
+            }
+          }
         } else if (action === "update") {
           const taskId = payload.task_id as number;
           const status = payload.status as AgentTask["status"];
@@ -728,7 +773,10 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
 
     setMessages: (messages) => set({ messages, rawEvents: [] }),
 
-    reset: () =>
-      set({ conversationId: null, systemPromptId: null, messages: [], rawEvents: [], tasks: [], isStreaming: false, isLoadingHistory: false, error: null, pendingTextQueue: [], isTyping: false }),
+    reset: () => {
+      const cur = get().conversationId;
+      if (cur) latestSeqByConv.delete(cur);
+      set({ conversationId: null, systemPromptId: null, messages: [], rawEvents: [], tasks: [], isStreaming: false, isLoadingHistory: false, error: null, pendingTextQueue: [], isTyping: false });
+    },
   };
 });
