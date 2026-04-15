@@ -15,6 +15,32 @@ interface LocalDeckOutline {
   slides: LocalSlideEntry[];
 }
 
+interface SlidePreviewState {
+  iframeUrl: string;
+  frameSize: { width: number; height: number };
+  frameScale: number;
+  slideLoadError: string;
+  slideLoadState: "idle" | "loading" | "ready" | "error";
+}
+
+const DEFAULT_SLIDE_FRAME = { width: 1280, height: 720 };
+const MAX_FRAME_WIDTH = 4096;
+const MAX_FRAME_HEIGHT = 4096;
+
+function createSlidePreviewState(
+  iframeUrl: string,
+  overrides: Partial<Omit<SlidePreviewState, "iframeUrl">> = {},
+): SlidePreviewState {
+  return {
+    iframeUrl,
+    frameSize: DEFAULT_SLIDE_FRAME,
+    frameScale: 1,
+    slideLoadError: "",
+    slideLoadState: iframeUrl ? "loading" : "idle",
+    ...overrides,
+  };
+}
+
 function normalizeOutline(outline: Record<string, unknown> | null): LocalDeckOutline {
   const slides = Array.isArray(outline?.slides)
     ? outline.slides
@@ -66,11 +92,11 @@ function LocalSlidePreviewDialog({
   const [selectedSlideId, setSelectedSlideId] = useState("");
   const [loading, setLoading] = useState(Boolean(conversationId));
   const [notice, setNotice] = useState("");
-  const [frameSize, setFrameSize] = useState({ width: 1600, height: 900 });
-  const [frameScale, setFrameScale] = useState(1);
+  const [previewState, setPreviewState] = useState<SlidePreviewState>(() => createSlidePreviewState(""));
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const cleanupEmbeddedObserverRef = useRef<(() => void) | null>(null);
+  const activeSlideRef = useRef("");
 
   const outline = fetchedOutline ?? fallbackDeckOutline;
   const outlineUrl = useMemo(() => {
@@ -91,6 +117,12 @@ function LocalSlidePreviewDialog({
     if (!conversationId || !selectedSlide) return "";
     return slideFileUrl(conversationId, `deck/slides/${selectedSlide.slideId}/index.html`);
   }, [conversationId, selectedSlide]);
+  const activePreviewState = previewState.iframeUrl === iframeUrl ? previewState : createSlidePreviewState(iframeUrl);
+  const { frameSize, frameScale, slideLoadError, slideLoadState } = activePreviewState;
+
+  useEffect(() => {
+    activeSlideRef.current = selectedSlide?.slideId ?? "";
+  }, [selectedSlide?.slideId]);
 
   const selectDefaultSlide = useCallback(
     (deckOutline: LocalDeckOutline, preferredSlideId?: string) =>
@@ -168,17 +200,41 @@ function LocalSlidePreviewDialog({
 
     const root = doc.documentElement;
     const body = doc.body;
-    const naturalWidth = Math.max(root.scrollWidth, root.clientWidth, body?.scrollWidth ?? 0, body?.clientWidth ?? 0, 1);
-    const naturalHeight = Math.max(root.scrollHeight, root.clientHeight, body?.scrollHeight ?? 0, body?.clientHeight ?? 0, 1);
+    const measuredWidth = Math.max(root.scrollWidth, root.clientWidth, body?.scrollWidth ?? 0, body?.clientWidth ?? 0, 1);
+    const measuredHeight = Math.max(root.scrollHeight, root.clientHeight, body?.scrollHeight ?? 0, body?.clientHeight ?? 0, 1);
+    const aspectRatio = measuredWidth / measuredHeight;
+    const metricsLookInvalid =
+      !Number.isFinite(measuredWidth) ||
+      !Number.isFinite(measuredHeight) ||
+      measuredWidth < 320 ||
+      measuredHeight < 180 ||
+      measuredWidth > MAX_FRAME_WIDTH ||
+      measuredHeight > MAX_FRAME_HEIGHT ||
+      aspectRatio < 0.5 ||
+      aspectRatio > 3;
+    const naturalWidth = metricsLookInvalid ? DEFAULT_SLIDE_FRAME.width : measuredWidth;
+    const naturalHeight = metricsLookInvalid ? DEFAULT_SLIDE_FRAME.height : measuredHeight;
     const scale = Math.min(viewport.clientWidth / naturalWidth, viewport.clientHeight / naturalHeight, 1);
 
-    setFrameSize((current) =>
-      current.width === naturalWidth && current.height === naturalHeight
-        ? current
-        : { width: naturalWidth, height: naturalHeight },
-    );
-    setFrameScale((current) => (Math.abs(current - scale) < 0.001 ? current : scale));
-  }, []);
+    setPreviewState((current) => {
+      const base = current.iframeUrl === iframeUrl ? current : createSlidePreviewState(iframeUrl);
+      const nextFrameSize =
+        base.frameSize.width === naturalWidth && base.frameSize.height === naturalHeight
+          ? base.frameSize
+          : { width: naturalWidth, height: naturalHeight };
+      const nextFrameScale = Math.abs(base.frameScale - scale) < 0.001 ? base.frameScale : scale;
+
+      if (nextFrameSize === base.frameSize && nextFrameScale === base.frameScale) {
+        return base;
+      }
+
+      return {
+        ...base,
+        frameSize: nextFrameSize,
+        frameScale: nextFrameScale,
+      };
+    });
+  }, [iframeUrl]);
 
   const bindEmbeddedResizeObserver = useCallback(() => {
     cleanupEmbeddedObserverRef.current?.();
@@ -187,8 +243,26 @@ function LocalSlidePreviewDialog({
     const iframe = iframeRef.current;
     const doc = iframe?.contentDocument;
     if (!doc) return;
+    const currentSlideId = activeSlideRef.current;
 
-    updateFrameMetrics();
+    try {
+      if (currentSlideId !== activeSlideRef.current) return;
+      updateFrameMetrics();
+      setPreviewState((current) => ({
+        ...(current.iframeUrl === iframeUrl ? current : createSlidePreviewState(iframeUrl)),
+        iframeUrl,
+        slideLoadState: "ready",
+        slideLoadError: "",
+      }));
+    } catch (error) {
+      setPreviewState(
+        createSlidePreviewState(iframeUrl, {
+          slideLoadState: "error",
+          slideLoadError: error instanceof Error ? error.message : "当前页面预览失败",
+        }),
+      );
+      return;
+    }
 
     const win = iframe?.contentWindow;
     if (!win) return;
@@ -203,7 +277,10 @@ function LocalSlidePreviewDialog({
     }
 
     const imageNodes = Array.from(doc.images);
-    const handleAssetLoad = () => updateFrameMetrics();
+    const handleAssetLoad = () => {
+      if (currentSlideId !== activeSlideRef.current) return;
+      updateFrameMetrics();
+    };
     imageNodes.forEach((img) => img.addEventListener("load", handleAssetLoad));
     win.addEventListener("resize", handleAssetLoad);
 
@@ -212,11 +289,9 @@ function LocalSlidePreviewDialog({
       imageNodes.forEach((img) => img.removeEventListener("load", handleAssetLoad));
       win.removeEventListener("resize", handleAssetLoad);
     };
-  }, [updateFrameMetrics]);
+  }, [iframeUrl, updateFrameMetrics]);
 
   useEffect(() => {
-    if (!iframeUrl) return;
-    setFrameScale(1);
     cleanupEmbeddedObserverRef.current?.();
     cleanupEmbeddedObserverRef.current = null;
     return () => {
@@ -360,6 +435,16 @@ function LocalSlidePreviewDialog({
                   src={iframeUrl}
                   title={selectedSlide?.title ?? "Local slide preview"}
                   onLoad={bindEmbeddedResizeObserver}
+                  onError={() => {
+                    cleanupEmbeddedObserverRef.current?.();
+                    cleanupEmbeddedObserverRef.current = null;
+                    setPreviewState(
+                      createSlidePreviewState(iframeUrl, {
+                        slideLoadState: "error",
+                        slideLoadError: "当前页面加载失败，请切换到其他页面继续预览。",
+                      }),
+                    );
+                  }}
                   className="absolute left-0 top-0 rounded-[20px] bg-white"
                   style={{
                     width: `${frameSize.width}px`,
@@ -369,6 +454,21 @@ function LocalSlidePreviewDialog({
                     border: "0",
                   }}
                 />
+                {slideLoadState === "loading" && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-[20px] bg-white/85 text-sm text-text-secondary">
+                    正在加载当前页面...
+                  </div>
+                )}
+                {slideLoadState === "error" && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-[20px] bg-white/95 p-6 text-center">
+                    <div className="max-w-md">
+                      <p className="text-sm font-semibold text-text-primary">当前页预览失败</p>
+                      <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                        {slideLoadError || "这一页的 HTML 结构或资源存在异常。切换到其他页不应再受影响。"}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-border bg-surface-alt text-sm text-text-secondary">
