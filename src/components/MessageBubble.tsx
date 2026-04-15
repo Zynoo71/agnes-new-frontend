@@ -24,6 +24,25 @@ import { useLocalSlidePreviewStore } from "@/stores/localSlidePreviewStore";
 // ── Stable references for Markdown (avoid remounting custom elements on re-render) ──
 const REMARK_PLUGINS = [remarkGfm, remarkCjkFriendly];
 
+function formatNaturalDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h${minutes > 0 ? `${minutes}min` : ""}${seconds > 0 ? `${seconds}s` : ""}`;
+  }
+  if (minutes > 0) {
+    return `${minutes}min${seconds > 0 ? `${seconds}s` : ""}`;
+  }
+  return `${seconds}s`;
+}
+
+function formatTtft(durationMs: number): string {
+  return `${(Math.max(0, durationMs) / 1000).toFixed(2)}s`;
+}
+
 function localDeckOutlineUrl(conversationId: string): string {
   return `/__local_slide_workspace/${encodeURIComponent(conversationId)}/deck/deck_outline.json`;
 }
@@ -261,6 +280,11 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
     <div className={`${animate ? "animate-message-in" : ""} group flex gap-2.5 mb-5`}>
       <AssistantAvatar />
       <div className="max-w-[85%] py-1 flex-1 min-w-0">
+        {message.ttftMs != null && (
+          <div className="mb-2 text-[11px] text-text-tertiary">
+            TTFT {formatTtft(message.ttftMs)}
+          </div>
+        )}
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
         {(() => {
@@ -394,6 +418,15 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
+        )}
+
+        {message.agentDurationMs != null && (
+          <div className="mt-4">
+            <div className="border-t border-border-light" />
+            <div className="pt-2 text-[11px] text-text-tertiary">
+              <span>已处理 {formatNaturalDuration(message.agentDurationMs)}</span>
+            </div>
+          </div>
         )}
 
         {!isStreaming && (

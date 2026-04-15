@@ -198,9 +198,10 @@ export function useChat() {
     if (!s.conversationId) return;
     const convId = s.conversationId;
     const isFirstMessage = s.messages.every((m) => m.role !== "user");
+    const requestStartedAt = Date.now();
 
     s.addUserMessage(query);
-    s.startAssistantMessage();
+    s.startAssistantMessage(requestStartedAt);
     const signal = beginStream(convId);
 
     if (isFirstMessage) {
@@ -224,9 +225,10 @@ export function useChat() {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
+    const requestStartedAt = Date.now();
 
     s.resolveHumanReview();
-    s.startAssistantMessage();
+    s.startAssistantMessage(requestStartedAt);
     const signal = beginStream(convId);
 
     const resumePayload: Record<string, unknown> = { action };
@@ -246,10 +248,11 @@ export function useChat() {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
+    const requestStartedAt = Date.now();
 
     s.removeLastRound();
     s.addUserMessage(newQuery);
-    s.startAssistantMessage();
+    s.startAssistantMessage(requestStartedAt);
     const signal = beginStream(convId);
 
     const stream = agentClient.editResendStream(
@@ -263,9 +266,10 @@ export function useChat() {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
+    const requestStartedAt = Date.now();
 
     s.removeLastAssistantMessage();
-    s.startAssistantMessage();
+    s.startAssistantMessage(requestStartedAt);
     const signal = beginStream(convId);
 
     const stream = agentClient.regenerateStream(
