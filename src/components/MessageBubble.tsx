@@ -24,6 +24,39 @@ import { useLocalSlidePreviewStore } from "@/stores/localSlidePreviewStore";
 // ── Stable references for Markdown (avoid remounting custom elements on re-render) ──
 const REMARK_PLUGINS = [remarkGfm, remarkCjkFriendly];
 
+function localDeckOutlineUrl(conversationId: string): string {
+  return `/__local_slide_workspace/${encodeURIComponent(conversationId)}/deck/deck_outline.json`;
+}
+
+function useLocalDeckAvailable(conversationId: string | null, enabled: boolean) {
+  const [availability, setAvailability] = useState<{ conversationId: string | null; available: boolean }>({
+    conversationId: null,
+    available: false,
+  });
+
+  useEffect(() => {
+    if (!enabled || !conversationId) return;
+
+    const controller = new AbortController();
+
+    void fetch(localDeckOutlineUrl(conversationId), {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then((response) => {
+        setAvailability({ conversationId, available: response.ok });
+      })
+      .catch((error: unknown) => {
+        if ((error as { name?: string })?.name === "AbortError") return;
+        setAvailability({ conversationId, available: false });
+      });
+
+    return () => controller.abort();
+  }, [conversationId, enabled]);
+
+  return Boolean(enabled && conversationId && availability.conversationId === conversationId && availability.available);
+}
+
 function MarkdownImage({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
   const openPreview = useImagePreviewStore((s) => s.open);
   return (
@@ -102,6 +135,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
   const [editText, setEditText] = useState("");
   const [copied, setCopied] = useState(false);
   const conversationId = useConversationStore((s) => s.conversationId);
+  const agentType = useConversationStore((s) => s.agentType);
   const openLocalPreview = useLocalSlidePreviewStore((s) => s.open);
 
   const canEdit = isUser && isLast && onEditResend && !isStreaming;
@@ -111,15 +145,9 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         .reverse()
         .find((block): block is { type: "SlideOutline"; data: SlideOutlineData } => block.type === "SlideOutline")
     : undefined;
-  const assistantText = !isUser
-    ? message.blocks
-        .filter((block): block is { type: "Message"; content: string } => block.type === "Message")
-        .map((block) => block.content)
-        .join("\n")
-    : "";
-  const hasSlideArtifactHint =
-    /\/deck\/deck_outline\.json|\/deck\/slides\/slide-\d+\/index\.html|产物路径|PPT 结构概览/i.test(assistantText);
-  const shouldShowLocalPreview = !isUser && isLast && (!!slideOutlineBlock || hasSlideArtifactHint);
+  const shouldCheckLocalPreview = !isUser && !!isLast && !!conversationId;
+  const hasLocalDeck = useLocalDeckAvailable(conversationId, shouldCheckLocalPreview);
+  const shouldShowLocalPreview = shouldCheckLocalPreview && (agentType === "slide" || hasLocalDeck);
   const canOpenLocalPreview = shouldShowLocalPreview && !isStreaming && !!conversationId;
 
   const handleCopy = useCallback(() => {
@@ -359,7 +387,9 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
                     ? "流式输出结束后可直接查看本地生成的整套 slides"
                     : isStreaming
                       ? "正在等待本地 slides 生成完成"
-                      : "当前没有可用的会话 ID，暂时无法读取本地 slides 目录"}
+                      : hasLocalDeck
+                        ? "本地 slides 已就绪，点击打开预览"
+                        : "当前会话还没有落出本地 slides，点开后可继续检查生成结果"}
                 </p>
               </div>
             </div>
