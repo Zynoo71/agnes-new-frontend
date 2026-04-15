@@ -236,14 +236,17 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
         {(() => {
+          // spawn_worker 和 spawn_worker_group 都属于 Swarm 类工具，统一展示 AgentSwarmPanel
+          const isSpawnTool = (name: string) => name === "spawn_worker" || name === "spawn_worker_group";
+
           const spawnToolCalls: ToolCallData[] = message.blocks
             .filter((b): b is { type: "ToolCallStart"; data: ToolCallData } =>
-              b.type === "ToolCallStart" && b.data.toolName === "spawn_worker")
+              b.type === "ToolCallStart" && isSpawnTool(b.data.toolName))
             .map((b) => b.data);
 
           const nonSpawnBlocks = message.blocks.filter(
             (b) =>
-              !(b.type === "ToolCallStart" && b.data.toolName === "spawn_worker") &&
+              !(b.type === "ToolCallStart" && isSpawnTool(b.data.toolName)) &&
               !(b.type === "ToolCallStart" && PLANNING_TOOL_NAMES.has(b.data.toolName)) &&
               b.type !== "TaskList",
           );
@@ -253,17 +256,17 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
           let seen = false;
           for (const block of message.blocks) {
             toolSeenBefore.push(seen);
-            const isSpawn = block.type === "ToolCallStart" && block.data.toolName === "spawn_worker";
+            const isSpawn = block.type === "ToolCallStart" && isSpawnTool(block.data.toolName);
             if (block.type === "ToolCallStart" || isSpawn) seen = true;
           }
 
-          // Index of the first spawn_worker block (render AgentSwarmPanel only once)
+          // Index of the first spawn tool block (render AgentSwarmPanel only once)
           const firstSpawnIdx = message.blocks.findIndex(
-            (b) => b.type === "ToolCallStart" && b.data.toolName === "spawn_worker",
+            (b) => b.type === "ToolCallStart" && isSpawnTool(b.data.toolName),
           );
 
           const rendered = message.blocks.map((block, i) => {
-            const isSpawn = block.type === "ToolCallStart" && block.data.toolName === "spawn_worker";
+            const isSpawn = block.type === "ToolCallStart" && isSpawnTool(block.data.toolName);
 
             if (isSpawn) {
               if (i !== firstSpawnIdx) return null;

@@ -56,6 +56,7 @@ export interface WorkerState {
   toolCalls: WorkerToolCall[];
   summary?: string;
   error?: string;
+  phase?: string;
 }
 
 export interface AgentTask {
@@ -330,6 +331,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
               characterIndex: index,
               text: "",
               toolCalls: [],
+              phase: (payload.phase as string) ?? "producer",
             };
             break;
           }
