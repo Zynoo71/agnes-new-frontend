@@ -109,6 +109,10 @@ export interface Message {
   nodes: NodeData[];
   workers: Record<string, WorkerState>;
   sources: SourceCitation[];
+  requestStartedAt?: number;
+  ttftMs?: number;
+  agentStartedAt?: number;
+  agentDurationMs?: number;
   error?: { errorType: string; message: string; recoverable: boolean };
 }
 
@@ -140,7 +144,18 @@ function appendOrPushBlock(
   blocks.push({ type: blockType, content });
 }
 
-export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): Message[] {
+function setTtftIfNeeded(message: Message, eventTimestamp: number): Message {
+  if (message.role !== "assistant" || message.ttftMs != null || message.requestStartedAt == null) {
+    return message;
+  }
+
+  return {
+    ...message,
+    ttftMs: Math.max(0, eventTimestamp - message.requestStartedAt),
+  };
+}
+
+export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, eventTimestamp = Date.now()): Message[] {
   const msgs = [...messages];
 
   // HumanInput: insert user message before the trailing assistant message (ResumeStream replay)
@@ -175,6 +190,17 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
   const updated = { ...last, blocks: [...last.blocks], workers: { ...last.workers }, sources: [...last.sources] };
 
   switch (event.event.case) {
+    case "agentStart": {
+      updated.agentStartedAt = eventTimestamp;
+      updated.agentDurationMs = undefined;
+      break;
+    }
+    case "agentEnd": {
+      if (updated.agentStartedAt != null) {
+        updated.agentDurationMs = Math.max(0, eventTimestamp - updated.agentStartedAt);
+      }
+      break;
+    }
     case "messageDelta": {
       const delta = event.event.value;
       if (delta.content) appendOrPushBlock(updated.blocks, "Message", delta.content);
@@ -188,15 +214,18 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
     case "toolCallStart": {
       const tc = event.event.value;
       const input = asRecord(tryDecodeJson(tc.toolInput));
+      const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
       updated.blocks.push({
         type: "ToolCallStart",
         data: { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
       });
+      updated.ttftMs = ttftUpdated.ttftMs;
       break;
     }
     case "toolCallResult": {
       const tr = event.event.value;
       const result = asRecord(tryDecodeJson(tr.toolResult));
+      const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
       const hasIdMatch = tr.toolCallId
         ? updated.blocks.some(
             (b) => b.type === "ToolCallStart" && b.data.toolCallId === tr.toolCallId,
@@ -216,6 +245,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
         }
         return block;
       });
+      updated.ttftMs = ttftUpdated.ttftMs;
       break;
     }
     case "nodeStart": {
@@ -466,7 +496,7 @@ interface ConversationStore {
   setLoadingHistory: (v: boolean) => void;
   setError: (err: string | null) => void;
   addUserMessage: (content: string) => void;
-  startAssistantMessage: () => void;
+  startAssistantMessage: (requestStartedAt?: number) => void;
   resolveHumanReview: () => void;
   removeLastRound: () => void;
   removeLastAssistantMessage: () => void;
@@ -525,11 +555,11 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         ],
       })),
 
-    startAssistantMessage: () =>
+    startAssistantMessage: (requestStartedAt) =>
       set((s) => ({
         messages: [
           ...s.messages,
-          { id: nextMessageId(), role: "assistant", blocks: [], nodes: [], workers: {}, sources: [] },
+          { id: nextMessageId(), role: "assistant", blocks: [], nodes: [], workers: {}, sources: [], requestStartedAt },
         ],
       })),
 
@@ -562,6 +592,17 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         const value = event.event.value;
         if (!value?.content) return;
         set((prev) => ({
+          messages: prev.messages.length > 0
+            ? (() => {
+                const msgs = [...prev.messages];
+                const last = msgs[msgs.length - 1];
+                if (!last || last.role !== "assistant" || last.ttftMs != null || last.requestStartedAt == null) {
+                  return prev.messages;
+                }
+                msgs[msgs.length - 1] = setTtftIfNeeded(last, rawEvent.timestamp);
+                return msgs;
+              })()
+            : prev.messages,
           pendingTextQueue: [...prev.pendingTextQueue, { convId, type: "Message", content: value.content }],
           rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
         }));
@@ -607,7 +648,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
       }
 
       set((prev) => ({
-        messages: applyStreamEvent(prev.messages, event),
+        messages: applyStreamEvent(prev.messages, event, rawEvent.timestamp),
         rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
         ...(newTasks !== undefined ? { tasks: newTasks } : {}),
       }));
