@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kw_im_service/v1/account.proto.
  */
 export const file_kw_im_service_v1_account: GenFile = /*@__PURE__*/
-  fileDesc("Ch5rd19pbV9zZXJ2aWNlL3YxL2FjY291bnQucHJvdG8SEGt3X2ltX3NlcnZpY2UudjEiNAoRR2V0VXNlclNpZ1JlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCRIOCgZleHBpcmUYAiABKAUiNgoPR2V0VXNlclNpZ1JlcGx5EhAKCHVzZXJfc2lnGAEgASgJEhEKCWV4cGlyZV9hdBgCIAEoAyImCiRHZXRUZW5jZW50SU1DbGllbnRDcmVkZW50aWFsc1JlcXVlc3QipAIKIkdldFRlbmNlbnRJTUNsaWVudENyZWRlbnRpYWxzUmVwbHkSEgoKc2RrX2FwcF9pZBgBIAEoBRISCgpzZWNyZXRfa2V5GAIgASgJEhwKFHRlbmNlbnRfdm9pY2VfYXBwX2lkGAMgASgFEh8KF3RlbmNlbnRfdm9pY2Vfc2VjcmV0X2lkGAQgASgJEiAKGHRlbmNlbnRfdm9pY2Vfc2VjcmV0X2tleRgFIAEoCRIfChd0ZW5jZW50X3B1c2hfc2VjcmV0X2tleRgGIAEoCRInCh90ZW5jZW50X3B1c2hfY2VydGlmaWNhdGVfaW9zX2lkGAcgASgFEisKI3RlbmNlbnRfcHVzaF9jZXJ0aWZpY2F0ZV9hbmRyb2lkX2lkGAggASgFIkcKFEltcG9ydEFjY291bnRSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSDAoEbmljaxgCIAEoCRIQCghmYWNlX3VybBgDIAEoCSIlChJJbXBvcnRBY2NvdW50UmVwbHkSDwoHc3VjY2VzcxgBIAEoCCItChlNdWx0aUFjY291bnRJbXBvcnRSZXF1ZXN0EhAKCHVzZXJfaWRzGAEgAygJIjAKF011bHRpQWNjb3VudEltcG9ydFJlcGx5EhUKDWZhaWxfYWNjb3VudHMYASADKAkiJwoTQ2hlY2tBY2NvdW50UmVxdWVzdBIQCgh1c2VyX2lkcxgBIAMoCSJKChFDaGVja0FjY291bnRSZXBseRI1CgdyZXN1bHRzGAEgAygLMiQua3dfaW1fc2VydmljZS52MS5BY2NvdW50Q2hlY2tSZXN1bHQiSQoSQWNjb3VudENoZWNrUmVzdWx0Eg8KB3VzZXJfaWQYASABKAkSDgoGc3RhdHVzGAIgASgJEhIKCmVycm9yX2luZm8YAyABKAkiKAoURGVsZXRlQWNjb3VudFJlcXVlc3QSEAoIdXNlcl9pZHMYASADKAkiTAoSRGVsZXRlQWNjb3VudFJlcGx5EjYKB3Jlc3VsdHMYASADKAsyJS5rd19pbV9zZXJ2aWNlLnYxLkRlbGV0ZUFjY291bnRSZXN1bHQiUAoTRGVsZXRlQWNjb3VudFJlc3VsdBIPCgd1c2VyX2lkGAEgASgJEhMKC3Jlc3VsdF9jb2RlGAIgASgFEhMKC3Jlc3VsdF9pbmZvGAMgASgJIiIKD0tpY2tVc2VyUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJIiAKDUtpY2tVc2VyUmVwbHkSDwoHc3VjY2VzcxgBIAEoCCJBChhRdWVyeU9ubGluZVN0YXR1c1JlcXVlc3QSEAoIdXNlcl9pZHMYASADKAkSEwoLbmVlZF9kZXRhaWwYAiABKAgiTwoWUXVlcnlPbmxpbmVTdGF0dXNSZXBseRI1CgdyZXN1bHRzGAEgAygLMiQua3dfaW1fc2VydmljZS52MS5PbmxpbmVTdGF0dXNSZXN1bHQiZgoST25saW5lU3RhdHVzUmVzdWx0Eg8KB3VzZXJfaWQYASABKAkSDgoGc3RhdHVzGAIgASgJEi8KB2RldGFpbHMYAyADKAsyHi5rd19pbV9zZXJ2aWNlLnYxLlN0YXR1c0RldGFpbCIwCgxTdGF0dXNEZXRhaWwSEAoIcGxhdGZvcm0YASABKAkSDgoGc3RhdHVzGAIgASgJQipaKGFnbmVzL3Byb3RvL2dlbi9nby9rd19pbV9zZXJ2aWNlL3YxO2ltdjFiBnByb3RvMw");
+  fileDesc("Ch5rd19pbV9zZXJ2aWNlL3YxL2FjY291bnQucHJvdG8SEGt3X2ltX3NlcnZpY2UudjEiNAoRR2V0VXNlclNpZ1JlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCRIOCgZleHBpcmUYAiABKAUiNgoPR2V0VXNlclNpZ1JlcGx5EhAKCHVzZXJfc2lnGAEgASgJEhEKCWV4cGlyZV9hdBgCIAEoAyImCiRHZXRUZW5jZW50SU1DbGllbnRDcmVkZW50aWFsc1JlcXVlc3QipAIKIkdldFRlbmNlbnRJTUNsaWVudENyZWRlbnRpYWxzUmVwbHkSEgoKc2RrX2FwcF9pZBgBIAEoBRISCgpzZWNyZXRfa2V5GAIgASgJEhwKFHRlbmNlbnRfdm9pY2VfYXBwX2lkGAMgASgFEh8KF3RlbmNlbnRfdm9pY2Vfc2VjcmV0X2lkGAQgASgJEiAKGHRlbmNlbnRfdm9pY2Vfc2VjcmV0X2tleRgFIAEoCRIfChd0ZW5jZW50X3B1c2hfc2VjcmV0X2tleRgGIAEoCRInCh90ZW5jZW50X3B1c2hfY2VydGlmaWNhdGVfaW9zX2lkGAcgASgFEisKI3RlbmNlbnRfcHVzaF9jZXJ0aWZpY2F0ZV9hbmRyb2lkX2lkGAggASgFIkcKFEltcG9ydEFjY291bnRSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSDAoEbmljaxgCIAEoCRIQCghmYWNlX3VybBgDIAEoCSIlChJJbXBvcnRBY2NvdW50UmVwbHkSDwoHc3VjY2VzcxgBIAEoCCIpChZFbnN1cmVJTUFjY291bnRSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiJwoURW5zdXJlSU1BY2NvdW50UmVwbHkSDwoHc3VjY2VzcxgBIAEoCCItChlNdWx0aUFjY291bnRJbXBvcnRSZXF1ZXN0EhAKCHVzZXJfaWRzGAEgAygJIjAKF011bHRpQWNjb3VudEltcG9ydFJlcGx5EhUKDWZhaWxfYWNjb3VudHMYASADKAkiJwoTQ2hlY2tBY2NvdW50UmVxdWVzdBIQCgh1c2VyX2lkcxgBIAMoCSJKChFDaGVja0FjY291bnRSZXBseRI1CgdyZXN1bHRzGAEgAygLMiQua3dfaW1fc2VydmljZS52MS5BY2NvdW50Q2hlY2tSZXN1bHQiSQoSQWNjb3VudENoZWNrUmVzdWx0Eg8KB3VzZXJfaWQYASABKAkSDgoGc3RhdHVzGAIgASgJEhIKCmVycm9yX2luZm8YAyABKAkiKAoURGVsZXRlQWNjb3VudFJlcXVlc3QSEAoIdXNlcl9pZHMYASADKAkiTAoSRGVsZXRlQWNjb3VudFJlcGx5EjYKB3Jlc3VsdHMYASADKAsyJS5rd19pbV9zZXJ2aWNlLnYxLkRlbGV0ZUFjY291bnRSZXN1bHQiUAoTRGVsZXRlQWNjb3VudFJlc3VsdBIPCgd1c2VyX2lkGAEgASgJEhMKC3Jlc3VsdF9jb2RlGAIgASgFEhMKC3Jlc3VsdF9pbmZvGAMgASgJIiIKD0tpY2tVc2VyUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJIiAKDUtpY2tVc2VyUmVwbHkSDwoHc3VjY2VzcxgBIAEoCCJBChhRdWVyeU9ubGluZVN0YXR1c1JlcXVlc3QSEAoIdXNlcl9pZHMYASADKAkSEwoLbmVlZF9kZXRhaWwYAiABKAgiTwoWUXVlcnlPbmxpbmVTdGF0dXNSZXBseRI1CgdyZXN1bHRzGAEgAygLMiQua3dfaW1fc2VydmljZS52MS5PbmxpbmVTdGF0dXNSZXN1bHQiZgoST25saW5lU3RhdHVzUmVzdWx0Eg8KB3VzZXJfaWQYASABKAkSDgoGc3RhdHVzGAIgASgJEi8KB2RldGFpbHMYAyADKAsyHi5rd19pbV9zZXJ2aWNlLnYxLlN0YXR1c0RldGFpbCIwCgxTdGF0dXNEZXRhaWwSEAoIcGxhdGZvcm0YASABKAkSDgoGc3RhdHVzGAIgASgJQipaKGFnbmVzL3Byb3RvL2dlbi9nby9rd19pbV9zZXJ2aWNlL3YxO2ltdjFiBnByb3RvMw");
 
 /**
  * @generated from message kw_im_service.v1.GetUserSigRequest
@@ -180,6 +180,42 @@ export const ImportAccountReplySchema: GenMessage<ImportAccountReply> = /*@__PUR
   messageDesc(file_kw_im_service_v1_account, 5);
 
 /**
+ * EnsureIMAccountRequest 确保 IM 账号存在（本地 DB 查重 → 拉取用户资料 → 腾讯 ImportAccount → 本地持久化）。
+ *
+ * @generated from message kw_im_service.v1.EnsureIMAccountRequest
+ */
+export type EnsureIMAccountRequest = Message<"kw_im_service.v1.EnsureIMAccountRequest"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+};
+
+/**
+ * Describes the message kw_im_service.v1.EnsureIMAccountRequest.
+ * Use `create(EnsureIMAccountRequestSchema)` to create a new message.
+ */
+export const EnsureIMAccountRequestSchema: GenMessage<EnsureIMAccountRequest> = /*@__PURE__*/
+  messageDesc(file_kw_im_service_v1_account, 6);
+
+/**
+ * @generated from message kw_im_service.v1.EnsureIMAccountReply
+ */
+export type EnsureIMAccountReply = Message<"kw_im_service.v1.EnsureIMAccountReply"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+};
+
+/**
+ * Describes the message kw_im_service.v1.EnsureIMAccountReply.
+ * Use `create(EnsureIMAccountReplySchema)` to create a new message.
+ */
+export const EnsureIMAccountReplySchema: GenMessage<EnsureIMAccountReply> = /*@__PURE__*/
+  messageDesc(file_kw_im_service_v1_account, 7);
+
+/**
  * @generated from message kw_im_service.v1.MultiAccountImportRequest
  */
 export type MultiAccountImportRequest = Message<"kw_im_service.v1.MultiAccountImportRequest"> & {
@@ -194,7 +230,7 @@ export type MultiAccountImportRequest = Message<"kw_im_service.v1.MultiAccountIm
  * Use `create(MultiAccountImportRequestSchema)` to create a new message.
  */
 export const MultiAccountImportRequestSchema: GenMessage<MultiAccountImportRequest> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 6);
+  messageDesc(file_kw_im_service_v1_account, 8);
 
 /**
  * @generated from message kw_im_service.v1.MultiAccountImportReply
@@ -213,7 +249,7 @@ export type MultiAccountImportReply = Message<"kw_im_service.v1.MultiAccountImpo
  * Use `create(MultiAccountImportReplySchema)` to create a new message.
  */
 export const MultiAccountImportReplySchema: GenMessage<MultiAccountImportReply> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 7);
+  messageDesc(file_kw_im_service_v1_account, 9);
 
 /**
  * @generated from message kw_im_service.v1.CheckAccountRequest
@@ -230,7 +266,7 @@ export type CheckAccountRequest = Message<"kw_im_service.v1.CheckAccountRequest"
  * Use `create(CheckAccountRequestSchema)` to create a new message.
  */
 export const CheckAccountRequestSchema: GenMessage<CheckAccountRequest> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 8);
+  messageDesc(file_kw_im_service_v1_account, 10);
 
 /**
  * @generated from message kw_im_service.v1.CheckAccountReply
@@ -247,7 +283,7 @@ export type CheckAccountReply = Message<"kw_im_service.v1.CheckAccountReply"> & 
  * Use `create(CheckAccountReplySchema)` to create a new message.
  */
 export const CheckAccountReplySchema: GenMessage<CheckAccountReply> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 9);
+  messageDesc(file_kw_im_service_v1_account, 11);
 
 /**
  * @generated from message kw_im_service.v1.AccountCheckResult
@@ -276,7 +312,7 @@ export type AccountCheckResult = Message<"kw_im_service.v1.AccountCheckResult"> 
  * Use `create(AccountCheckResultSchema)` to create a new message.
  */
 export const AccountCheckResultSchema: GenMessage<AccountCheckResult> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 10);
+  messageDesc(file_kw_im_service_v1_account, 12);
 
 /**
  * @generated from message kw_im_service.v1.DeleteAccountRequest
@@ -293,7 +329,7 @@ export type DeleteAccountRequest = Message<"kw_im_service.v1.DeleteAccountReques
  * Use `create(DeleteAccountRequestSchema)` to create a new message.
  */
 export const DeleteAccountRequestSchema: GenMessage<DeleteAccountRequest> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 11);
+  messageDesc(file_kw_im_service_v1_account, 13);
 
 /**
  * @generated from message kw_im_service.v1.DeleteAccountReply
@@ -310,7 +346,7 @@ export type DeleteAccountReply = Message<"kw_im_service.v1.DeleteAccountReply"> 
  * Use `create(DeleteAccountReplySchema)` to create a new message.
  */
 export const DeleteAccountReplySchema: GenMessage<DeleteAccountReply> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 12);
+  messageDesc(file_kw_im_service_v1_account, 14);
 
 /**
  * @generated from message kw_im_service.v1.DeleteAccountResult
@@ -337,7 +373,7 @@ export type DeleteAccountResult = Message<"kw_im_service.v1.DeleteAccountResult"
  * Use `create(DeleteAccountResultSchema)` to create a new message.
  */
 export const DeleteAccountResultSchema: GenMessage<DeleteAccountResult> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 13);
+  messageDesc(file_kw_im_service_v1_account, 15);
 
 /**
  * @generated from message kw_im_service.v1.KickUserRequest
@@ -354,7 +390,7 @@ export type KickUserRequest = Message<"kw_im_service.v1.KickUserRequest"> & {
  * Use `create(KickUserRequestSchema)` to create a new message.
  */
 export const KickUserRequestSchema: GenMessage<KickUserRequest> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 14);
+  messageDesc(file_kw_im_service_v1_account, 16);
 
 /**
  * @generated from message kw_im_service.v1.KickUserReply
@@ -371,7 +407,7 @@ export type KickUserReply = Message<"kw_im_service.v1.KickUserReply"> & {
  * Use `create(KickUserReplySchema)` to create a new message.
  */
 export const KickUserReplySchema: GenMessage<KickUserReply> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 15);
+  messageDesc(file_kw_im_service_v1_account, 17);
 
 /**
  * @generated from message kw_im_service.v1.QueryOnlineStatusRequest
@@ -395,7 +431,7 @@ export type QueryOnlineStatusRequest = Message<"kw_im_service.v1.QueryOnlineStat
  * Use `create(QueryOnlineStatusRequestSchema)` to create a new message.
  */
 export const QueryOnlineStatusRequestSchema: GenMessage<QueryOnlineStatusRequest> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 16);
+  messageDesc(file_kw_im_service_v1_account, 18);
 
 /**
  * @generated from message kw_im_service.v1.QueryOnlineStatusReply
@@ -412,7 +448,7 @@ export type QueryOnlineStatusReply = Message<"kw_im_service.v1.QueryOnlineStatus
  * Use `create(QueryOnlineStatusReplySchema)` to create a new message.
  */
 export const QueryOnlineStatusReplySchema: GenMessage<QueryOnlineStatusReply> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 17);
+  messageDesc(file_kw_im_service_v1_account, 19);
 
 /**
  * @generated from message kw_im_service.v1.OnlineStatusResult
@@ -441,7 +477,7 @@ export type OnlineStatusResult = Message<"kw_im_service.v1.OnlineStatusResult"> 
  * Use `create(OnlineStatusResultSchema)` to create a new message.
  */
 export const OnlineStatusResultSchema: GenMessage<OnlineStatusResult> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 18);
+  messageDesc(file_kw_im_service_v1_account, 20);
 
 /**
  * @generated from message kw_im_service.v1.StatusDetail
@@ -465,5 +501,5 @@ export type StatusDetail = Message<"kw_im_service.v1.StatusDetail"> & {
  * Use `create(StatusDetailSchema)` to create a new message.
  */
 export const StatusDetailSchema: GenMessage<StatusDetail> = /*@__PURE__*/
-  messageDesc(file_kw_im_service_v1_account, 19);
+  messageDesc(file_kw_im_service_v1_account, 21);
 

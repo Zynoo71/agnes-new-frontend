@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kw_aigc_service/v1/kw_aigc_service.proto.
  */
 export const file_kw_aigc_service_v1_kw_aigc_service: GenFile = /*@__PURE__*/
-  fileDesc("Cihrd19haWdjX3NlcnZpY2UvdjEva3dfYWlnY19zZXJ2aWNlLnByb3RvEhJrd19haWdjX3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSInChRHZXRUYXNrU3RhdHVzUmVxdWVzdBIPCgd0YXNrX2lkGAEgASgJItYBChVHZXRUYXNrU3RhdHVzUmVzcG9uc2USDQoFZm91bmQYASABKAgSDwoHdGFza19pZBgCIAEoCRIOCgZzdGF0dXMYAyABKAkSEgoKcmVzdWx0X3VyaRgEIAEoCRIRCgllcnJvcl9tc2cYBSABKAkSFAoMY29tcGxldGVkX2F0GAYgASgJEhYKDnN1YnNjcmliZXJfdGFnGAcgASgJEiEKGXN1YnNjcmliZXJfY29uc3VtZXJfZ3JvdXAYCCABKAkSFQoNc3Vic2NyaWJlcl9pcBgJIAEoCSI+ChhHZXRBaWdjVGFza1N0YXR1c1JlcXVlc3QSDwoHdGFza19pZBgBIAEoCRIRCgl0YXNrX3R5cGUYAiABKAkicwoZR2V0QWlnY1Rhc2tTdGF0dXNSZXNwb25zZRINCgVmb3VuZBgBIAEoCBIPCgd0YXNrX2lkGAIgASgJEg4KBnN0YXR1cxgDIAEoCRIRCgl0YXNrX3R5cGUYBCABKAkSEwoLcmVzdWx0X2pzb24YBSABKAkiSQoaUmVjb2duaXplSW1hZ2VNYXRjaFJlcXVlc3QSEQoJaW1hZ2VfdXJsGAEgASgJEhgKEG9iamVjdF9kZXRlY3Rpb24YAiABKAkiQAobUmVjb2duaXplSW1hZ2VNYXRjaFJlc3BvbnNlEhAKCGlzX21hdGNoGAEgASgIEg8KB21lc3NhZ2UYAiABKAkiNgofQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvUmVxdWVzdBITCgttb2RlbF9jb2RlcxgBIAMoCSJbChBNb2RlbERpc3BsYXlJbmZvEhIKCm1vZGVsX2NvZGUYASABKAkSDAoEbmFtZRgCIAEoCRITCgttb2RlbF9pbnRybxgDIAEoCRIQCghpY29uX3VybBgEIAEoCSJYCiBCYXRjaEdldE1vZGVsRGlzcGxheUluZm9SZXNwb25zZRI0CgZtb2RlbHMYASADKAsyJC5rd19haWdjX3NlcnZpY2UudjEuTW9kZWxEaXNwbGF5SW5mbyJFChtHZXRNb2RlbENhcGFiaWxpdGllc1JlcXVlc3QSEgoKbW9kZWxfY29kZRgBIAEoCRISCgptb2RlbF90eXBlGAIgASgJIlMKHEdldE1vZGVsQ2FwYWJpbGl0aWVzUmVzcG9uc2USMwoGbW9kZWxzGAEgAygLMiMua3dfYWlnY19zZXJ2aWNlLnYxLk1vZGVsQ2FwYWJpbGl0eSKfAgoPTW9kZWxDYXBhYmlsaXR5EhIKCm1vZGVsX2NvZGUYASABKAkSEgoKbW9kZWxfbmFtZRgCIAEoCRITCgttb2RlbF9hbGlhcxgDIAEoCRINCgVpbnRybxgEIAEoCRIQCghpY29uX3VybBgFIAEoCRISCgptb2RlbF90eXBlGAYgASgJEjIKBWltYWdlGAogASgLMiMua3dfYWlnY19zZXJ2aWNlLnYxLkltYWdlQ2FwYWJpbGl0eRIyCgV2aWRlbxgLIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5WaWRlb0NhcGFiaWxpdHkSMgoFYXVkaW8YDCABKAsyIy5rd19haWdjX3NlcnZpY2UudjEuQXVkaW9DYXBhYmlsaXR5IlcKD0ltYWdlQ2FwYWJpbGl0eRIVCg1hc3BlY3RfcmF0aW9zGAEgAygJEhMKC3Jlc29sdXRpb25zGAIgAygJEhgKEG1heF9iYXRjaF9pbWFnZXMYAyABKAUiWQoPVmlkZW9DYXBhYmlsaXR5EhAKCGR1cmF0aW9uGAEgAygFEh0KFXN1cHBvcnRlZF9yZXNvbHV0aW9ucxgCIAMoCRIVCg1hc3BlY3RfcmF0aW9zGAMgAygJIhEKD0F1ZGlvQ2FwYWJpbGl0eSKeAgoUU3ludGhlc2l6ZVRUU1JlcXVlc3QSDAoEdGV4dBgBIAEoCRISCgptb2RlbF9uYW1lGAIgASgJEhAKCHRyYWNlX2lkGAMgASgJEg8KB3Rhc2tfaWQYBCABKAkSDgoGc291cmNlGAUgASgJEjoKDXZvaWNlX3NldHRpbmcYCiABKAsyIy5rd19haWdjX3NlcnZpY2UudjEuVFRTVm9pY2VTZXR0aW5nEjoKDWF1ZGlvX3NldHRpbmcYCyABKAsyIy5rd19haWdjX3NlcnZpY2UudjEuVFRTQXVkaW9TZXR0aW5nEhYKDmxhbmd1YWdlX2Jvb3N0GAwgASgJEgwKBHN5bmMYDSABKAgSEwoLaXNfYmxvY2tpbmcYDiABKAgiTgoPVFRTVm9pY2VTZXR0aW5nEhAKCHZvaWNlX2lkGAEgASgJEg0KBXNwZWVkGAIgASgCEgsKA3ZvbBgDIAEoAhINCgVwaXRjaBgEIAEoBSJYCg9UVFNBdWRpb1NldHRpbmcSEwoLc2FtcGxlX3JhdGUYASABKAUSDwoHYml0cmF0ZRgCIAEoBRIOCgZmb3JtYXQYAyABKAkSDwoHY2hhbm5lbBgEIAEoBSK3AQoVU3ludGhlc2l6ZVRUU1Jlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgSDwoHbWVzc2FnZRgCIAEoCRIQCgh0cmFjZV9pZBgDIAEoCRIPCgd0YXNrX2lkGAQgASgJEhIKCm1vZGVsX25hbWUYBSABKAkSEgoKZXJyb3JfY29kZRgGIAEoCRIxCgZyZXN1bHQYCiABKAsyIS5rd19haWdjX3NlcnZpY2UudjEuVFRTUmVzdWx0SXRlbSLWAQoWR2VuZXJhdGVHYW1lVFRTUmVxdWVzdBINCgVzY2VuZRgBIAEoCRIMCgR0ZXh0GAIgASgJEhAKCHZvaWNlX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSDgoGZ2VuZGVyGAUgASgJEg8KB3NldHRpbmcYBiABKAkSDAoEaW5mbxgHIAEoCRILCgN1cmwYCCABKAkSDgoGcnVuX2lkGAsgASgJEhAKCHRyYWNlX2lkGAwgASgJSgQICRAKSgQIChALUgpzZXNzaW9uX2lkUglpc19maW5pc2gipAIKF0dlbmVyYXRlR2FtZVRUU1Jlc3BvbnNlEg8KB3N1Y2Nlc3MYASABKAgSDwoHbWVzc2FnZRgCIAEoCRIOCgZydW5faWQYAyABKAkSDwoHdGFza19pZBgEIAEoCRINCgVzY2VuZRgFIAEoCRILCgN1cmkYCiABKAkSEAoIZHVyYXRpb24YCyABKAESEwoLc2FtcGxlX3JhdGUYDCABKAkSDwoHYml0cmF0ZRgNIAEoCRIOCgZmb3JtYXQYDiABKAkSEAoIdHJhY2VfaWQYDyABKAkSEAoIdm9pY2VfaWQYECABKAkSEgoKdm9pY2VfbmFtZRgRIAEoCUoECBIQE0oECBMQFEoECBQQFVIKc2Vzc2lvbl9pZFIFaW5kZXhSBXN0YWdlInsKDVRUU1Jlc3VsdEl0ZW0SDwoHc3VjY2VzcxgBIAEoCBIPCgdtZXNzYWdlGAIgASgJEg8KB3Rhc2tfaWQYAyABKAkSEQoJYXVkaW9fdXJsGAQgASgJEhAKCGR1cmF0aW9uGAUgASgCEhIKCmF1ZGlvX3NpemUYBiABKAMygwcKFEt3QWlnY1NlcnZpY2VTZXJ2aWNlEkYKBFBpbmcSHy5rd19haWdjX3NlcnZpY2UudjEuUGluZ1JlcXVlc3QaHS5rd19haWdjX3NlcnZpY2UudjEuUGluZ1JlcGx5EmQKDUdldFRhc2tTdGF0dXMSKC5rd19haWdjX3NlcnZpY2UudjEuR2V0VGFza1N0YXR1c1JlcXVlc3QaKS5rd19haWdjX3NlcnZpY2UudjEuR2V0VGFza1N0YXR1c1Jlc3BvbnNlEnAKEUdldEFpZ2NUYXNrU3RhdHVzEiwua3dfYWlnY19zZXJ2aWNlLnYxLkdldEFpZ2NUYXNrU3RhdHVzUmVxdWVzdBotLmt3X2FpZ2Nfc2VydmljZS52MS5HZXRBaWdjVGFza1N0YXR1c1Jlc3BvbnNlEnYKE1JlY29nbml6ZUltYWdlTWF0Y2gSLi5rd19haWdjX3NlcnZpY2UudjEuUmVjb2duaXplSW1hZ2VNYXRjaFJlcXVlc3QaLy5rd19haWdjX3NlcnZpY2UudjEuUmVjb2duaXplSW1hZ2VNYXRjaFJlc3BvbnNlEoUBChhCYXRjaEdldE1vZGVsRGlzcGxheUluZm8SMy5rd19haWdjX3NlcnZpY2UudjEuQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvUmVxdWVzdBo0Lmt3X2FpZ2Nfc2VydmljZS52MS5CYXRjaEdldE1vZGVsRGlzcGxheUluZm9SZXNwb25zZRJ5ChRHZXRNb2RlbENhcGFiaWxpdGllcxIvLmt3X2FpZ2Nfc2VydmljZS52MS5HZXRNb2RlbENhcGFiaWxpdGllc1JlcXVlc3QaMC5rd19haWdjX3NlcnZpY2UudjEuR2V0TW9kZWxDYXBhYmlsaXRpZXNSZXNwb25zZRJkCg1TeW50aGVzaXplVFRTEigua3dfYWlnY19zZXJ2aWNlLnYxLlN5bnRoZXNpemVUVFNSZXF1ZXN0Gikua3dfYWlnY19zZXJ2aWNlLnYxLlN5bnRoZXNpemVUVFNSZXNwb25zZRJqCg9HZW5lcmF0ZUdhbWVUVFMSKi5rd19haWdjX3NlcnZpY2UudjEuR2VuZXJhdGVHYW1lVFRTUmVxdWVzdBorLmt3X2FpZ2Nfc2VydmljZS52MS5HZW5lcmF0ZUdhbWVUVFNSZXNwb25zZUI6WjhhZ25lcy9wcm90by9nZW4vZ28va3dfYWlnY19zZXJ2aWNlL3YxO2t3X2FpZ2Nfc2VydmljZV92MWIGcHJvdG8z");
+  fileDesc("Cihrd19haWdjX3NlcnZpY2UvdjEva3dfYWlnY19zZXJ2aWNlLnByb3RvEhJrd19haWdjX3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSInChRHZXRUYXNrU3RhdHVzUmVxdWVzdBIPCgd0YXNrX2lkGAEgASgJItYBChVHZXRUYXNrU3RhdHVzUmVzcG9uc2USDQoFZm91bmQYASABKAgSDwoHdGFza19pZBgCIAEoCRIOCgZzdGF0dXMYAyABKAkSEgoKcmVzdWx0X3VyaRgEIAEoCRIRCgllcnJvcl9tc2cYBSABKAkSFAoMY29tcGxldGVkX2F0GAYgASgJEhYKDnN1YnNjcmliZXJfdGFnGAcgASgJEiEKGXN1YnNjcmliZXJfY29uc3VtZXJfZ3JvdXAYCCABKAkSFQoNc3Vic2NyaWJlcl9pcBgJIAEoCSI+ChhHZXRBaWdjVGFza1N0YXR1c1JlcXVlc3QSDwoHdGFza19pZBgBIAEoCRIRCgl0YXNrX3R5cGUYAiABKAkicwoZR2V0QWlnY1Rhc2tTdGF0dXNSZXNwb25zZRINCgVmb3VuZBgBIAEoCBIPCgd0YXNrX2lkGAIgASgJEg4KBnN0YXR1cxgDIAEoCRIRCgl0YXNrX3R5cGUYBCABKAkSEwoLcmVzdWx0X2pzb24YBSABKAkiSQoaUmVjb2duaXplSW1hZ2VNYXRjaFJlcXVlc3QSEQoJaW1hZ2VfdXJsGAEgASgJEhgKEG9iamVjdF9kZXRlY3Rpb24YAiABKAkiQAobUmVjb2duaXplSW1hZ2VNYXRjaFJlc3BvbnNlEhAKCGlzX21hdGNoGAEgASgIEg8KB21lc3NhZ2UYAiABKAkiNgofQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvUmVxdWVzdBITCgttb2RlbF9jb2RlcxgBIAMoCSJbChBNb2RlbERpc3BsYXlJbmZvEhIKCm1vZGVsX2NvZGUYASABKAkSDAoEbmFtZRgCIAEoCRITCgttb2RlbF9pbnRybxgDIAEoCRIQCghpY29uX3VybBgEIAEoCSJYCiBCYXRjaEdldE1vZGVsRGlzcGxheUluZm9SZXNwb25zZRI0CgZtb2RlbHMYASADKAsyJC5rd19haWdjX3NlcnZpY2UudjEuTW9kZWxEaXNwbGF5SW5mbyJFChtHZXRNb2RlbENhcGFiaWxpdGllc1JlcXVlc3QSEgoKbW9kZWxfY29kZRgBIAEoCRISCgptb2RlbF90eXBlGAIgASgJIlMKHEdldE1vZGVsQ2FwYWJpbGl0aWVzUmVzcG9uc2USMwoGbW9kZWxzGAEgAygLMiMua3dfYWlnY19zZXJ2aWNlLnYxLk1vZGVsQ2FwYWJpbGl0eSLcAgoPTW9kZWxDYXBhYmlsaXR5EhIKCm1vZGVsX2NvZGUYASABKAkSEgoKbW9kZWxfbmFtZRgCIAEoCRITCgttb2RlbF9hbGlhcxgDIAEoCRINCgVpbnRybxgEIAEoCRIQCghpY29uX3VybBgFIAEoCRISCgptb2RlbF90eXBlGAYgASgJEjIKBWltYWdlGAogASgLMiMua3dfYWlnY19zZXJ2aWNlLnYxLkltYWdlQ2FwYWJpbGl0eRIyCgV2aWRlbxgLIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5WaWRlb0NhcGFiaWxpdHkSMgoFYXVkaW8YDCABKAsyIy5rd19haWdjX3NlcnZpY2UudjEuQXVkaW9DYXBhYmlsaXR5EjsKCnZpZGVvX2VkaXQYDSABKAsyJy5rd19haWdjX3NlcnZpY2UudjEuVmlkZW9FZGl0Q2FwYWJpbGl0eSJXCg9JbWFnZUNhcGFiaWxpdHkSFQoNYXNwZWN0X3JhdGlvcxgBIAMoCRITCgtyZXNvbHV0aW9ucxgCIAMoCRIYChBtYXhfYmF0Y2hfaW1hZ2VzGAMgASgFIqIBCg9WaWRlb0NhcGFiaWxpdHkSEAoIZHVyYXRpb24YASADKAUSHQoVc3VwcG9ydGVkX3Jlc29sdXRpb25zGAIgAygJEhUKDWFzcGVjdF9yYXRpb3MYAyADKAkSIQoZc3VwcG9ydHNfYXVkaW9fZ2VuZXJhdGlvbhgEIAEoCBIkChxzdXBwb3J0c19jdXN0b21fYXVkaW9fdXBsb2FkGAUgASgIInUKE1ZpZGVvRWRpdENhcGFiaWxpdHkSHAoUbWluX2R1cmF0aW9uX3NlY29uZHMYASABKAUSHAoUbWF4X2R1cmF0aW9uX3NlY29uZHMYAiABKAUSIgoac3VwcG9ydGVkX2R1cmF0aW9uX3NlY29uZHMYAyADKAUiEQoPQXVkaW9DYXBhYmlsaXR5IpcCChRTeW50aGVzaXplVFRTUmVxdWVzdBIMCgR0ZXh0GAEgASgJEhIKCm1vZGVsX25hbWUYAiABKAkSEAoIdHJhY2VfaWQYAyABKAkSDwoHdGFza19pZBgEIAEoCRIOCgZzb3VyY2UYBSABKAkSOgoNdm9pY2Vfc2V0dGluZxgKIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5UVFNWb2ljZVNldHRpbmcSOgoNYXVkaW9fc2V0dGluZxgLIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5UVFNBdWRpb1NldHRpbmcSFgoObGFuZ3VhZ2VfYm9vc3QYDCABKAkSEQoEc3luYxgNIAEoCEgAiAEBQgcKBV9zeW5jIk4KD1RUU1ZvaWNlU2V0dGluZxIQCgh2b2ljZV9pZBgBIAEoCRINCgVzcGVlZBgCIAEoAhILCgN2b2wYAyABKAISDQoFcGl0Y2gYBCABKAUiWAoPVFRTQXVkaW9TZXR0aW5nEhMKC3NhbXBsZV9yYXRlGAEgASgFEg8KB2JpdHJhdGUYAiABKAUSDgoGZm9ybWF0GAMgASgJEg8KB2NoYW5uZWwYBCABKAUitwEKFVN5bnRoZXNpemVUVFNSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg8KB21lc3NhZ2UYAiABKAkSEAoIdHJhY2VfaWQYAyABKAkSDwoHdGFza19pZBgEIAEoCRISCgptb2RlbF9uYW1lGAUgASgJEhIKCmVycm9yX2NvZGUYBiABKAkSMQoGcmVzdWx0GAogASgLMiEua3dfYWlnY19zZXJ2aWNlLnYxLlRUU1Jlc3VsdEl0ZW0i1gEKFkdlbmVyYXRlR2FtZVRUU1JlcXVlc3QSDQoFc2NlbmUYASABKAkSDAoEdGV4dBgCIAEoCRIQCgh2b2ljZV9pZBgDIAEoCRIMCgRuYW1lGAQgASgJEg4KBmdlbmRlchgFIAEoCRIPCgdzZXR0aW5nGAYgASgJEgwKBGluZm8YByABKAkSCwoDdXJsGAggASgJEg4KBnJ1bl9pZBgLIAEoCRIQCgh0cmFjZV9pZBgMIAEoCUoECAkQCkoECAoQC1IKc2Vzc2lvbl9pZFIJaXNfZmluaXNoIqQCChdHZW5lcmF0ZUdhbWVUVFNSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg8KB21lc3NhZ2UYAiABKAkSDgoGcnVuX2lkGAMgASgJEg8KB3Rhc2tfaWQYBCABKAkSDQoFc2NlbmUYBSABKAkSCwoDdXJpGAogASgJEhAKCGR1cmF0aW9uGAsgASgBEhMKC3NhbXBsZV9yYXRlGAwgASgJEg8KB2JpdHJhdGUYDSABKAkSDgoGZm9ybWF0GA4gASgJEhAKCHRyYWNlX2lkGA8gASgJEhAKCHZvaWNlX2lkGBAgASgJEhIKCnZvaWNlX25hbWUYESABKAlKBAgSEBNKBAgTEBRKBAgUEBVSCnNlc3Npb25faWRSBWluZGV4UgVzdGFnZSJ7Cg1UVFNSZXN1bHRJdGVtEg8KB3N1Y2Nlc3MYASABKAgSDwoHbWVzc2FnZRgCIAEoCRIPCgd0YXNrX2lkGAMgASgJEhEKCWF1ZGlvX3VybBgEIAEoCRIQCghkdXJhdGlvbhgFIAEoAhISCgphdWRpb19zaXplGAYgASgDMoMHChRLd0FpZ2NTZXJ2aWNlU2VydmljZRJGCgRQaW5nEh8ua3dfYWlnY19zZXJ2aWNlLnYxLlBpbmdSZXF1ZXN0Gh0ua3dfYWlnY19zZXJ2aWNlLnYxLlBpbmdSZXBseRJkCg1HZXRUYXNrU3RhdHVzEigua3dfYWlnY19zZXJ2aWNlLnYxLkdldFRhc2tTdGF0dXNSZXF1ZXN0Gikua3dfYWlnY19zZXJ2aWNlLnYxLkdldFRhc2tTdGF0dXNSZXNwb25zZRJwChFHZXRBaWdjVGFza1N0YXR1cxIsLmt3X2FpZ2Nfc2VydmljZS52MS5HZXRBaWdjVGFza1N0YXR1c1JlcXVlc3QaLS5rd19haWdjX3NlcnZpY2UudjEuR2V0QWlnY1Rhc2tTdGF0dXNSZXNwb25zZRJ2ChNSZWNvZ25pemVJbWFnZU1hdGNoEi4ua3dfYWlnY19zZXJ2aWNlLnYxLlJlY29nbml6ZUltYWdlTWF0Y2hSZXF1ZXN0Gi8ua3dfYWlnY19zZXJ2aWNlLnYxLlJlY29nbml6ZUltYWdlTWF0Y2hSZXNwb25zZRKFAQoYQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvEjMua3dfYWlnY19zZXJ2aWNlLnYxLkJhdGNoR2V0TW9kZWxEaXNwbGF5SW5mb1JlcXVlc3QaNC5rd19haWdjX3NlcnZpY2UudjEuQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvUmVzcG9uc2USeQoUR2V0TW9kZWxDYXBhYmlsaXRpZXMSLy5rd19haWdjX3NlcnZpY2UudjEuR2V0TW9kZWxDYXBhYmlsaXRpZXNSZXF1ZXN0GjAua3dfYWlnY19zZXJ2aWNlLnYxLkdldE1vZGVsQ2FwYWJpbGl0aWVzUmVzcG9uc2USZAoNU3ludGhlc2l6ZVRUUxIoLmt3X2FpZ2Nfc2VydmljZS52MS5TeW50aGVzaXplVFRTUmVxdWVzdBopLmt3X2FpZ2Nfc2VydmljZS52MS5TeW50aGVzaXplVFRTUmVzcG9uc2USagoPR2VuZXJhdGVHYW1lVFRTEioua3dfYWlnY19zZXJ2aWNlLnYxLkdlbmVyYXRlR2FtZVRUU1JlcXVlc3QaKy5rd19haWdjX3NlcnZpY2UudjEuR2VuZXJhdGVHYW1lVFRTUmVzcG9uc2VCOlo4YWduZXMvcHJvdG8vZ2VuL2dvL2t3X2FpZ2Nfc2VydmljZS92MTtrd19haWdjX3NlcnZpY2VfdjFiBnByb3RvMw");
 
 /**
  * @generated from message kw_aigc_service.v1.PingRequest
@@ -311,7 +311,7 @@ export type GetModelCapabilitiesRequest = Message<"kw_aigc_service.v1.GetModelCa
   modelCode: string;
 
   /**
-   * 模型类型（必填）：image / video / audio
+   * 模型类型（必填）：image / video / audio / video_edit
    *
    * @generated from field: string model_type = 2;
    */
@@ -394,6 +394,11 @@ export type ModelCapability = Message<"kw_aigc_service.v1.ModelCapability"> & {
    * @generated from field: kw_aigc_service.v1.AudioCapability audio = 12;
    */
   audio?: AudioCapability;
+
+  /**
+   * @generated from field: kw_aigc_service.v1.VideoEditCapability video_edit = 13;
+   */
+  videoEdit?: VideoEditCapability;
 };
 
 /**
@@ -460,6 +465,20 @@ export type VideoCapability = Message<"kw_aigc_service.v1.VideoCapability"> & {
    * @generated from field: repeated string aspect_ratios = 3;
    */
   aspectRatios: string[];
+
+  /**
+   * 是否支持模型侧生成音频（如带有音轨的视频生成）
+   *
+   * @generated from field: bool supports_audio_generation = 4;
+   */
+  supportsAudioGeneration: boolean;
+
+  /**
+   * 是否支持上传自定义音频（通常为后处理 mux）
+   *
+   * @generated from field: bool supports_custom_audio_upload = 5;
+   */
+  supportsCustomAudioUpload: boolean;
 };
 
 /**
@@ -468,6 +487,39 @@ export type VideoCapability = Message<"kw_aigc_service.v1.VideoCapability"> & {
  */
 export const VideoCapabilitySchema: GenMessage<VideoCapability> = /*@__PURE__*/
   messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 15);
+
+/**
+ * @generated from message kw_aigc_service.v1.VideoEditCapability
+ */
+export type VideoEditCapability = Message<"kw_aigc_service.v1.VideoEditCapability"> & {
+  /**
+   * 最短可配置时长（秒）
+   *
+   * @generated from field: int32 min_duration_seconds = 1;
+   */
+  minDurationSeconds: number;
+
+  /**
+   * 最长可配置时长（秒）
+   *
+   * @generated from field: int32 max_duration_seconds = 2;
+   */
+  maxDurationSeconds: number;
+
+  /**
+   * 显式可配置时长列表；空表示仅范围校验
+   *
+   * @generated from field: repeated int32 supported_duration_seconds = 3;
+   */
+  supportedDurationSeconds: number[];
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.VideoEditCapability.
+ * Use `create(VideoEditCapabilitySchema)` to create a new message.
+ */
+export const VideoEditCapabilitySchema: GenMessage<VideoEditCapability> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 16);
 
 /**
  * TODO: 待后续实现
@@ -482,7 +534,7 @@ export type AudioCapability = Message<"kw_aigc_service.v1.AudioCapability"> & {
  * Use `create(AudioCapabilitySchema)` to create a new message.
  */
 export const AudioCapabilitySchema: GenMessage<AudioCapability> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 16);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 17);
 
 /**
  * @generated from message kw_aigc_service.v1.SynthesizeTTSRequest
@@ -545,18 +597,11 @@ export type SynthesizeTTSRequest = Message<"kw_aigc_service.v1.SynthesizeTTSRequ
   languageBoost: string;
 
   /**
-   * 是否同步模式（默认 true）
+   * 是否同步模式（默认 true；未设置时由服务端按 true 处理）
    *
-   * @generated from field: bool sync = 13;
+   * @generated from field: optional bool sync = 13;
    */
-  sync: boolean;
-
-  /**
-   * 是否阻塞等待生成结果（默认 true）
-   *
-   * @generated from field: bool is_blocking = 14;
-   */
-  isBlocking: boolean;
+  sync?: boolean;
 };
 
 /**
@@ -564,7 +609,7 @@ export type SynthesizeTTSRequest = Message<"kw_aigc_service.v1.SynthesizeTTSRequ
  * Use `create(SynthesizeTTSRequestSchema)` to create a new message.
  */
 export const SynthesizeTTSRequestSchema: GenMessage<SynthesizeTTSRequest> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 17);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 18);
 
 /**
  * @generated from message kw_aigc_service.v1.TTSVoiceSetting
@@ -604,7 +649,7 @@ export type TTSVoiceSetting = Message<"kw_aigc_service.v1.TTSVoiceSetting"> & {
  * Use `create(TTSVoiceSettingSchema)` to create a new message.
  */
 export const TTSVoiceSettingSchema: GenMessage<TTSVoiceSetting> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 18);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 19);
 
 /**
  * @generated from message kw_aigc_service.v1.TTSAudioSetting
@@ -644,7 +689,7 @@ export type TTSAudioSetting = Message<"kw_aigc_service.v1.TTSAudioSetting"> & {
  * Use `create(TTSAudioSettingSchema)` to create a new message.
  */
 export const TTSAudioSettingSchema: GenMessage<TTSAudioSetting> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 19);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 20);
 
 /**
  * @generated from message kw_aigc_service.v1.SynthesizeTTSResponse
@@ -705,7 +750,7 @@ export type SynthesizeTTSResponse = Message<"kw_aigc_service.v1.SynthesizeTTSRes
  * Use `create(SynthesizeTTSResponseSchema)` to create a new message.
  */
 export const SynthesizeTTSResponseSchema: GenMessage<SynthesizeTTSResponse> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 20);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 21);
 
 /**
  * @generated from message kw_aigc_service.v1.GenerateGameTTSRequest
@@ -787,7 +832,7 @@ export type GenerateGameTTSRequest = Message<"kw_aigc_service.v1.GenerateGameTTS
  * Use `create(GenerateGameTTSRequestSchema)` to create a new message.
  */
 export const GenerateGameTTSRequestSchema: GenMessage<GenerateGameTTSRequest> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 21);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 22);
 
 /**
  * @generated from message kw_aigc_service.v1.GenerateGameTTSResponse
@@ -864,7 +909,7 @@ export type GenerateGameTTSResponse = Message<"kw_aigc_service.v1.GenerateGameTT
  * Use `create(GenerateGameTTSResponseSchema)` to create a new message.
  */
 export const GenerateGameTTSResponseSchema: GenMessage<GenerateGameTTSResponse> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 22);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 23);
 
 /**
  * @generated from message kw_aigc_service.v1.TTSResultItem
@@ -918,7 +963,7 @@ export type TTSResultItem = Message<"kw_aigc_service.v1.TTSResultItem"> & {
  * Use `create(TTSResultItemSchema)` to create a new message.
  */
 export const TTSResultItemSchema: GenMessage<TTSResultItem> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 23);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 24);
 
 /**
  * @generated from service kw_aigc_service.v1.KwAigcServiceService
