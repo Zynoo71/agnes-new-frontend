@@ -107,6 +107,7 @@ export type ContentBlock =
   | { type: "AnalysisPhaseDigest"; data: { digestText: string; producerCompleted: number; producerFailed: number } }
   | { type: "DeliverablePhaseStarted"; data: { deliverableCount: number; deliverableTypes: string[] } }
   | { type: "SheetProgress"; data: { step: string; icon: string; label: string; detail: string } }
+  | { type: "SheetToolProgress"; data: { toolName: string; step: string; stepLabel: string; stepIndex: number; totalSteps: number } }
   | { type: "SheetDeliverableReady"; data: { kind: string; icon: string; label: string; path: string; extra?: string } }
   | { type: "SwarmGroupStarted"; data: { groupId: string; phase: string; workerCount: number; label: string } };
 
@@ -492,6 +493,63 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             label: "Excel 已导出",
             path: (payload.export_path as string) ?? "",
             extra: sheetCount > 0 ? `${sheetCount} 个工作表` : "",
+          },
+        });
+        break;
+      }
+
+      // Tool progress events (creative_table, search_table step updates)
+      if (custom.type === "SheetToolProgress") {
+        updated.blocks.push({
+          type: "SheetToolProgress",
+          data: {
+            toolName: (payload.tool_name as string) ?? "",
+            step: (payload.step as string) ?? "",
+            stepLabel: (payload.step_label as string) ?? "",
+            stepIndex: (payload.step_index as number) ?? 0,
+            totalSteps: (payload.total_steps as number) ?? 0,
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetCreativeTableReady") {
+        updated.blocks.push({
+          type: "SheetDeliverableReady",
+          data: {
+            kind: "creative_table",
+            icon: "📝",
+            label: `创意表格「${(payload.table_name as string) ?? ""}」已生成`,
+            path: (payload.output_path as string) ?? "",
+            extra: `${(payload.row_count as number) ?? 0} 行`,
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetSearchTableReady") {
+        updated.blocks.push({
+          type: "SheetDeliverableReady",
+          data: {
+            kind: "search_table",
+            icon: "🔍",
+            label: "搜索成表完成",
+            path: (payload.output_path as string) ?? "",
+            extra: `${(payload.row_count as number) ?? 0} 行 × ${(payload.column_count as number) ?? 0} 列`,
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetDataEnriched") {
+        updated.blocks.push({
+          type: "SheetDeliverableReady",
+          data: {
+            kind: "enriched",
+            icon: "🔗",
+            label: "数据扩充完成",
+            path: (payload.output_path as string) ?? "",
+            extra: `${(payload.row_count as number) ?? 0} 行`,
           },
         });
         break;

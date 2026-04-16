@@ -559,6 +559,18 @@ const BlockRenderer = memo(function BlockRenderer({
           {block.data.detail && <span className="text-xs opacity-60">{block.data.detail}</span>}
         </div>
       );
+    case "SheetToolProgress":
+      return (
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-300 text-sm border border-blue-200 dark:border-blue-800">
+          <span className="text-base">⏳</span>
+          <span>{block.data.stepLabel}</span>
+          {block.data.totalSteps > 0 && (
+            <span className="text-xs opacity-60 ml-auto">
+              {block.data.stepIndex}/{block.data.totalSteps}
+            </span>
+          )}
+        </div>
+      );
     case "SheetDeliverableReady":
       return (
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 text-sm border border-green-200 dark:border-green-800">
