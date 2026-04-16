@@ -7,6 +7,7 @@ import type {
   ContentBlock,
   HumanReviewData,
   ToolCallData,
+  FileData,
   MemoryUpdateData,
   SlideOutlineData,
   SlideDesignSystemData,
@@ -156,8 +157,9 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
   const conversationId = useConversationStore((s) => s.conversationId);
   const agentType = useConversationStore((s) => s.agentType);
   const openLocalPreview = useLocalSlidePreviewStore((s) => s.open);
+  const hasFileBlocks = message.blocks.some((block) => block.type === "File");
 
-  const canEdit = isUser && isLast && onEditResend && !isStreaming;
+  const canEdit = isUser && isLast && onEditResend && !isStreaming && !hasFileBlocks;
   const canRegenerate = !isUser && isLast && onRegenerate && !isStreaming;
   const slideOutlineBlock = !isUser
     ? [...message.blocks]
@@ -485,6 +487,8 @@ const BlockRenderer = memo(function BlockRenderer({
           >{block.content}</Markdown>
         </div>
       );
+    case "File":
+      return <FileBlock data={block.data} />;
     case "Reasoning":
       return <ReasoningBlock content={block.content} isStreaming={isStreaming} autoCollapse={autoCollapse} />;
     case "ToolCallStart":
@@ -513,6 +517,29 @@ const BlockRenderer = memo(function BlockRenderer({
       return <SlideDesignSystemBlock data={block.data} />;
   }
 });
+
+function FileBlock({ data }: { data: FileData }) {
+  const label = data.filename || data.url.split("/").pop() || "attachment";
+
+  return (
+    <a
+      href={data.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-2 flex items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50/80 px-3 py-2 text-left transition-colors hover:border-sky-300 hover:bg-sky-100/80"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-700">
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-7.5A2.25 2.25 0 0017.25 4.5h-10.5A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25h7.5m5.25-5.25L12 21m0 0l-2.25-2.25M12 21V10.5" />
+        </svg>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-text-primary">{label}</span>
+        <span className="block truncate text-xs text-text-secondary">{data.mimeType}</span>
+      </span>
+    </a>
+  );
+}
 
 // ── Reasoning block with smooth transition ──
 const AUTO_COLLAPSE_DELAY = 2000;
