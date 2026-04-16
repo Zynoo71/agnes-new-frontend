@@ -34,7 +34,7 @@ function formatDuration(seconds: number): string {
 function buildHistoryWorkers(toolCalls: ToolCallData[]): HistoryWorker[] {
   const usedIndices = new Set<number>();
   return toolCalls
-    .filter((tc) => tc.toolResult)
+    .filter((tc) => tc.toolResult && tc.toolResult.worker_id)
     .map((tc) => {
       const r = tc.toolResult!;
       const wId = (r.worker_id as string) ?? tc.toolCallId;
