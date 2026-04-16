@@ -316,7 +316,7 @@ export function ChatPanel() {
   const canSend = (hasInput || pendingFiles.length > 0) && !isUploadingFiles;
 
   const inputArea = (
-    <div className={`relative rounded-[20px] border border-border bg-surface shadow-sm
+    <div className={`rounded-[20px] border border-border bg-surface shadow-sm
                     focus-within:shadow-md focus-within:border-border transition-shadow
                     ${isEmpty ? "max-w-xl w-full" : ""}`}>
       {/* Agent mode selector + Prompt selector */}
@@ -381,24 +381,6 @@ export function ChatPanel() {
           className="hidden"
           onChange={handleSelectFiles}
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isStreaming || isUploadingFiles || hasPendingReview}
-          className="mb-2.5 ml-3 mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-alt text-text-secondary transition-all hover:border-border-dark hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-          title={hasPendingReview ? "Attachments are unavailable during review replies" : "Upload file"}
-        >
-          {isUploadingFiles ? (
-            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-              <path className="opacity-75" fill="currentColor" d="M12 2a10 10 0 00-10 10h3a7 7 0 017-7V2z" />
-            </svg>
-          ) : (
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a3 3 0 11-4.243-4.243l8.4-8.4a2 2 0 112.829 2.828l-7.108 7.108a1 1 0 11-1.414-1.414l6.011-6.01" />
-            </svg>
-          )}
-        </button>
         <textarea
           ref={textareaRef}
           value={input}
@@ -408,12 +390,61 @@ export function ChatPanel() {
           onCompositionEnd={() => { isComposingRef.current = false; }}
           placeholder={hasPendingReview ? "Type feedback to modify..." : isUploadingFiles ? "Uploading attachment..." : "Ask Agnes anything..."}
           rows={1}
-          className="flex-1 resize-none bg-transparent py-2.5 pl-4 pr-14 text-sm
+          className="flex-1 resize-none bg-transparent py-2.5 px-4 text-sm
                      focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
         />
+        {isStreaming ? (
+          <button
+            onClick={cancelStream}
+            className="mb-2.5 mr-3 ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-error text-white
+                       hover:bg-error/80 active:scale-95 transition-all"
+            title="Stop generating"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            onClick={() => handleSend()}
+            disabled={!canSend}
+            className={`mb-2.5 mr-3 ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl active:scale-95 transition-all
+              ${canSend
+                ? "bg-accent text-white hover:bg-accent-hover"
+                : "bg-text-tertiary/20 text-text-tertiary/50"
+              }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+            </svg>
+          </button>
+        )}
       </div>
-      {/* Bottom toolbar: location toggle */}
-      <div className="flex items-center px-3 pb-2 pt-0 relative">
+      {/* Bottom toolbar */}
+      <div className="flex items-center gap-0.5 px-3 pb-2 pt-0 relative">
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isStreaming || isUploadingFiles || hasPendingReview}
+          className={`flex items-center gap-1 px-2 py-1 text-[11px] rounded-full transition-all ${
+            pendingFiles.length > 0
+              ? "bg-accent/10 text-accent"
+              : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
+          } disabled:cursor-not-allowed disabled:opacity-40`}
+          title={hasPendingReview ? "Attachments are unavailable during review replies" : "Upload file"}
+        >
+          {isUploadingFiles ? (
+            <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M12 2a10 10 0 00-10 10h3a7 7 0 017-7V2z" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a3 3 0 11-4.243-4.243l8.4-8.4a2 2 0 112.829 2.828l-7.108 7.108a1 1 0 11-1.414-1.414l6.011-6.01" />
+            </svg>
+          )}
+          <span>Attach</span>
+        </button>
         <button
           onClick={() => setShowLocation(!showLocation)}
           className={`flex items-center gap-1 px-2 py-1 text-[11px] rounded-full transition-all ${
@@ -446,32 +477,6 @@ export function ChatPanel() {
           />
         )}
       </div>
-      {isStreaming ? (
-        <button
-          onClick={cancelStream}
-          className="absolute right-2.5 bottom-2.5 rounded-xl bg-error text-white p-2
-                     hover:bg-error/80 active:scale-95 transition-all"
-          title="Stop generating"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <rect x="6" y="6" width="12" height="12" rx="2" />
-          </svg>
-        </button>
-      ) : (
-        <button
-          onClick={() => handleSend()}
-          disabled={!canSend}
-          className={`absolute right-2.5 bottom-2.5 rounded-xl p-2 active:scale-95 transition-all
-            ${canSend
-              ? "bg-accent text-white hover:bg-accent-hover"
-              : "bg-text-tertiary/20 text-text-tertiary/50"
-            }`}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
-          </svg>
-        </button>
-      )}
     </div>
   );
 
