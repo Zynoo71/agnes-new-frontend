@@ -31,6 +31,11 @@ function beginNewTurn(convId: string): AbortSignal {
   return beginStream(convId);
 }
 
+function isAlreadyExists(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("already_exists") || msg.includes("ALREADY_EXISTS");
+}
+
 async function runStream(
   iter: AsyncIterable<AgentStreamEvent>,
   signal: AbortSignal,
@@ -43,6 +48,19 @@ async function runStream(
     }
   } catch (err) {
     if (signal.aborted) return;
+    // Backend has an active stream for this conversation (spec §6.6) —
+    // don't retry ChatStream, fall back to ResumeStream(from_seq=0) to
+    // pick up the existing stream from the beginning.
+    if (isAlreadyExists(err)) {
+      console.warn(`Active stream exists for conv ${convId}, falling back to resumeStream(from_seq=0)`);
+      const resumeIter = agentClient.resumeStream(
+        { conversationId: BigInt(convId), fromSeq: 0n },
+        { signal },
+      );
+      // Tail-call: delegate cleanup to the resumed runStream invocation.
+      await runStream(resumeIter, signal, convId);
+      return;
+    }
     const msg = err instanceof Error ? err.message : String(err);
     console.error("Stream error:", err);
     if (getState().conversationId === convId) {
@@ -265,6 +283,7 @@ export function useChat() {
       useConversationListStore.getState().update(convId, { title });
     }
 
+    const extraContext = Object.keys(s.extraContext).length > 0 ? s.extraContext : undefined;
     const stream = agentClient.chatStream(
       {
         conversationId: BigInt(convId),
@@ -277,6 +296,7 @@ export function useChat() {
           data: new Uint8Array(),
         })),
         systemPromptId: s.systemPromptId ? BigInt(s.systemPromptId) : 0n,
+        extraContext,
       },
       { signal },
     );

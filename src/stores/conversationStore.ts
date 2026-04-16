@@ -534,6 +534,7 @@ interface ConversationStore {
   conversationId: string | null;
   agentType: string;
   systemPromptId: string | null;
+  extraContext: { [key: string]: string };
   messages: Message[];
   rawEvents: RawEvent[];
   tasks: AgentTask[];
@@ -549,6 +550,7 @@ interface ConversationStore {
   setConversationId: (id: string) => void;
   setAgentType: (type: string) => void;
   setSystemPromptId: (id: string | null) => void;
+  setExtraContext: (ctx: { [key: string]: string }) => void;
   setStreaming: (v: boolean) => void;
   setLoadingHistory: (v: boolean) => void;
   setError: (err: string | null) => void;
@@ -587,6 +589,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
     conversationId: null,
     agentType: "super",
     systemPromptId: null,
+    extraContext: {},
     messages: [],
     rawEvents: [],
     tasks: [],
@@ -600,6 +603,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
     setConversationId: (id) => set({ conversationId: id }),
     setAgentType: (type) => set({ agentType: type }),
     setSystemPromptId: (id) => set({ systemPromptId: id }),
+    setExtraContext: (ctx) => set({ extraContext: ctx }),
     setStreaming: (v) => set({ isStreaming: v }),
     setLoadingHistory: (v) => set({ isLoadingHistory: v }),
     setError: (err) => set({ error: err }),

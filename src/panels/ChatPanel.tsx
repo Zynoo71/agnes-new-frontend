@@ -124,15 +124,69 @@ function ScrollRow({ items, direction, duration }: { items: string[]; direction:
   );
 }
 
+function LocationPopover({ city, country, onChange, onClose }: {
+  city: string;
+  country: string;
+  onChange: (city: string, country: string) => void;
+  onClose: () => void;
+}) {
+  const [c, setC] = useState(city);
+  const [co, setCo] = useState(country);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
+
+  const apply = () => {
+    onChange(c.trim(), co.trim());
+    onClose();
+  };
+
+  return (
+    <div ref={ref} className="absolute bottom-full left-0 mb-2 w-56 rounded-xl border border-border bg-surface shadow-lg p-3 z-50 animate-message-in">
+      <div className="text-xs font-medium text-text-secondary mb-2">Location Context</div>
+      <label className="block text-[11px] text-text-tertiary mb-0.5">City</label>
+      <input
+        value={c}
+        onChange={(e) => setC(e.target.value)}
+        placeholder="e.g. Shanghai"
+        className="w-full mb-2 px-2 py-1.5 text-xs rounded-lg border border-border bg-surface-alt focus:outline-none focus:border-accent"
+      />
+      <label className="block text-[11px] text-text-tertiary mb-0.5">Country</label>
+      <input
+        value={co}
+        onChange={(e) => setCo(e.target.value)}
+        placeholder="e.g. China"
+        className="w-full mb-3 px-2 py-1.5 text-xs rounded-lg border border-border bg-surface-alt focus:outline-none focus:border-accent"
+        onKeyDown={(e) => { if (e.key === "Enter") apply(); }}
+      />
+      <div className="flex gap-2">
+        <button onClick={() => { onChange("", ""); onClose(); }} className="flex-1 text-xs py-1.5 rounded-lg text-text-tertiary hover:bg-surface-hover transition-colors">
+          Clear
+        </button>
+        <button onClick={apply} className="flex-1 text-xs py-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors">
+          Apply
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ChatPanel() {
-  const { conversationId, agentType, messages, isStreaming, isLoadingHistory, error, setAgentType, systemPromptId, setSystemPromptId, setError } =
+  const { conversationId, agentType, messages, isStreaming, isLoadingHistory, error, setAgentType, systemPromptId, setSystemPromptId, setError, extraContext, setExtraContext } =
     useConversationStore();
   const rawEventsCount = useConversationStore(s => s.rawEvents.length);
   const rawEvents = useConversationStore(s => s.rawEvents);
-  
+
   const { createConversation, sendMessage, hitlResume, editResend, regenerate, cancelStream } = useChat();
   const [showEvents, setShowEvents] = useState(false);
   const [input, setInput] = useState("");
+  const [showLocation, setShowLocation] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -357,6 +411,40 @@ export function ChatPanel() {
           className="flex-1 resize-none bg-transparent py-2.5 pl-4 pr-14 text-sm
                      focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
         />
+      </div>
+      {/* Bottom toolbar: location toggle */}
+      <div className="flex items-center px-3 pb-2 pt-0 relative">
+        <button
+          onClick={() => setShowLocation(!showLocation)}
+          className={`flex items-center gap-1 px-2 py-1 text-[11px] rounded-full transition-all ${
+            extraContext.city || extraContext.country
+              ? "bg-accent/10 text-accent"
+              : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
+          }`}
+          title="Set location context"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+          </svg>
+          {extraContext.city || extraContext.country
+            ? <span>{[extraContext.city, extraContext.country].filter(Boolean).join(", ")}</span>
+            : <span>Location</span>
+          }
+        </button>
+        {showLocation && (
+          <LocationPopover
+            city={(extraContext.city as string) ?? ""}
+            country={(extraContext.country as string) ?? ""}
+            onChange={(city, country) => {
+              const ctx: { [key: string]: string } = {};
+              if (city) ctx.city = city;
+              if (country) ctx.country = country;
+              setExtraContext(ctx);
+            }}
+            onClose={() => setShowLocation(false)}
+          />
+        )}
       </div>
       {isStreaming ? (
         <button
