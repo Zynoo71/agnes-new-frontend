@@ -10,6 +10,7 @@ import type {
   MemoryUpdateData,
   SlideOutlineData,
   SlideDesignSystemData,
+  WorkerState,
 } from "@/stores/conversationStore";
 import { PLANNING_TOOL_NAMES, useConversationStore } from "@/stores/conversationStore";
 import { CitationSources } from "@/components/CitationSources";
@@ -288,16 +289,54 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
             if (block.type === "ToolCallStart" || isSpawn) seen = true;
           }
 
-          // Index of the first spawn tool block (render AgentSwarmPanel only once)
+          // Collect SwarmGroupStarted blocks to split workers into groups
+          const swarmGroups = message.blocks
+            .filter((b): b is { type: "SwarmGroupStarted"; data: { groupId: string; phase: string; workerCount: number; label: string } } =>
+              b.type === "SwarmGroupStarted")
+            .map((b) => b.data);
+
+          // Build per-group worker maps (live mode)
+          const allWorkers = Object.values(message.workers);
+          const hasGroups = swarmGroups.length > 0 && allWorkers.some((w) => w.groupId);
+
+          // Index of the first spawn tool block (render AgentSwarmPanel at this position)
           const firstSpawnIdx = message.blocks.findIndex(
             (b) => b.type === "ToolCallStart" && isSpawnTool(b.data.toolName),
           );
+
+          let swarmRendered = false;
 
           const rendered = message.blocks.map((block, i) => {
             const isSpawn = block.type === "ToolCallStart" && isSpawnTool(block.data.toolName);
 
             if (isSpawn) {
-              if (i !== firstSpawnIdx) return null;
+              if (swarmRendered) return null;
+              swarmRendered = true;
+
+              // If we have group info, render separate panels per group
+              if (hasGroups && swarmGroups.length > 0) {
+                return swarmGroups.map((group) => {
+                  const groupWorkers: Record<string, WorkerState> = {};
+                  for (const [wid, w] of Object.entries(message.workers)) {
+                    if (w.groupId === group.groupId) {
+                      groupWorkers[wid] = w;
+                    }
+                  }
+                  // Skip rendering empty groups
+                  if (Object.keys(groupWorkers).length === 0) return null;
+                  return (
+                    <AgentSwarmPanel
+                      key={`swarm-${group.groupId}`}
+                      liveWorkers={groupWorkers}
+                      spawnToolCalls={spawnToolCalls}
+                      groupLabel={group.label}
+                      groupPhase={group.phase}
+                    />
+                  );
+                });
+              }
+
+              // Fallback: single panel (no group_id info, e.g. non-sheet agents)
               return (
                 <AgentSwarmPanel
                   key={`swarm-${i}`}
@@ -309,6 +348,11 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
 
             // Planning tools & cite_sources → filter out
             if (block.type === "ToolCallStart" && (PLANNING_TOOL_NAMES.has(block.data.toolName) || block.data.toolName === "cite_sources")) {
+              return null;
+            }
+
+            // SwarmGroupStarted blocks are consumed above for grouping, skip rendering
+            if (block.type === "SwarmGroupStarted") {
               return null;
             }
 
@@ -523,6 +567,8 @@ const BlockRenderer = memo(function BlockRenderer({
           {block.data.extra && <span className="text-xs opacity-70">{block.data.extra}</span>}
         </div>
       );
+    case "SwarmGroupStarted":
+      return null;
     case "SlideOutline":
       return <SlideOutlineBlock data={block.data} />;
     case "SlideDesignSystem":

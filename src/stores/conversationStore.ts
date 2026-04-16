@@ -57,6 +57,7 @@ export interface WorkerState {
   summary?: string;
   error?: string;
   phase?: string;
+  groupId?: string;
 }
 
 export interface AgentTask {
@@ -106,7 +107,8 @@ export type ContentBlock =
   | { type: "AnalysisPhaseDigest"; data: { digestText: string; producerCompleted: number; producerFailed: number } }
   | { type: "DeliverablePhaseStarted"; data: { deliverableCount: number; deliverableTypes: string[] } }
   | { type: "SheetProgress"; data: { step: string; icon: string; label: string; detail: string } }
-  | { type: "SheetDeliverableReady"; data: { kind: string; icon: string; label: string; path: string; extra?: string } };
+  | { type: "SheetDeliverableReady"; data: { kind: string; icon: string; label: string; path: string; extra?: string } }
+  | { type: "SwarmGroupStarted"; data: { groupId: string; phase: string; workerCount: number; label: string } };
 
 export interface Message {
   id: string;
@@ -495,6 +497,20 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
         break;
       }
 
+      // Swarm group started — marks the beginning of a new worker group
+      if (custom.type === "SwarmGroupStarted") {
+        updated.blocks.push({
+          type: "SwarmGroupStarted",
+          data: {
+            groupId: (payload.group_id as string) ?? "",
+            phase: (payload.phase as string) ?? "producer",
+            workerCount: (payload.worker_count as number) ?? 0,
+            label: (payload.label as string) ?? "",
+          },
+        });
+        break;
+      }
+
       // Worker events
       const workerId = payload.worker_id as string | undefined;
       if (workerId) {
@@ -512,6 +528,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
               text: "",
               toolCalls: [],
               phase: (payload.phase as string) ?? "producer",
+              groupId: (payload.group_id as string) ?? "",
             };
             break;
           }
