@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
+import type { ChatAttachment } from "@/types/chatAttachment";
 import { pickWorkerCharacter, type WorkerCharacter } from "@/workerCharacters";
 
 // ── Helpers ──
@@ -108,8 +109,11 @@ export interface MemoryUpdateData {
   content: string;
 }
 
+export interface FileData extends ChatAttachment {}
+
 export type ContentBlock =
   | { type: "Message"; content: string }
+  | { type: "File"; data: FileData }
   | { type: "Reasoning"; content: string }
   | { type: "ToolCallStart"; data: ToolCallData }
   | { type: "human_review"; data: HumanReviewData }
@@ -163,6 +167,19 @@ function appendOrPushBlock(
   blocks.push({ type: blockType, content });
 }
 
+function asFileData(val: unknown): FileData | null {
+  const data = asRecord(val);
+  const url = typeof data.url === "string" ? data.url : "";
+  const mimeType = typeof data.mime_type === "string"
+    ? data.mime_type
+    : typeof data.mimeType === "string"
+      ? data.mimeType
+      : "";
+  const filename = typeof data.filename === "string" ? data.filename : "";
+  if (!url || !mimeType) return null;
+  return { filename, mimeType, url };
+}
+
 function setTtftIfNeeded(message: Message, eventTimestamp: number): Message {
   if (message.role !== "assistant" || message.ttftMs != null || message.requestStartedAt == null) {
     return message;
@@ -187,10 +204,19 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
         .filter((b) => b.type === "Message")
         .map((b) => ((b.data as Record<string, unknown>)?.content as string) ?? "")
         .join("\n");
-      if (userText) {
+      const fileBlocks = blocks
+        .filter((b) => b.type === "File")
+        .map((b) => asFileData(b.data))
+        .filter((b): b is FileData => b !== null)
+        .map((data) => ({ type: "File", data }) as ContentBlock);
+      if (userText || fileBlocks.length > 0) {
         const userMsg: Message = {
           id: nextMessageId(), role: "user",
-          blocks: [{ type: "Message", content: userText }], nodes: [], workers: {}, sources: [],
+          blocks: [
+            ...(userText ? [{ type: "Message", content: userText } as ContentBlock] : []),
+            ...fileBlocks,
+          ],
+          nodes: [], workers: {}, sources: [],
         };
         const lastIdx = msgs.length - 1;
         if (msgs[lastIdx]?.role === "assistant") {
@@ -526,7 +552,7 @@ interface ConversationStore {
   setStreaming: (v: boolean) => void;
   setLoadingHistory: (v: boolean) => void;
   setError: (err: string | null) => void;
-  addUserMessage: (content: string) => void;
+  addUserMessage: (content: string, files?: ChatAttachment[]) => void;
   startAssistantMessage: (requestStartedAt?: number) => void;
   resolveHumanReview: () => void;
   removeLastRound: () => void;
@@ -578,11 +604,21 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
     setLoadingHistory: (v) => set({ isLoadingHistory: v }),
     setError: (err) => set({ error: err }),
 
-    addUserMessage: (content) =>
+    addUserMessage: (content, files = []) =>
       set((s) => ({
         messages: [
           ...s.messages,
-          { id: nextMessageId(), role: "user", blocks: [{ type: "Message", content }], nodes: [], workers: {}, sources: [] },
+          {
+            id: nextMessageId(),
+            role: "user",
+            blocks: [
+              ...(content ? [{ type: "Message", content } as ContentBlock] : []),
+              ...files.map((file) => ({ type: "File", data: file }) as ContentBlock),
+            ],
+            nodes: [],
+            workers: {},
+            sources: [],
+          },
         ],
       })),
 

@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
 import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq } from "@/stores/conversationStore";
 import type { SourceCitation } from "@/stores/conversationStore";
+import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
@@ -107,12 +108,22 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
   const messages: Message[] = [];
   for (const turn of turns) {
     const userBlocks = turn.user as { type: string; data: unknown }[];
-    const userText = userBlocks
+    const userTextBlocks = userBlocks
       .filter((b) => b.type === "Message")
-      .map((b) => (b.data as Record<string, unknown>)?.content ?? JSON.stringify(b.data))
-      .join("\n");
-    if (userText) {
-      messages.push({ id: nextHistoryId(), role: "user", blocks: [{ type: "Message", content: userText }], nodes: [], workers: {}, sources: [] });
+      .map((b) => ({ type: "Message", content: ((b.data as Record<string, unknown>)?.content as string) ?? JSON.stringify(b.data) }) as ContentBlock);
+    const fileBlocks = userBlocks
+      .filter((b) => b.type === "File")
+      .map((b) => {
+        const data = (b.data ?? {}) as Record<string, unknown>;
+        const url = typeof data.url === "string" ? data.url : "";
+        const mimeType = typeof data.mime_type === "string" ? data.mime_type : "";
+        const filename = typeof data.filename === "string" ? data.filename : "";
+        if (!url || !mimeType) return null;
+        return { type: "File", data: { filename, mimeType, url } } as ContentBlock;
+      })
+      .filter((b): b is ContentBlock => b !== null);
+    if (userTextBlocks.length > 0 || fileBlocks.length > 0) {
+      messages.push({ id: nextHistoryId(), role: "user", blocks: [...userTextBlocks, ...fileBlocks], nodes: [], workers: {}, sources: [] });
     }
     const assistantBlocks: ContentBlock[] = [];
     const turnSources: SourceCitation[] = [];
@@ -237,19 +248,20 @@ export function useChat() {
     return id;
   }, []);
 
-  const sendMessage = useCallback(async (query: string) => {
+  const sendMessage = useCallback(async (query: string, files: ChatAttachment[] = []) => {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
     const isFirstMessage = s.messages.every((m) => m.role !== "user");
     const requestStartedAt = Date.now();
 
-    s.addUserMessage(query);
+    s.addUserMessage(query, files);
     s.startAssistantMessage(requestStartedAt);
     const signal = beginNewTurn(convId);
 
     if (isFirstMessage) {
-      const title = query.length > 50 ? query.slice(0, 50) + "..." : query;
+      const titleSource = query || files[0]?.filename || "New chat";
+      const title = titleSource.length > 50 ? titleSource.slice(0, 50) + "..." : titleSource;
       useConversationListStore.getState().update(convId, { title });
     }
 
@@ -258,6 +270,12 @@ export function useChat() {
         conversationId: BigInt(convId),
         query,
         agentType: s.agentType,
+        files: files.map((file) => ({
+          mimeType: file.mimeType,
+          url: file.url,
+          filename: file.filename,
+          data: new Uint8Array(),
+        })),
         systemPromptId: s.systemPromptId ? BigInt(s.systemPromptId) : 0n,
       },
       { signal },

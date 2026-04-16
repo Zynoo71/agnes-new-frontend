@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef, useCallback, type KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type ChangeEvent, type KeyboardEvent } from "react";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import { useChat } from "@/hooks/useChat";
 import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
+import { uploadChatAttachment } from "@/api/chatAttachment";
 import { MessageBubble } from "@/components/MessageBubble";
 import { EventStream } from "@/components/EventStream";
 import { SystemPromptSelector } from "@/components/SystemPromptSelector";
+import type { ChatAttachment } from "@/types/chatAttachment";
 
 const AGENT_TYPES = ["super", "search", "research", "slide", "pixa"] as const;
 
@@ -123,7 +125,7 @@ function ScrollRow({ items, direction, duration }: { items: string[]; direction:
 }
 
 export function ChatPanel() {
-  const { conversationId, agentType, messages, isStreaming, isLoadingHistory, error, setAgentType, systemPromptId, setSystemPromptId } =
+  const { conversationId, agentType, messages, isStreaming, isLoadingHistory, error, setAgentType, systemPromptId, setSystemPromptId, setError } =
     useConversationStore();
   const rawEventsCount = useConversationStore(s => s.rawEvents.length);
   const rawEvents = useConversationStore(s => s.rawEvents);
@@ -136,9 +138,12 @@ export function ChatPanel() {
   const contentRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<ChatAttachment[]>([]);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const isNearBottomRef = useRef(true);
   const pendingScrollRef = useRef(false);
   const lastAutoScrollRef = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const health = useHealthCheck();
 
@@ -199,8 +204,14 @@ export function ChatPanel() {
 
   const handleSend = async (text?: string) => {
     const trimmed = (text ?? input).trim();
-    if (!trimmed || isStreaming) return;
+    if ((!trimmed && pendingFiles.length === 0) || isStreaming || isUploadingFiles) return;
+    if (hasPendingReview && pendingFiles.length > 0) {
+      setError("Attachments are not supported while replying to a human review step.");
+      return;
+    }
+    const filesToSend = pendingFiles;
     setInput("");
+    setPendingFiles([]);
     isNearBottomRef.current = true;
     if (!conversationId) {
       await createConversation();
@@ -208,9 +219,34 @@ export function ChatPanel() {
     if (hasPendingReview) {
       hitlResume("modify", trimmed);
     } else {
-      sendMessage(trimmed);
+      sendMessage(trimmed, filesToSend);
     }
     // ResizeObserver handles the scroll when content appears.
+  };
+
+  const handleSelectFiles = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+
+    setIsUploadingFiles(true);
+    setError(null);
+    try {
+      const uploaded: ChatAttachment[] = [];
+      for (const file of files) {
+        uploaded.push(await uploadChatAttachment(file));
+      }
+      setPendingFiles((prev) => [...prev, ...uploaded]);
+    } catch (uploadError) {
+      const message = uploadError instanceof Error ? uploadError.message : String(uploadError);
+      setError(`Upload failed: ${message}`);
+    } finally {
+      setIsUploadingFiles(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleRemovePendingFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -223,6 +259,7 @@ export function ChatPanel() {
   };
 
   const hasInput = input.trim().length > 0;
+  const canSend = (hasInput || pendingFiles.length > 0) && !isUploadingFiles;
 
   const inputArea = (
     <div className={`relative rounded-[20px] border border-border bg-surface shadow-sm
@@ -259,7 +296,55 @@ export function ChatPanel() {
           disabled={hasUserMessages}
         />
       </div>
+      {pendingFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-3 pt-2">
+          {pendingFiles.map((file, index) => (
+            <div
+              key={`${file.url}-${index}`}
+              className="flex max-w-full items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs text-sky-900"
+            >
+              <span className="truncate max-w-52 font-medium">{file.filename}</span>
+              <span className="truncate text-sky-700/80">{file.mimeType}</span>
+              <button
+                type="button"
+                onClick={() => handleRemovePendingFile(index)}
+                className="rounded-full p-0.5 text-sky-700 transition-colors hover:bg-sky-200 hover:text-sky-900"
+                title="Remove attachment"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex items-end">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleSelectFiles}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isStreaming || isUploadingFiles || hasPendingReview}
+          className="mb-2.5 ml-3 mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-alt text-text-secondary transition-all hover:border-border-dark hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          title={hasPendingReview ? "Attachments are unavailable during review replies" : "Upload file"}
+        >
+          {isUploadingFiles ? (
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M12 2a10 10 0 00-10 10h3a7 7 0 017-7V2z" />
+            </svg>
+          ) : (
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a3 3 0 11-4.243-4.243l8.4-8.4a2 2 0 112.829 2.828l-7.108 7.108a1 1 0 11-1.414-1.414l6.011-6.01" />
+            </svg>
+          )}
+        </button>
         <textarea
           ref={textareaRef}
           value={input}
@@ -267,7 +352,7 @@ export function ChatPanel() {
           onKeyDown={handleKeyDown}
           onCompositionStart={() => { isComposingRef.current = true; }}
           onCompositionEnd={() => { isComposingRef.current = false; }}
-          placeholder={hasPendingReview ? "Type feedback to modify..." : "Ask Agnes anything..."}
+          placeholder={hasPendingReview ? "Type feedback to modify..." : isUploadingFiles ? "Uploading attachment..." : "Ask Agnes anything..."}
           rows={1}
           className="flex-1 resize-none bg-transparent py-2.5 pl-4 pr-14 text-sm
                      focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
@@ -287,9 +372,9 @@ export function ChatPanel() {
       ) : (
         <button
           onClick={() => handleSend()}
-          disabled={!hasInput}
+          disabled={!canSend}
           className={`absolute right-2.5 bottom-2.5 rounded-xl p-2 active:scale-95 transition-all
-            ${hasInput
+            ${canSend
               ? "bg-accent text-white hover:bg-accent-hover"
               : "bg-text-tertiary/20 text-text-tertiary/50"
             }`}
