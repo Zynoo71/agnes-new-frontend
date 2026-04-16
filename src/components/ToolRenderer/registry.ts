@@ -9,6 +9,7 @@ import { ScheduleManagerRenderer } from "./renderers/ScheduleManagerRenderer";
 import { SlideToolRenderer } from "./renderers/SlideToolRenderer";
 import { GenerateImageRenderer } from "./renderers/GenerateImageRenderer";
 import { GenerateVideoRenderer } from "./renderers/GenerateVideoRenderer";
+import { WeatherRenderer } from "./renderers/WeatherRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
@@ -40,6 +41,7 @@ const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   delegate_to_slide_agent: SlideToolRenderer,
   generate_image: GenerateImageRenderer,
   generate_video: GenerateVideoRenderer,
+  query_weather: WeatherRenderer,
 };
 
 export function getToolRenderer(toolName: string): FC<ToolRenderProps> | undefined {
