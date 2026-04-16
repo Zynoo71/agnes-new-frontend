@@ -103,12 +103,13 @@ export type ContentBlock =
   | { type: "SlideOutline"; data: SlideOutlineData }
   | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
   | { type: "MemoryUpdate"; data: MemoryUpdateData }
-  | { type: "PhaseTransition"; data: { phase: string; succeeded: number[]; failed: number[]; message: string } }
+  | { type: "PhaseTransition"; data: { phase: string; completedCount: number; failedCount: number; totalCount: number; message: string } }
   | { type: "AnalysisPhaseDigest"; data: { digestText: string; producerCompleted: number; producerFailed: number } }
   | { type: "DeliverablePhaseStarted"; data: { deliverableCount: number; deliverableTypes: string[] } }
   | { type: "SheetProgress"; data: { step: string; icon: string; label: string; detail: string } }
   | { type: "SheetToolProgress"; data: { toolName: string; step: string; stepLabel: string; stepIndex: number; totalSteps: number } }
   | { type: "SheetDeliverableReady"; data: { kind: string; icon: string; label: string; path: string; extra?: string } }
+  | { type: "SheetTaskStatus"; data: { taskId: string; title: string; engine: string; status: "running" | "done" | "failed"; errorMessage?: string } }
   | { type: "SwarmGroupStarted"; data: { groupId: string; phase: string; workerCount: number; label: string } };
 
 export interface Message {
@@ -329,8 +330,9 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
           type: "PhaseTransition",
           data: {
             phase: "producer_complete",
-            succeeded: (payload.succeeded_indices as number[]) ?? [],
-            failed: (payload.failed_indices as number[]) ?? [],
+            completedCount: (payload.completed_count as number) ?? 0,
+            failedCount: (payload.failed_count as number) ?? 0,
+            totalCount: (payload.total_count as number) ?? 0,
             message: "分析阶段已完成，正在生成最终交付物…",
           },
         });
@@ -364,7 +366,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
 
       // ── Sheet progress events (pipeline stage notifications) ──
       if (custom.type === "SheetFilesIngested") {
-        const fileCount = (payload.file_count as number) ?? 0;
+        const fileCount = (payload.imported_files_count as number) ?? 0;
         const primaryInput = (payload.primary_input_path as string) ?? "";
         const name = primaryInput ? primaryInput.split("/").pop() : "";
         updated.blocks.push({
@@ -386,13 +388,14 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
           chart_only: "图表生成", pivot: "透视汇总", export: "格式导出",
           search_table: "搜索成表", enrich: "数据扩充", generate_table: "创意建表",
         };
+        const isMultiGoal = payload.is_multi_goal as boolean;
         updated.blocks.push({
           type: "SheetProgress",
           data: {
             step: "intent_inferred",
             icon: "🎯",
             label: `意图识别：${goalLabels[goal] ?? goal}`,
-            detail: (payload.secondary_goals as string[])?.join("、") ?? "",
+            detail: isMultiGoal ? "多目标请求" : "",
           },
         });
         break;
@@ -462,7 +465,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             kind: "dashboard",
             icon: "📈",
             label: "数据座舱已生成",
-            path: (payload.dashboard_path as string) ?? "",
+            path: (payload.output_path as string) ?? "",
           },
         });
         break;
@@ -493,6 +496,49 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             label: "Excel 已导出",
             path: (payload.export_path as string) ?? "",
             extra: sheetCount > 0 ? `${sheetCount} 个工作表` : "",
+          },
+        });
+        break;
+      }
+
+      // ── Sandbox task lifecycle events ──
+      if (custom.type === "SheetSandboxTaskStarted") {
+        updated.blocks.push({
+          type: "SheetTaskStatus",
+          data: {
+            taskId: (payload.task_id as string) ?? "",
+            title: (payload.title as string) ?? "",
+            engine: (payload.engine as string) ?? "",
+            status: "running",
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetSandboxTaskCompleted") {
+        const status = (payload.status as string) ?? "";
+        const isFailed = status === "failed";
+        updated.blocks.push({
+          type: "SheetTaskStatus",
+          data: {
+            taskId: (payload.task_id as string) ?? "",
+            title: "",
+            engine: (payload.engine as string) ?? "",
+            status: isFailed ? "failed" : "done",
+            errorMessage: isFailed ? ((payload.error_message as string) ?? "") : undefined,
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetChartGenerated") {
+        updated.blocks.push({
+          type: "SheetDeliverableReady",
+          data: {
+            kind: "chart",
+            icon: "📉",
+            label: "图表已生成",
+            path: (payload.chart_output_path as string) ?? "",
           },
         });
         break;

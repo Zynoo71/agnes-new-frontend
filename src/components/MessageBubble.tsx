@@ -526,6 +526,11 @@ const BlockRenderer = memo(function BlockRenderer({
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-sm border border-blue-200 dark:border-blue-800">
           <span className="text-base">✅</span>
           <span>{block.data.message}</span>
+          {block.data.totalCount > 0 && (
+            <span className="text-xs opacity-70">
+              （{block.data.completedCount}/{block.data.totalCount} 完成{block.data.failedCount > 0 ? `，${block.data.failedCount} 失败` : ""}）
+            </span>
+          )}
         </div>
       );
     case "AnalysisPhaseDigest":
@@ -579,6 +584,31 @@ const BlockRenderer = memo(function BlockRenderer({
           {block.data.extra && <span className="text-xs opacity-70">{block.data.extra}</span>}
         </div>
       );
+    case "SheetTaskStatus": {
+      const isFailed = block.data.status === "failed";
+      const isRunning = block.data.status === "running";
+      if (isFailed) {
+        return (
+          <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">
+            <span className="text-base shrink-0">❌</span>
+            <div>
+              <span className="font-medium">任务执行失败</span>
+              {block.data.errorMessage && <p className="text-xs opacity-80 mt-0.5">{block.data.errorMessage}</p>}
+            </div>
+          </div>
+        );
+      }
+      if (isRunning) {
+        return (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-sm border border-amber-200 dark:border-amber-800">
+            <span className="text-base animate-pulse">⚙️</span>
+            <span>正在执行：{block.data.title}</span>
+            {block.data.engine && <span className="text-xs opacity-60">（{block.data.engine}）</span>}
+          </div>
+        );
+      }
+      return null;
+    }
     case "SwarmGroupStarted":
       return null;
     case "SlideOutline":
