@@ -11,7 +11,7 @@ import type {
   SlideOutlineData,
   SlideDesignSystemData,
 } from "@/stores/conversationStore";
-import { PLANNING_TOOL_NAMES, useConversationStore } from "@/stores/conversationStore";
+import { PLANNING_TOOL_NAMES, SWARM_TOOL_NAMES, useConversationStore } from "@/stores/conversationStore";
 import { CitationSources } from "@/components/CitationSources";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
@@ -288,14 +288,14 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
         {(() => {
-          const spawnToolCalls: ToolCallData[] = message.blocks
+          const swarmToolCalls: ToolCallData[] = message.blocks
             .filter((b): b is { type: "ToolCallStart"; data: ToolCallData } =>
-              b.type === "ToolCallStart" && b.data.toolName === "spawn_worker")
+              b.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(b.data.toolName))
             .map((b) => b.data);
 
           const nonSpawnBlocks = message.blocks.filter(
             (b) =>
-              !(b.type === "ToolCallStart" && b.data.toolName === "spawn_worker") &&
+              !(b.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(b.data.toolName)) &&
               !(b.type === "ToolCallStart" && PLANNING_TOOL_NAMES.has(b.data.toolName)) &&
               b.type !== "TaskList",
           );
@@ -305,25 +305,25 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
           let seen = false;
           for (const block of message.blocks) {
             toolSeenBefore.push(seen);
-            const isSpawn = block.type === "ToolCallStart" && block.data.toolName === "spawn_worker";
-            if (block.type === "ToolCallStart" || isSpawn) seen = true;
+            const isSwarm = block.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(block.data.toolName);
+            if (block.type === "ToolCallStart" || isSwarm) seen = true;
           }
 
-          // Index of the first spawn_worker block (render AgentSwarmPanel only once)
-          const firstSpawnIdx = message.blocks.findIndex(
-            (b) => b.type === "ToolCallStart" && b.data.toolName === "spawn_worker",
+          // Index of the first swarm tool block (render AgentSwarmPanel only once)
+          const firstSwarmIdx = message.blocks.findIndex(
+            (b) => b.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(b.data.toolName),
           );
 
           const rendered = message.blocks.map((block, i) => {
-            const isSpawn = block.type === "ToolCallStart" && block.data.toolName === "spawn_worker";
+            const isSwarm = block.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(block.data.toolName);
 
-            if (isSpawn) {
-              if (i !== firstSpawnIdx) return null;
+            if (isSwarm) {
+              if (i !== firstSwarmIdx) return null;
               return (
                 <AgentSwarmPanel
                   key={`swarm-${i}`}
                   liveWorkers={message.workers}
-                  spawnToolCalls={spawnToolCalls}
+                  spawnToolCalls={swarmToolCalls}
                 />
               );
             }
@@ -635,6 +635,9 @@ function MemoryUpdateBlock({ data }: { data: MemoryUpdateData }) {
 // ── Review type display config ──
 const REVIEW_TYPE_CONFIG: Record<string, { title: string; description: string }> = {
   research_plan: { title: "Research Plan", description: "Review the proposed tasks before execution" },
+  prompt_enhancement: { title: "Prompt Enhancement", description: "Review the enhanced prompt before generation" },
+  material_supplement: { title: "Material Confirmation", description: "Confirm materials to use for generation" },
+  batch_generation_plan: { title: "Generation Plan", description: "Review the batch generation plan" },
 };
 
 function HumanReviewBlock({
@@ -763,8 +766,170 @@ function ResearchPlanRenderer(data: Record<string, unknown>) {
   );
 }
 
+function PromptEnhancementRenderer(data: Record<string, unknown>) {
+  const original = (data.original_prompt as string) ?? "";
+  const enhanced = (data.enhanced_prompt as string) ?? "";
+  const mediaType = (data.media_type as string) ?? "image";
+  const style = (data.style as string) ?? "";
+  const message = (data.message as string) ?? "";
+
+  return (
+    <div className="space-y-3">
+      {message && (
+        <p className="text-xs text-text-secondary leading-relaxed">{message}</p>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="rounded-lg bg-surface border border-border-light p-3">
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Original</div>
+          <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{original}</p>
+        </div>
+        <div className="rounded-lg bg-accent/5 border border-accent/20 p-3">
+          <div className="text-[10px] font-medium text-accent uppercase tracking-wide mb-1.5">Enhanced</div>
+          <p className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap">{enhanced}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        {mediaType && (
+          <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+            {mediaType}
+          </span>
+        )}
+        {style && (
+          <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+            {style.startsWith("custom:") ? style.slice(7) : style}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface MaterialCandidate {
+  url: string;
+  source: string;
+  desc?: string;
+}
+
+function MaterialSupplementRenderer(data: Record<string, unknown>) {
+  const missing = (data.missing_materials as string[]) ?? [];
+  const candidates = (data.candidates as MaterialCandidate[]) ?? [];
+  const actions = (data.suggested_actions as string[]) ?? [];
+  const message = (data.message as string) ?? "";
+
+  return (
+    <div className="space-y-3">
+      {message && (
+        <p className="text-xs text-text-secondary leading-relaxed">{message}</p>
+      )}
+      {missing.length > 0 && (
+        <div>
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Missing materials</div>
+          <div className="flex flex-wrap gap-1.5">
+            {missing.map((m, i) => (
+              <span key={i} className="text-[11px] text-warning bg-warning/10 px-2 py-0.5 rounded-full">{m}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {candidates.length > 0 && (
+        <div>
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Candidates</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {candidates.map((c, i) => (
+              <div key={i} className="rounded-lg border border-border-light overflow-hidden bg-surface">
+                <img src={c.url} alt={c.desc ?? ""} className="w-full h-24 object-cover" loading="lazy" />
+                <div className="px-2 py-1.5">
+                  {c.desc && <p className="text-[11px] text-text-secondary truncate">{c.desc}</p>}
+                  <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1 py-0.5 rounded">
+                    {c.source}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {actions.length > 0 && (
+        <div>
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Suggestions</div>
+          <ul className="space-y-1">
+            {actions.map((a, i) => (
+              <li key={i} className="text-xs text-text-secondary flex items-start gap-1.5">
+                <span className="text-text-tertiary mt-0.5 shrink-0">&#x2022;</span>
+                {a}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface BatchPlanItem {
+  title: string;
+  prompt: string;
+  ratio?: string;
+  style?: string;
+  model_code?: string | null;
+  num_images?: number;
+  images?: string[];
+}
+
+function BatchGenerationPlanRenderer(data: Record<string, unknown>) {
+  const items = (data.items as BatchPlanItem[]) ?? [];
+  const sharedStyle = (data.shared_style as string) ?? "";
+  const totalCount = (data.total_count as number) ?? items.length;
+  const message = (data.message as string) ?? "";
+
+  return (
+    <div className="space-y-3">
+      {message && (
+        <p className="text-xs text-text-secondary leading-relaxed">{message}</p>
+      )}
+      <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
+        <span>{totalCount} images</span>
+        {sharedStyle && (
+          <>
+            <span className="text-border-light">|</span>
+            <span>{sharedStyle}</span>
+          </>
+        )}
+      </div>
+      <div className="space-y-2">
+        {items.map((item, i) => (
+          <div key={i} className="rounded-lg bg-surface border border-border-light p-3">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[10px] font-mono text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+                #{i + 1}
+              </span>
+              <span className="text-sm font-medium text-text-primary">{item.title}</span>
+              {item.ratio && (
+                <span className="text-[10px] text-text-tertiary bg-surface-hover px-1 py-0.5 rounded ml-auto">
+                  {item.ratio}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{item.prompt}</p>
+            {item.images && item.images.length > 0 && (
+              <div className="flex gap-1.5 mt-2">
+                {item.images.map((url, j) => (
+                  <img key={j} src={url} alt="" className="w-12 h-12 rounded object-cover border border-border-light" loading="lazy" />
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const REVIEW_RENDERERS: Record<string, ReviewRenderer> = {
   research_plan: ResearchPlanRenderer,
+  prompt_enhancement: PromptEnhancementRenderer,
+  material_supplement: MaterialSupplementRenderer,
+  batch_generation_plan: BatchGenerationPlanRenderer,
 };
 
 function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Record<string, unknown> }) {

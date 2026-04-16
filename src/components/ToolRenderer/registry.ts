@@ -8,6 +8,7 @@ import { WebReadRenderer } from "./renderers/WebReadRenderer";
 import { ScheduleManagerRenderer } from "./renderers/ScheduleManagerRenderer";
 import { SlideToolRenderer } from "./renderers/SlideToolRenderer";
 import { GenerateImageRenderer } from "./renderers/GenerateImageRenderer";
+import { GenerateVideoRenderer } from "./renderers/GenerateVideoRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
@@ -38,6 +39,7 @@ const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   render_html: SlideToolRenderer,
   delegate_to_slide_agent: SlideToolRenderer,
   generate_image: GenerateImageRenderer,
+  generate_video: GenerateVideoRenderer,
 };
 
 export function getToolRenderer(toolName: string): FC<ToolRenderProps> | undefined {

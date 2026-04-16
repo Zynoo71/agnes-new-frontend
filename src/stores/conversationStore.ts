@@ -84,6 +84,10 @@ export const PLANNING_TOOL_NAMES = new Set([
   "create_task", "update_task", "list_tasks", "get_task",
 ]);
 
+export const SWARM_TOOL_NAMES = new Set([
+  "spawn_worker", "delegate_to_image_studio",
+]);
+
 export interface SlideOutlineData {
   outline: Record<string, unknown>;
 }
@@ -378,6 +382,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
             };
             break;
           }
+          case "WorkerDelta":
           case "MessageDelta": {
             const w = updated.workers[workerId];
             if (w) {
@@ -385,6 +390,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
             }
             break;
           }
+          case "WorkerToolCall":
           case "ToolCallStart": {
             const w = updated.workers[workerId];
             if (w) {
@@ -395,6 +401,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
             }
             break;
           }
+          case "WorkerToolResult":
           case "ToolCallResult": {
             const w = updated.workers[workerId];
             if (w) {
@@ -409,6 +416,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
             }
             break;
           }
+          case "WorkerComplete":
           case "WorkerEnd": {
             const w = updated.workers[workerId];
             if (w) {
