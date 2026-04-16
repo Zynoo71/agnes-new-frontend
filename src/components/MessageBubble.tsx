@@ -477,6 +477,52 @@ const BlockRenderer = memo(function BlockRenderer({
       return <ContextCompactingBlock done={block.done || !isStreaming} />;
     case "MemoryUpdate":
       return <MemoryUpdateBlock data={block.data} />;
+    case "PhaseTransition":
+      return (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-sm border border-blue-200 dark:border-blue-800">
+          <span className="text-base">✅</span>
+          <span>{block.data.message}</span>
+        </div>
+      );
+    case "AnalysisPhaseDigest":
+      return (
+        <div className="px-3 py-2 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-sm border border-indigo-200 dark:border-indigo-800 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📋</span>
+            <span className="font-medium">分析阶段摘要</span>
+            <span className="text-xs opacity-70">
+              （{block.data.producerCompleted} 完成{block.data.producerFailed > 0 ? `，${block.data.producerFailed} 失败` : ""}）
+            </span>
+          </div>
+          {block.data.digestText && <p className="text-xs opacity-80 whitespace-pre-wrap">{block.data.digestText}</p>}
+        </div>
+      );
+    case "DeliverablePhaseStarted":
+      return (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-sm border border-emerald-200 dark:border-emerald-800">
+          <span className="text-base">🚀</span>
+          <span>正在并行生成 {block.data.deliverableCount} 个交付物</span>
+          {block.data.deliverableTypes.length > 0 && (
+            <span className="text-xs opacity-70">（{block.data.deliverableTypes.join("、")}）</span>
+          )}
+        </div>
+      );
+    case "SheetProgress":
+      return (
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm border border-slate-200 dark:border-slate-800">
+          <span className="text-base">{block.data.icon}</span>
+          <span>{block.data.label}</span>
+          {block.data.detail && <span className="text-xs opacity-60">{block.data.detail}</span>}
+        </div>
+      );
+    case "SheetDeliverableReady":
+      return (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 text-sm border border-green-200 dark:border-green-800">
+          <span className="text-base">{block.data.icon}</span>
+          <span className="font-medium">{block.data.label}</span>
+          {block.data.extra && <span className="text-xs opacity-70">{block.data.extra}</span>}
+        </div>
+      );
     case "SlideOutline":
       return <SlideOutlineBlock data={block.data} />;
     case "SlideDesignSystem":

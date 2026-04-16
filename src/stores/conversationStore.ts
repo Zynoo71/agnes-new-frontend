@@ -101,7 +101,12 @@ export type ContentBlock =
   | { type: "ContextCompacting"; done: boolean }
   | { type: "SlideOutline"; data: SlideOutlineData }
   | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
-  | { type: "MemoryUpdate"; data: MemoryUpdateData };
+  | { type: "MemoryUpdate"; data: MemoryUpdateData }
+  | { type: "PhaseTransition"; data: { phase: string; succeeded: number[]; failed: number[]; message: string } }
+  | { type: "AnalysisPhaseDigest"; data: { digestText: string; producerCompleted: number; producerFailed: number } }
+  | { type: "DeliverablePhaseStarted"; data: { deliverableCount: number; deliverableTypes: string[] } }
+  | { type: "SheetProgress"; data: { step: string; icon: string; label: string; detail: string } }
+  | { type: "SheetDeliverableReady"; data: { kind: string; icon: string; label: string; path: string; extra?: string } };
 
 export interface Message {
   id: string;
@@ -312,6 +317,181 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
             data: { field: field as "soul" | "identity", content },
           });
         }
+        break;
+      }
+
+      // Phase transition event from sheet_agent
+      if (custom.type === "SheetProducerPhaseComplete") {
+        updated.blocks.push({
+          type: "PhaseTransition",
+          data: {
+            phase: "producer_complete",
+            succeeded: (payload.succeeded_indices as number[]) ?? [],
+            failed: (payload.failed_indices as number[]) ?? [],
+            message: "分析阶段已完成，正在生成最终交付物…",
+          },
+        });
+        break;
+      }
+
+      // Analysis phase digest — transition summary between producer and deliverable phases
+      if (custom.type === "SheetAnalysisPhaseDigest") {
+        updated.blocks.push({
+          type: "AnalysisPhaseDigest",
+          data: {
+            digestText: (payload.digest_text as string) ?? "",
+            producerCompleted: (payload.producer_completed as number) ?? 0,
+            producerFailed: (payload.producer_failed as number) ?? 0,
+          },
+        });
+        break;
+      }
+
+      // Deliverable phase started — parallel deliverable generation begins
+      if (custom.type === "SheetDeliverablePhaseStarted") {
+        updated.blocks.push({
+          type: "DeliverablePhaseStarted",
+          data: {
+            deliverableCount: (payload.deliverable_count as number) ?? 0,
+            deliverableTypes: (payload.deliverable_types as string[]) ?? [],
+          },
+        });
+        break;
+      }
+
+      // ── Sheet progress events (pipeline stage notifications) ──
+      if (custom.type === "SheetFilesIngested") {
+        const fileCount = (payload.file_count as number) ?? 0;
+        const primaryInput = (payload.primary_input_path as string) ?? "";
+        const name = primaryInput ? primaryInput.split("/").pop() : "";
+        updated.blocks.push({
+          type: "SheetProgress",
+          data: {
+            step: "files_ingested",
+            icon: "📁",
+            label: `已接收 ${fileCount} 个文件`,
+            detail: name ? `主文件：${name}` : "",
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetRequestIntentInferred") {
+        const goal = (payload.primary_goal as string) ?? "";
+        const goalLabels: Record<string, string> = {
+          report: "数据分析报告", dashboard: "数据座舱", analyze: "通用分析",
+          chart_only: "图表生成", pivot: "透视汇总", export: "格式导出",
+          search_table: "搜索成表", enrich: "数据扩充", generate_table: "创意建表",
+        };
+        updated.blocks.push({
+          type: "SheetProgress",
+          data: {
+            step: "intent_inferred",
+            icon: "🎯",
+            label: `意图识别：${goalLabels[goal] ?? goal}`,
+            detail: (payload.secondary_goals as string[])?.join("、") ?? "",
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetExcelStructureInspected") {
+        const sheetCount = (payload.sheet_count as number) ?? 0;
+        updated.blocks.push({
+          type: "SheetProgress",
+          data: {
+            step: "excel_inspected",
+            icon: "🔍",
+            label: `Excel 结构探查完成`,
+            detail: sheetCount > 0 ? `发现 ${sheetCount} 个工作表` : "",
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetDatasetProfileGenerated") {
+        const rows = (payload.row_count as number) ?? 0;
+        const cols = (payload.column_count as number) ?? 0;
+        updated.blocks.push({
+          type: "SheetProgress",
+          data: {
+            step: "profile_generated",
+            icon: "📊",
+            label: `数据画像完成`,
+            detail: rows > 0 ? `${rows.toLocaleString()} 行 × ${cols} 列` : "",
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetAnalysisPlanCreated") {
+        const taskCount = (payload.task_count as number) ?? 0;
+        updated.blocks.push({
+          type: "SheetProgress",
+          data: {
+            step: "plan_created",
+            icon: "📋",
+            label: `分析计划已生成`,
+            detail: taskCount > 0 ? `共 ${taskCount} 个分析任务` : "",
+          },
+        });
+        break;
+      }
+
+      // ── Sheet deliverable ready events ──
+      if (custom.type === "SheetHtmlReportReady") {
+        updated.blocks.push({
+          type: "SheetDeliverableReady",
+          data: {
+            kind: "report",
+            icon: "📄",
+            label: "HTML 报告已生成",
+            path: (payload.report_path as string) ?? "",
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetDashboardReady") {
+        updated.blocks.push({
+          type: "SheetDeliverableReady",
+          data: {
+            kind: "dashboard",
+            icon: "📈",
+            label: "数据座舱已生成",
+            path: (payload.dashboard_path as string) ?? "",
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetFinalSummaryReady") {
+        const primaryOutput = (payload.primary_output as string) ?? "";
+        updated.blocks.push({
+          type: "SheetDeliverableReady",
+          data: {
+            kind: "summary",
+            icon: "✨",
+            label: "分析完成",
+            path: (payload.summary_path as string) ?? "",
+            extra: primaryOutput ? `主产物：${primaryOutput.split("/").pop()}` : "",
+          },
+        });
+        break;
+      }
+
+      if (custom.type === "SheetExcelExported") {
+        const sheetCount = (payload.sheet_count as number) ?? 0;
+        updated.blocks.push({
+          type: "SheetDeliverableReady",
+          data: {
+            kind: "excel",
+            icon: "📊",
+            label: "Excel 已导出",
+            path: (payload.export_path as string) ?? "",
+            extra: sheetCount > 0 ? `${sheetCount} 个工作表` : "",
+          },
+        });
         break;
       }
 
