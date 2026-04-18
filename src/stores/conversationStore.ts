@@ -106,6 +106,7 @@ export type ContentBlock =
   | { type: "PhaseTransition"; data: { phase: string; completedCount: number; failedCount: number; totalCount: number; message: string } }
   | { type: "AnalysisPhaseDigest"; data: { digestText: string; producerCompleted: number; producerFailed: number } }
   | { type: "DeliverablePhaseStarted"; data: { deliverableCount: number; deliverableTypes: string[] } }
+  | { type: "FinalPhaseStarted"; data: { phase: string; message: string } }
   | { type: "SheetProgress"; data: { step: string; icon: string; label: string; detail: string } }
   | { type: "SheetToolProgress"; data: { toolName: string; step: string; stepLabel: string; stepIndex: number; totalSteps: number } }
   | { type: "SheetDeliverableReady"; data: { kind: string; icon: string; label: string; path: string; extra?: string } }
@@ -364,18 +365,42 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
         break;
       }
 
+      // Final phase started — terminal summary generation begins (Phase C)
+      if (custom.type === "SheetFinalPhaseStarted") {
+        updated.blocks.push({
+          type: "PhaseTransition",
+          data: {
+            phase: "final",
+            completedCount: 0,
+            failedCount: 0,
+            totalCount: 0,
+            message: "✍️ 正在生成最终总结…",
+          },
+        });
+        break;
+      }
+
       // ── Sheet progress events (pipeline stage notifications) ──
       if (custom.type === "SheetFilesIngested") {
-        const fileCount = (payload.imported_files_count as number) ?? 0;
-        const primaryInput = (payload.primary_input_path as string) ?? "";
-        const name = primaryInput ? primaryInput.split("/").pop() : "";
+        // v2.0: 多轮追加式 ingest
+        const roundSeq = (payload.round_seq as number) ?? 0;
+        const newCount = (payload.new_file_count as number) ?? 0;
+        const replacedCount = (payload.replaced_file_count as number) ?? 0;
+        const totalActive = (payload.total_active_files as number) ?? 0;
+        const digest = (payload.request_digest as string) ?? "";
+        const labelParts: string[] = [];
+        if (newCount > 0) labelParts.push(`新增 ${newCount}`);
+        if (replacedCount > 0) labelParts.push(`覆盖 ${replacedCount}`);
+        const label = roundSeq
+          ? `第 ${roundSeq} 轮 · ${labelParts.join(" / ") || "无变更"}（共 ${totalActive} 份在用）`
+          : `已接收 ${newCount + replacedCount} 个文件`;
         updated.blocks.push({
           type: "SheetProgress",
           data: {
             step: "files_ingested",
             icon: "📁",
-            label: `已接收 ${fileCount} 个文件`,
-            detail: name ? `主文件：${name}` : "",
+            label,
+            detail: digest ? `本轮：${digest}` : "",
           },
         });
         break;

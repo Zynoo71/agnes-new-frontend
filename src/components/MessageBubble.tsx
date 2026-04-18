@@ -315,7 +315,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
 
               // If we have group info, render separate panels per group
               if (hasGroups && swarmGroups.length > 0) {
-                return swarmGroups.map((group) => {
+                const groupedPanels = swarmGroups.map((group) => {
                   const groupWorkers: Record<string, WorkerState> = {};
                   for (const [wid, w] of Object.entries(message.workers)) {
                     if (w.groupId === group.groupId) {
@@ -334,6 +334,26 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
                     />
                   );
                 });
+
+                // Also render ungrouped workers (single-task deliverables, final summary)
+                const ungroupedWorkers: Record<string, WorkerState> = {};
+                const groupIds = new Set(swarmGroups.map((g) => g.groupId));
+                for (const [wid, w] of Object.entries(message.workers)) {
+                  if (!w.groupId || !groupIds.has(w.groupId)) {
+                    ungroupedWorkers[wid] = w;
+                  }
+                }
+                if (Object.keys(ungroupedWorkers).length > 0) {
+                  groupedPanels.push(
+                    <AgentSwarmPanel
+                      key="swarm-ungrouped"
+                      liveWorkers={ungroupedWorkers}
+                      spawnToolCalls={spawnToolCalls}
+                    />
+                  );
+                }
+
+                return groupedPanels;
               }
 
               // Fallback: single panel (no group_id info, e.g. non-sheet agents)
@@ -523,8 +543,12 @@ const BlockRenderer = memo(function BlockRenderer({
       return <MemoryUpdateBlock data={block.data} />;
     case "PhaseTransition":
       return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-sm border border-blue-200 dark:border-blue-800">
-          <span className="text-base">✅</span>
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm border ${
+          block.data.phase === "final"
+            ? "bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800"
+            : "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+        }`}>
+          <span className="text-base">{block.data.phase === "final" ? "✍️" : "✅"}</span>
           <span>{block.data.message}</span>
           {block.data.totalCount > 0 && (
             <span className="text-xs opacity-70">
@@ -550,7 +574,13 @@ const BlockRenderer = memo(function BlockRenderer({
       return (
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-sm border border-emerald-200 dark:border-emerald-800">
           <span className="text-base">🚀</span>
-          <span>正在并行生成 {block.data.deliverableCount} 个交付物</span>
+          <span>
+            {block.data.deliverableCount > 1
+              ? `正在并行生成 ${block.data.deliverableCount} 个交付物`
+              : block.data.deliverableCount === 1
+              ? "正在生成交付物"
+              : "正在生成最终产物"}
+          </span>
           {block.data.deliverableTypes.length > 0 && (
             <span className="text-xs opacity-70">（{block.data.deliverableTypes.join("、")}）</span>
           )}

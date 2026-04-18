@@ -341,8 +341,11 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-text-primary truncate">{worker.character.name}</span>
-            {worker.phase === "finalizer" && (
-              <span className="text-[9px] font-medium text-accent/80 bg-accent/8 px-1 py-0.5 rounded">收口</span>
+            {(worker.phase === "finalizer" || worker.phase === "deliverable") && (
+              <span className="text-[9px] font-medium text-emerald-600/80 bg-emerald-600/8 px-1 py-0.5 rounded">交付</span>
+            )}
+            {worker.phase === "final" && (
+              <span className="text-[9px] font-medium text-violet-600/80 bg-violet-600/8 px-1 py-0.5 rounded">总结</span>
             )}
             <StatusBadge status={worker.status} />
           </div>
@@ -440,8 +443,11 @@ function HistoryWorkerCard({ worker, index }: { worker: HistoryWorker; index: nu
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-text-primary truncate">{worker.character.name}</span>
-            {worker.phase === "finalizer" && (
-              <span className="text-[9px] font-medium text-accent/80 bg-accent/8 px-1 py-0.5 rounded">收口</span>
+            {(worker.phase === "finalizer" || worker.phase === "deliverable") && (
+              <span className="text-[9px] font-medium text-emerald-600/80 bg-emerald-600/8 px-1 py-0.5 rounded">交付</span>
+            )}
+            {worker.phase === "final" && (
+              <span className="text-[9px] font-medium text-violet-600/80 bg-violet-600/8 px-1 py-0.5 rounded">总结</span>
             )}
             <StatusBadge status={worker.status} duration={worker.durationSeconds} />
           </div>

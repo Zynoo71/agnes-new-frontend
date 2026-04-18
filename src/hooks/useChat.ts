@@ -11,8 +11,14 @@ const getState = () => useConversationStore.getState();
 const SHEET_DEFAULT_FILES = [
   {
     mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    url: "https://storage.googleapis.com/agnes-default/user_e88f2c99-e17d-433b-adf0-32d8792148bc/20260413/f8b424e3-65a9-4f90-98b6-498385510783.xlsx",
-    filename: "f8b424e3-65a9-4f90-98b6-498385510783.xlsx",
+    url: "https://storage.googleapis.com/agnes-default-test/user_1088ceeb-c1a6-4660-8b00-96b9e976f41c/20260417/ef681694-5003-49e6-b85a-0a4efc0b1d01.xlsx",
+    filename: "ef681694-5003-49e6-b85a-0a4efc0b1d01.xlsx",
+    data: new Uint8Array(),
+  },
+  {
+    mimeType: "text/csv",
+    url: "https://storage.googleapis.com/agnes-default-test/user_1088ceeb-c1a6-4660-8b00-96b9e976f41c/20260417/edc472f6-de00-409a-b0e6-458e9a66cdbb.csv",
+    filename: "edc472f6-de00-409a-b0e6-458e9a66cdbb.csv",
     data: new Uint8Array(),
   },
 ] as const;
