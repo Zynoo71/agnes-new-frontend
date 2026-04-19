@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
 import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq } from "@/stores/conversationStore";
-import type { SourceCitation } from "@/stores/conversationStore";
+import type { SourceCitation, SheetArtifactData, SheetPlanDimension } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
@@ -218,6 +218,86 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
             type: "MemoryUpdate",
             data: { field, content },
           });
+        }
+      } else if (block.type === "ArtifactCreated") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const artifactId = (data.artifact_id as string) ?? "";
+        if (!artifactId) continue;
+        const newData: SheetArtifactData = {
+          artifactId,
+          artifactType: (data.artifact_type as string) ?? "TEXT",
+          name: (data.name as string) ?? artifactId.split("/").pop() ?? artifactId,
+          producerNodeId: (data.producer_node_id as string) ?? "",
+          content: (data.content as Record<string, unknown>) ?? {},
+          createdAt: 0,
+        };
+        const existingIdx = assistantBlocks.findIndex(
+          (b) => b.type === "SheetArtifact" && b.data.artifactId === artifactId,
+        );
+        if (existingIdx >= 0) {
+          assistantBlocks[existingIdx] = { type: "SheetArtifact", data: newData };
+        } else {
+          assistantBlocks.push({ type: "SheetArtifact", data: newData });
+        }
+      } else if (block.type === "ArtifactInvalidated") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const artifactId = (data.artifact_id as string) ?? "";
+        if (!artifactId) continue;
+        for (let i = 0; i < assistantBlocks.length; i++) {
+          const b = assistantBlocks[i];
+          if (b.type === "SheetArtifact" && b.data.artifactId === artifactId) {
+            assistantBlocks[i] = {
+              type: "SheetArtifact",
+              data: {
+                ...b.data,
+                invalidated: true,
+                invalidatedReason: (data.reason as string) ?? "",
+              },
+            };
+          }
+        }
+      } else if (block.type === "TaskPlanned") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const nodes = Array.isArray(data.nodes) ? (data.nodes as Array<Record<string, unknown>>) : [];
+        if (nodes.length === 0) continue;
+        const dims: SheetPlanDimension[] = nodes.map((n) => ({
+          id: (n.node_id as string) ?? (n.id as string) ?? "",
+          title: (n.objective as string) ?? (n.title as string) ?? (n.task_type as string) ?? "",
+          role: (n.worker_role as string) ?? undefined,
+          status: "pending",
+        }));
+        const existingIdx = assistantBlocks.findIndex((b) => b.type === "SheetPlan");
+        if (existingIdx >= 0) {
+          assistantBlocks[existingIdx] = { type: "SheetPlan", data: { dimensions: dims } };
+        } else {
+          assistantBlocks.push({ type: "SheetPlan", data: { dimensions: dims } });
+        }
+      } else if (
+        block.type === "TaskStarted" ||
+        block.type === "TaskCompleted" ||
+        block.type === "TaskFailed"
+      ) {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const nodeId = (data.node_id as string) ?? "";
+        if (!nodeId) continue;
+        const nextStatus: SheetPlanDimension["status"] =
+          block.type === "TaskStarted" ? "running"
+          : block.type === "TaskCompleted" ? "done"
+          : "failed";
+        const error = block.type === "TaskFailed" ? ((data.error as string) ?? "") : undefined;
+        for (let i = 0; i < assistantBlocks.length; i++) {
+          const b = assistantBlocks[i];
+          if (b.type !== "SheetPlan") continue;
+          assistantBlocks[i] = {
+            type: "SheetPlan",
+            data: {
+              dimensions: b.data.dimensions.map((d) =>
+                d.id === nodeId
+                  ? { ...d, status: nextStatus, ...(error != null ? { error } : {}) }
+                  : d,
+              ),
+            },
+          };
         }
       }
     }

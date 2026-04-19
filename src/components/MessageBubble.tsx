@@ -17,6 +17,8 @@ import { CitationSources } from "@/components/CitationSources";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { TaskListPanel } from "./TaskListPanel";
+import { SheetArtifactCard } from "./SheetArtifactCard";
+import { SheetPlanPanel } from "./SheetPlanPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
 import { useImagePreviewStore } from "@/stores/imagePreviewStore";
@@ -515,6 +517,10 @@ const BlockRenderer = memo(function BlockRenderer({
       return <SlideOutlineBlock data={block.data} />;
     case "SlideDesignSystem":
       return <SlideDesignSystemBlock data={block.data} />;
+    case "SheetArtifact":
+      return <SheetArtifactCard data={block.data} />;
+    case "SheetPlan":
+      return <SheetPlanPanel data={block.data} />;
   }
 });
 

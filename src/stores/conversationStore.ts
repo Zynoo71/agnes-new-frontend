@@ -86,7 +86,7 @@ export const PLANNING_TOOL_NAMES = new Set([
 ]);
 
 export const SWARM_TOOL_NAMES = new Set([
-  "spawn_worker", "delegate_to_image_studio",
+  "spawn_worker", "delegate_to_image_studio", "spawn_data_worker",
 ]);
 
 export interface SlideOutlineData {
@@ -109,7 +109,30 @@ export interface MemoryUpdateData {
   content: string;
 }
 
-export interface FileData extends ChatAttachment {}
+export interface SheetArtifactData {
+  artifactId: string;
+  artifactType: string;            // CHART / TABLE / REPORT / DASHBOARD / EXPORT / TEXT / DATASET
+  name: string;
+  producerNodeId: string;
+  content: Record<string, unknown>;
+  createdAt: number;
+  invalidated?: boolean;
+  invalidatedReason?: string;
+}
+
+export interface SheetPlanDimension {
+  id: string;
+  title: string;
+  status: "pending" | "running" | "done" | "failed" | "aborted";
+  role?: string;
+  error?: string;
+}
+
+export interface SheetPlanData {
+  dimensions: SheetPlanDimension[];
+}
+
+export type FileData = ChatAttachment;
 
 export type ContentBlock =
   | { type: "Message"; content: string }
@@ -121,7 +144,9 @@ export type ContentBlock =
   | { type: "ContextCompacting"; done: boolean }
   | { type: "SlideOutline"; data: SlideOutlineData }
   | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
-  | { type: "MemoryUpdate"; data: MemoryUpdateData };
+  | { type: "MemoryUpdate"; data: MemoryUpdateData }
+  | { type: "SheetArtifact"; data: SheetArtifactData }
+  | { type: "SheetPlan"; data: SheetPlanData };
 
 export interface Message {
   id: string;
@@ -388,6 +413,98 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
         }
         break;
       }
+
+      // ── Sheet Agent v3 events ──
+      if (custom.type === "ArtifactCreated") {
+        const artifactId = (payload.artifact_id as string) ?? "";
+        if (!artifactId) break;
+        const newData: SheetArtifactData = {
+          artifactId,
+          artifactType: (payload.artifact_type as string) ?? "TEXT",
+          name: (payload.name as string) ?? artifactId.split("/").pop() ?? artifactId,
+          producerNodeId: (payload.producer_node_id as string) ?? "",
+          content: asRecord(payload.content),
+          createdAt: eventTimestamp,
+        };
+        // Dedupe: if same artifact_id already exists, replace in place.
+        const existingIdx = updated.blocks.findIndex(
+          (b) => b.type === "SheetArtifact" && b.data.artifactId === artifactId,
+        );
+        if (existingIdx >= 0) {
+          updated.blocks = [...updated.blocks];
+          updated.blocks[existingIdx] = { type: "SheetArtifact", data: newData };
+        } else {
+          updated.blocks.push({ type: "SheetArtifact", data: newData });
+        }
+        break;
+      }
+
+      if (custom.type === "ArtifactInvalidated") {
+        const artifactId = (payload.artifact_id as string) ?? "";
+        if (!artifactId) break;
+        updated.blocks = updated.blocks.map((b) =>
+          b.type === "SheetArtifact" && b.data.artifactId === artifactId
+            ? {
+                type: "SheetArtifact",
+                data: {
+                  ...b.data,
+                  invalidated: true,
+                  invalidatedReason: (payload.reason as string) ?? "",
+                },
+              }
+            : b,
+        );
+        break;
+      }
+
+      if (custom.type === "TaskPlanned") {
+        const nodes = Array.isArray(payload.nodes) ? (payload.nodes as Array<Record<string, unknown>>) : [];
+        if (nodes.length === 0) break;
+        const dims: SheetPlanDimension[] = nodes.map((n) => ({
+          id: (n.node_id as string) ?? (n.id as string) ?? "",
+          title: (n.objective as string) ?? (n.title as string) ?? (n.task_type as string) ?? "",
+          role: (n.worker_role as string) ?? undefined,
+          status: "pending",
+        }));
+        // Replace any existing SheetPlan in this message (idempotent re-plan).
+        const existingIdx = updated.blocks.findIndex((b) => b.type === "SheetPlan");
+        if (existingIdx >= 0) {
+          updated.blocks = [...updated.blocks];
+          updated.blocks[existingIdx] = { type: "SheetPlan", data: { dimensions: dims } };
+        } else {
+          updated.blocks.push({ type: "SheetPlan", data: { dimensions: dims } });
+        }
+        break;
+      }
+
+      if (
+        custom.type === "TaskStarted" ||
+        custom.type === "TaskCompleted" ||
+        custom.type === "TaskFailed"
+      ) {
+        const nodeId = (payload.node_id as string) ?? "";
+        if (!nodeId) break;
+        const nextStatus: SheetPlanDimension["status"] =
+          custom.type === "TaskStarted" ? "running"
+          : custom.type === "TaskCompleted" ? "done"
+          : "failed";
+        const error = custom.type === "TaskFailed" ? ((payload.error as string) ?? "") : undefined;
+        updated.blocks = updated.blocks.map((b) => {
+          if (b.type !== "SheetPlan") return b;
+          return {
+            type: "SheetPlan",
+            data: {
+              dimensions: b.data.dimensions.map((d) =>
+                d.id === nodeId
+                  ? { ...d, status: nextStatus, ...(error != null ? { error } : {}) }
+                  : d,
+              ),
+            },
+          };
+        });
+        break;
+      }
+      // ── End Sheet Agent v3 events ──
 
       // Worker events
       const workerId = payload.worker_id as string | undefined;

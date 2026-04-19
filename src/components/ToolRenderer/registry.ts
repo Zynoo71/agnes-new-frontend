@@ -10,6 +10,7 @@ import { SlideToolRenderer } from "./renderers/SlideToolRenderer";
 import { GenerateImageRenderer } from "./renderers/GenerateImageRenderer";
 import { GenerateVideoRenderer } from "./renderers/GenerateVideoRenderer";
 import { WeatherRenderer } from "./renderers/WeatherRenderer";
+import { SheetToolRenderer } from "./renderers/SheetToolRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
@@ -42,6 +43,22 @@ const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   generate_image: GenerateImageRenderer,
   generate_video: GenerateVideoRenderer,
   query_weather: WeatherRenderer,
+  // Sheet Agent v3 tools
+  plan_analysis: SheetToolRenderer,
+  dispatch_workers: SheetToolRenderer,
+  profile_data: SheetToolRenderer,
+  list_assets: SheetToolRenderer,
+  read_artifact: SheetToolRenderer,
+  query_data: SheetToolRenderer,
+  run_python: SheetToolRenderer,
+  search_table: SheetToolRenderer,
+  creative_table: SheetToolRenderer,
+  make_chart: SheetToolRenderer,
+  build_dashboard: SheetToolRenderer,
+  write_report: SheetToolRenderer,
+  compose_report: SheetToolRenderer,
+  export_data: SheetToolRenderer,
+  record_insight: SheetToolRenderer,
 };
 
 export function getToolRenderer(toolName: string): FC<ToolRenderProps> | undefined {
