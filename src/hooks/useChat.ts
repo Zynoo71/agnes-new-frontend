@@ -266,11 +266,40 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
           role: (n.worker_role as string) ?? undefined,
           status: "pending",
         }));
-        const existingIdx = assistantBlocks.findIndex((b) => b.type === "SheetPlan");
-        if (existingIdx >= 0) {
-          assistantBlocks[existingIdx] = { type: "SheetPlan", data: { dimensions: dims } };
-        } else {
+        // 同 conversationStore：多 plan_analysis 的 merge / replace / append 逻辑
+        const newIds = new Set(dims.map((d) => d.id));
+        let mergeIdx = -1;
+        let isReplace = false;
+        for (let i = 0; i < assistantBlocks.length; i++) {
+          const b = assistantBlocks[i];
+          if (b.type !== "SheetPlan") continue;
+          const existIds = new Set(b.data.dimensions.map((d) => d.id));
+          const overlap = [...newIds].some((id) => existIds.has(id));
+          if (overlap) {
+            mergeIdx = i;
+            isReplace = [...newIds].every((id) => existIds.has(id))
+              && [...existIds].every((id) => newIds.has(id));
+            break;
+          }
+        }
+        if (mergeIdx < 0) {
           assistantBlocks.push({ type: "SheetPlan", data: { dimensions: dims } });
+        } else if (isReplace) {
+          assistantBlocks[mergeIdx] = { type: "SheetPlan", data: { dimensions: dims } };
+        } else {
+          const existing = assistantBlocks[mergeIdx];
+          if (existing.type === "SheetPlan") {
+            const existIds = new Set(existing.data.dimensions.map((d) => d.id));
+            assistantBlocks[mergeIdx] = {
+              type: "SheetPlan",
+              data: {
+                dimensions: [
+                  ...existing.data.dimensions,
+                  ...dims.filter((d) => !existIds.has(d.id)),
+                ],
+              },
+            };
+          }
         }
       } else if (
         block.type === "TaskStarted" ||

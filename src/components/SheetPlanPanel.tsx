@@ -93,7 +93,7 @@ export function SheetPlanPanel({ data }: { data: SheetPlanData }) {
               {s.node}
               <span
                 className={`text-xs leading-relaxed flex-1 min-w-0 truncate ${
-                  d.status === "done" ? "text-text-tertiary line-through" : "text-text-primary"
+                  d.status === "done" ? "text-text-tertiary" : "text-text-primary"
                 }`}
               >
                 {d.title || d.id}

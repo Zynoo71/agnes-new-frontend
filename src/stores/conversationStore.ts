@@ -466,13 +466,40 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
           role: (n.worker_role as string) ?? undefined,
           status: "pending",
         }));
-        // Replace any existing SheetPlan in this message (idempotent re-plan).
-        const existingIdx = updated.blocks.findIndex((b) => b.type === "SheetPlan");
-        if (existingIdx >= 0) {
-          updated.blocks = [...updated.blocks];
-          updated.blocks[existingIdx] = { type: "SheetPlan", data: { dimensions: dims } };
-        } else {
+        // 多文件 / 增量场景：plan_analysis 可能被多次调用。
+        // - 同一 plan 重发（dim_ids 完全相同）→ 替换最后一个 SheetPlan（幂等）
+        // - 增量 plan（部分 dim_ids 命中已有）→ merge 进对应 SheetPlan，保留旧 dims 状态
+        // - 新一轮 plan（无任何 dim_id 命中）→ append 一个新的 SheetPlan 块
+        const newIds = new Set(dims.map((d) => d.id));
+        const existingPlanIdxs = updated.blocks
+          .map((b, i) => (b.type === "SheetPlan" ? i : -1))
+          .filter((i) => i >= 0);
+        let mergeIdx = -1;
+        let isReplace = false;
+        for (const idx of existingPlanIdxs) {
+          const block = updated.blocks[idx] as { type: "SheetPlan"; data: SheetPlanData };
+          const existIds = new Set(block.data.dimensions.map((d) => d.id));
+          const overlap = [...newIds].some((id) => existIds.has(id));
+          if (overlap) {
+            mergeIdx = idx;
+            isReplace = [...newIds].every((id) => existIds.has(id))
+              && [...existIds].every((id) => newIds.has(id));
+            break;
+          }
+        }
+        updated.blocks = [...updated.blocks];
+        if (mergeIdx < 0) {
           updated.blocks.push({ type: "SheetPlan", data: { dimensions: dims } });
+        } else if (isReplace) {
+          updated.blocks[mergeIdx] = { type: "SheetPlan", data: { dimensions: dims } };
+        } else {
+          const block = updated.blocks[mergeIdx] as { type: "SheetPlan"; data: SheetPlanData };
+          const existIds = new Set(block.data.dimensions.map((d) => d.id));
+          const merged = [
+            ...block.data.dimensions,
+            ...dims.filter((d) => !existIds.has(d.id)),
+          ];
+          updated.blocks[mergeIdx] = { type: "SheetPlan", data: { dimensions: merged } };
         }
         break;
       }
