@@ -521,6 +521,8 @@ const BlockRenderer = memo(function BlockRenderer({
       return <SheetArtifactCard data={block.data} />;
     case "SheetPlan":
       return <SheetPlanPanel data={block.data} />;
+    case "AgentThinking":
+      return <AgentThinkingBlock phase={block.phase} hint={block.hint} />;
   }
 });
 
@@ -602,6 +604,31 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
         <div ref={contentRef} className="mt-1.5 pl-4 border-l-2 border-border-light prose-reasoning text-xs text-text-secondary leading-relaxed break-words overflow-hidden">
           <Markdown remarkPlugins={[remarkGfm, remarkCjkFriendly]}>{content.replace(/\\n/g, "\n")}</Markdown>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Agent thinking placeholder ──
+
+const PHASE_COLOR: Record<string, string> = {
+  thinking: "text-amber-500",
+  planning: "text-violet-500",
+  profiling: "text-sky-500",
+  executing: "text-emerald-500",
+  delivering: "text-rose-500",
+};
+
+function AgentThinkingBlock({ phase, hint }: { phase?: string; hint?: string }) {
+  const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
+  const text = hint || "智能体正在思考中...";
+  return (
+    <div className="my-3 flex items-center gap-2 text-[12px] text-text-secondary">
+      <div className="flex items-center gap-2 rounded-full border border-border-light bg-surface-2/60 px-3 py-1.5">
+        <svg className={`w-3.5 h-3.5 ${colorCls} animate-spin`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+        </svg>
+        <span>{text}</span>
       </div>
     </div>
   );

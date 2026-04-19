@@ -146,7 +146,8 @@ export type ContentBlock =
   | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
   | { type: "MemoryUpdate"; data: MemoryUpdateData }
   | { type: "SheetArtifact"; data: SheetArtifactData }
-  | { type: "SheetPlan"; data: SheetPlanData };
+  | { type: "SheetPlan"; data: SheetPlanData }
+  | { type: "AgentThinking"; phase?: string; hint?: string };
 
 export interface Message {
   id: string;
@@ -203,6 +204,25 @@ function asFileData(val: unknown): FileData | null {
   const filename = typeof data.filename === "string" ? data.filename : "";
   if (!url || !mimeType) return null;
   return { filename, mimeType, url };
+}
+
+function removeAgentThinking(blocks: ContentBlock[]): ContentBlock[] {
+  const idx = blocks.findIndex((b) => b.type === "AgentThinking");
+  if (idx < 0) return blocks;
+  const next = [...blocks];
+  next.splice(idx, 1);
+  return next;
+}
+
+function ensureAgentThinking(blocks: ContentBlock[], phase?: string, hint?: string): ContentBlock[] {
+  // 如果已经有 AgentThinking，原地更新 phase / hint
+  const idx = blocks.findIndex((b) => b.type === "AgentThinking");
+  if (idx >= 0) {
+    const next = [...blocks];
+    next[idx] = { type: "AgentThinking", phase, hint };
+    return next;
+  }
+  return [...blocks, { type: "AgentThinking", phase, hint }];
 }
 
 function setTtftIfNeeded(message: Message, eventTimestamp: number): Message {
@@ -263,28 +283,38 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
     case "agentStart": {
       updated.agentStartedAt = eventTimestamp;
       updated.agentDurationMs = undefined;
+      // 立即给用户一个"思考中"的占位反馈，避免 TTFT 长时无任何视觉变化
+      updated.blocks = ensureAgentThinking(updated.blocks, "thinking", "智能体正在思考中...");
       break;
     }
     case "agentEnd": {
       if (updated.agentStartedAt != null) {
         updated.agentDurationMs = Math.max(0, eventTimestamp - updated.agentStartedAt);
       }
+      updated.blocks = removeAgentThinking(updated.blocks);
       break;
     }
     case "messageDelta": {
       const delta = event.event.value;
-      if (delta.content) appendOrPushBlock(updated.blocks, "Message", delta.content);
+      if (delta.content) {
+        updated.blocks = removeAgentThinking(updated.blocks);
+        appendOrPushBlock(updated.blocks, "Message", delta.content);
+      }
       break;
     }
     case "reasoningDelta": {
       const delta = event.event.value;
-      if (delta.content) appendOrPushBlock(updated.blocks, "Reasoning", delta.content);
+      if (delta.content) {
+        updated.blocks = removeAgentThinking(updated.blocks);
+        appendOrPushBlock(updated.blocks, "Reasoning", delta.content);
+      }
       break;
     }
     case "toolCallStart": {
       const tc = event.event.value;
       const input = asRecord(tryDecodeJson(tc.toolInput));
       const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+      updated.blocks = removeAgentThinking(updated.blocks);
       updated.blocks.push({
         type: "ToolCallStart",
         data: { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
@@ -415,6 +445,34 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       }
 
       // ── Sheet Agent v3 events ──
+      if (custom.type === "TurnStarted") {
+        // 替换/插入"思考中"占位，用 user_message_preview 提示用户在做什么
+        const preview = (payload.user_message_preview as string) ?? "";
+        updated.blocks = ensureAgentThinking(
+          updated.blocks,
+          "thinking",
+          preview ? `正在分析您的请求：${preview.slice(0, 30)}...` : "智能体正在思考中...",
+        );
+        break;
+      }
+
+      if (custom.type === "TurnPhaseChanged") {
+        const phase = (payload.phase as string) ?? "";
+        const visibleTools = Array.isArray(payload.visible_tools)
+          ? (payload.visible_tools as string[])
+          : [];
+        const phaseHint: Record<string, string> = {
+          planning: "正在规划分析维度...",
+          profiling: "正在探查数据结构...",
+          executing: "正在执行分析任务...",
+          delivering: "正在汇总产出报告...",
+        };
+        const hint = phaseHint[phase] ?? `阶段：${phase}`;
+        const toolsSuffix = visibleTools.length > 0 ? `（${visibleTools.join(", ")}）` : "";
+        updated.blocks = ensureAgentThinking(updated.blocks, phase, hint + toolsSuffix);
+        break;
+      }
+
       if (custom.type === "ArtifactCreated") {
         const artifactId = (payload.artifact_id as string) ?? "";
         if (!artifactId) break;
