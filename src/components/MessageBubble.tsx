@@ -635,12 +635,40 @@ function AgentThinkingBlock({
   const dotColor = colorCls.replace("text-", "bg-");
   const currentText = hint || (list.length === 0 ? "正在为您准备..." : "");
 
+  // R20-F: 超 5 行折叠（默认收起，留最后 3 行 + 折叠提示）
+  const COLLAPSE_THRESHOLD = 5;
+  const TAIL_KEEP = 3;
+  const [expanded, setExpanded] = useState(false);
+  const showCollapse = list.length > COLLAPSE_THRESHOLD;
+  const visibleList = (!expanded && showCollapse)
+    ? list.slice(-TAIL_KEEP)
+    : list;
+  const hiddenCount = list.length - visibleList.length;
+
   if (list.length === 0 && !currentText) return null;
 
   return (
     <div className="my-3 flex flex-col gap-1 text-[12px] text-text-secondary">
-      {list.map((it, i) => (
-        <div key={i} className="flex items-start gap-2 leading-5">
+      {showCollapse && !expanded && hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="self-start text-[11px] text-text-tertiary hover:text-text-secondary transition-colors mb-1"
+        >
+          ▸ 展开前 {hiddenCount} 步
+        </button>
+      )}
+      {showCollapse && expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="self-start text-[11px] text-text-tertiary hover:text-text-secondary transition-colors mb-1"
+        >
+          ▾ 折叠
+        </button>
+      )}
+      {visibleList.map((it, i) => (
+        <div key={`${i}-${it.slice(0, 16)}`} className="flex items-start gap-2 leading-5">
           <span className="mt-[7px] inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/70 flex-shrink-0" />
           <span className="text-text-tertiary">{it}</span>
         </div>

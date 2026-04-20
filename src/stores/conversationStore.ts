@@ -241,8 +241,13 @@ function ensureAgentThinking(blocks: ContentBlock[], phase?: string, hint?: stri
   return [...blocks, { type: "AgentThinking", phase, hint, items: [] }];
 }
 
-function appendAgentThinkingItem(blocks: ContentBlock[], item: string): ContentBlock[] {
-  // 找到（或创建）AgentThinking，并往 items 末尾追加一条
+// R20-F: 按 matcher（key 函数）upsert —— 已存在匹配项则替换，否则追加。
+// 用于 DataUploaded/DataProfiled 等同 asset_id 重复事件的去重。
+function upsertAgentThinkingItem(
+  blocks: ContentBlock[],
+  matcher: (existing: string) => boolean,
+  item: string,
+): ContentBlock[] {
   const idx = blocks.findIndex((b) => b.type === "AgentThinking");
   if (idx < 0) {
     return [...blocks, { type: "AgentThinking", phase: undefined, hint: undefined, items: [item] }];
@@ -250,8 +255,15 @@ function appendAgentThinkingItem(blocks: ContentBlock[], item: string): ContentB
   const next = [...blocks];
   const prev = next[idx] as { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
   const existing = prev.items ?? [];
-  if (existing[existing.length - 1] === item) return next;
-  next[idx] = { ...prev, items: [...existing, item] };
+  const itemIdx = existing.findIndex(matcher);
+  let merged: string[];
+  if (itemIdx >= 0) {
+    merged = [...existing];
+    merged[itemIdx] = item;
+  } else {
+    merged = [...existing, item];
+  }
+  next[idx] = { ...prev, items: merged };
   return next;
 }
 
@@ -487,24 +499,19 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       }
 
       if (custom.type === "TurnPhaseChanged") {
+        // R20-E: 后端已大幅减少 phase 事件，仅 IngestUploadsHook 仍 emit ingesting_uploads。
+        // 其他 phase 即便误传过来也只更新 hint，不再硬编码大量阶段文案，让 LLM narrate 主导。
         const phase = (payload.phase as string) ?? "";
         const visibleTools = Array.isArray(payload.visible_tools)
           ? (payload.visible_tools as string[])
           : [];
         const phaseHint: Record<string, string> = {
           ingesting_uploads: "正在为您接收上传的文件",
-          scanning_workspace: "正在熟悉您的数据",
-          thinking: "正在为您梳理思路",
-          planning: "正在规划分析路径",
-          profiling: "正在识别数据结构",
-          executing: "正在并行执行分析",
-          delivering: "正在汇总报告",
         };
-        const hint = phaseHint[phase] ?? `阶段：${phase}`;
+        const hint = phaseHint[phase] ?? "";
+        if (!hint) break;  // 未知 phase 不打扰
         const toolsSuffix = visibleTools.length > 0
-          ? (phase === "ingesting_uploads"
-              ? `（${visibleTools.slice(0, 3).join("、")}${visibleTools.length > 3 ? " 等" : ""}）`
-              : `（${visibleTools.join("、")}）`)
+          ? `（${visibleTools.slice(0, 3).join("、")}${visibleTools.length > 3 ? " 等" : ""}）`
           : "";
         updated.blocks = ensureAgentThinking(updated.blocks, phase, hint + toolsSuffix);
         break;
@@ -516,12 +523,15 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
         const fileType = (payload.file_type as string) ?? "";
         if (filename) {
           const failed = sizeBytes === 0 || fileType.startsWith("failed");
+          // R20-F: dedupe by filename —— 同文件多次 emit 只保留最新一条
+          const matcher = (it: string) =>
+            it.includes(`已收到 ${filename}`) || it.includes(`未能接收 ${filename}`);
           if (failed) {
             const reason = fileType.startsWith("failed:") ? fileType.slice(7) : "下载失败";
-            updated.blocks = appendAgentThinkingItem(updated.blocks, `未能接收 ${filename}：${reason}`);
+            updated.blocks = upsertAgentThinkingItem(updated.blocks, matcher, `未能接收 ${filename}：${reason}`);
           } else {
             const sizeText = sizeBytes > 0 ? `（${formatFileSize(sizeBytes)}）` : "";
-            updated.blocks = appendAgentThinkingItem(updated.blocks, `已收到 ${filename}${sizeText}`);
+            updated.blocks = upsertAgentThinkingItem(updated.blocks, matcher, `已收到 ${filename}${sizeText}`);
           }
         }
         break;
@@ -541,7 +551,9 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
             ? `，主要字段：${columns.slice(0, 4).map(c => c.name).filter(Boolean).join("、")}${columns.length > 4 ? "..." : ""}`
             : "";
           const summary = dims ? `读懂 ${shortName}（${dims}${colHint}）` : `读懂 ${shortName}`;
-          updated.blocks = appendAgentThinkingItem(updated.blocks, summary);
+          // R20-F: dedupe by asset shortName —— 反复 profile 同表只保留最新一条
+          const matcher = (it: string) => it.startsWith(`读懂 ${shortName}`);
+          updated.blocks = upsertAgentThinkingItem(updated.blocks, matcher, summary);
         }
         break;
       }
