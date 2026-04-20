@@ -12,6 +12,7 @@ interface HistoryWorker {
   description: string;
   status: "completed" | "failed";
   toolsUsed: string[];
+  childToolCalls: { toolName: string; toolInput: Record<string, unknown>; toolResult?: Record<string, unknown> }[];
   durationSeconds: number;
   error?: string;
   character: WorkerCharacter;
@@ -45,6 +46,13 @@ function buildHistoryWorkers(toolCalls: ToolCallData[]): HistoryWorker[] {
         description: (r.description as string) ?? "",
         status: (r.status as "completed" | "failed") ?? "completed",
         toolsUsed: (r.tools_used as string[]) ?? [],
+        childToolCalls: Array.isArray(r.child_tool_calls)
+          ? (r.child_tool_calls as { tool_name?: string; tool_input?: Record<string, unknown>; tool_result?: Record<string, unknown> }[]).map((c) => ({
+              toolName: c.tool_name ?? "",
+              toolInput: c.tool_input ?? {},
+              toolResult: c.tool_result,
+            }))
+          : [],
         durationSeconds: (r.duration_seconds as number) ?? 0,
         error: r.error as string | undefined,
         character,
@@ -287,7 +295,7 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
 function HistoryWorkerCard({ worker, index }: { worker: HistoryWorker; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const avatarUri = useMemo(() => getWorkerAvatar(worker.character.name), [worker.character.name]);
-  const hasDetails = worker.toolsUsed.length > 0 || worker.error;
+  const hasDetails = worker.toolsUsed.length > 0 || worker.childToolCalls.length > 0 || worker.error;
 
   return (
     <div
@@ -321,8 +329,19 @@ function HistoryWorkerCard({ worker, index }: { worker: HistoryWorker; index: nu
       </div>
 
       <Collapsible open={expanded}>
-        <div className="border-t border-border-light px-3 py-2 ml-9">
-          {worker.toolsUsed.length > 0 && (
+        <div className="border-t border-border-light px-3 py-2.5 ml-9 space-y-2">
+          {worker.childToolCalls.length > 0 ? (
+            worker.childToolCalls.map((tc, i) => (
+              <div key={i} className="[&>div]:shadow-none [&>div]:border-0 [&>div]:bg-background [&>div]:rounded-lg">
+                <ToolCallBlock
+                  toolName={tc.toolName}
+                  toolInput={tc.toolInput}
+                  toolResult={tc.toolResult}
+                  toolCallId={`${worker.workerId}-h-${i}`}
+                />
+              </div>
+            ))
+          ) : worker.toolsUsed.length > 0 ? (
             <div className="flex flex-wrap gap-1">
               {worker.toolsUsed.map((t, i) => (
                 <span key={i} className="text-[10px] font-mono bg-surface-hover rounded px-1.5 py-0.5 text-text-secondary">
@@ -330,7 +349,7 @@ function HistoryWorkerCard({ worker, index }: { worker: HistoryWorker; index: nu
                 </span>
               ))}
             </div>
-          )}
+          ) : null}
           {worker.error && (
             <p className="text-[11px] text-error mt-1.5">{worker.error}</p>
           )}

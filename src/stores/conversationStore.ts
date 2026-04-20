@@ -319,14 +319,18 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
   const last = msgs[msgs.length - 1];
   if (!last || last.role !== "assistant") return msgs;
 
-  const updated = { ...last, blocks: [...last.blocks], workers: { ...last.workers }, sources: [...last.sources] };
+  const updated = {
+    ...last,
+    blocks: [...last.blocks],
+    workers: { ...last.workers },
+    sources: [...last.sources],
+  };
 
   switch (event.event.case) {
     case "agentStart": {
       updated.agentStartedAt = eventTimestamp;
       updated.agentDurationMs = undefined;
-      // 立即给用户一个"准备中"的占位反馈；具体阶段事件来了会替换文案
-      updated.blocks = ensureAgentThinking(updated.blocks, "thinking", "正在为您准备...");
+      // R21: 不再插入"正在为您准备..."占位 —— 直接等待真实事件（避免和后续 tool 卡片重复）
       break;
     }
     case "agentEnd": {
@@ -538,23 +542,9 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       }
 
       if (custom.type === "DataProfiled") {
-        const assetId = (payload.asset_id as string) ?? "";
-        const rowCount = (payload.row_count as number) ?? 0;
-        const colCount = (payload.column_count as number) ?? 0;
-        const columns = Array.isArray(payload.columns) ? (payload.columns as Array<{ name: string }>) : [];
-        if (assetId) {
-          const shortName = assetId.split("/").pop() ?? assetId;
-          const dims = rowCount > 0 || colCount > 0
-            ? `${rowCount.toLocaleString()} 行 × ${colCount} 列`
-            : "";
-          const colHint = columns.length > 0
-            ? `，主要字段：${columns.slice(0, 4).map(c => c.name).filter(Boolean).join("、")}${columns.length > 4 ? "..." : ""}`
-            : "";
-          const summary = dims ? `读懂 ${shortName}（${dims}${colHint}）` : `读懂 ${shortName}`;
-          // R20-F: dedupe by asset shortName —— 反复 profile 同表只保留最新一条
-          const matcher = (it: string) => it.startsWith(`读懂 ${shortName}`);
-          updated.blocks = upsertAgentThinkingItem(updated.blocks, matcher, summary);
-        }
+        // R21: profile_data 工具本身已经渲染为独立 tool 卡片（"🔍 Profile Data inputs/xxx.csv"），
+        // DataProfiled 是 streaming 元数据，前端不再额外插入 AgentThinking "读懂 xxx" 行
+        //（避免与工具卡片重复 + 风格断裂）。如需查看 dims/columns，展开 tool 卡片 Output 即可。
         break;
       }
 

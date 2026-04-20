@@ -18,7 +18,8 @@ import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { TaskListPanel } from "./TaskListPanel";
 import { SheetArtifactCard } from "./SheetArtifactCard";
-import { SheetPlanPanel } from "./SheetPlanPanel";
+// R21: SheetPlanPanel 已下线（Agent Swarm 卡片完整覆盖其信息）
+// import { SheetPlanPanel } from "./SheetPlanPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
 import { useImagePreviewStore } from "@/stores/imagePreviewStore";
@@ -520,7 +521,9 @@ const BlockRenderer = memo(function BlockRenderer({
     case "SheetArtifact":
       return <SheetArtifactCard data={block.data} />;
     case "SheetPlan":
-      return <SheetPlanPanel data={block.data} />;
+      // R21: SheetPlan 面板被下方 Agent Swarm 完整覆盖（每个 dim = 1 个 worker，
+      // worker 卡片就是 dimension 卡片）。保留类型以避免 store 端 break，但不再渲染。
+      return null;
     case "AgentThinking":
       return <AgentThinkingBlock phase={block.phase} hint={block.hint} items={block.items} />;
   }
@@ -633,7 +636,7 @@ function AgentThinkingBlock({
   const list = items ?? [];
   const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
   const dotColor = colorCls.replace("text-", "bg-");
-  const currentText = hint || (list.length === 0 ? "正在为您准备..." : "");
+  const currentText = hint || (list.length === 0 ? "" : "");
 
   // R20-F: 超 5 行折叠（默认收起，留最后 3 行 + 折叠提示）
   const COLLAPSE_THRESHOLD = 5;
