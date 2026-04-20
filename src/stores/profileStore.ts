@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { agentClient } from "@/grpc/client";
 import type { ProfileFactInfo } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
 
-const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "";
+const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 
 type Field = "soul" | "identity";
 
