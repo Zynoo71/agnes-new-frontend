@@ -40,13 +40,18 @@ function resolveBffBaseUrl(): string {
   return "http://127.0.0.1:8201";
 }
 
-export async function uploadChatAttachment(file: File): Promise<ChatAttachment> {
+export async function uploadChatAttachment(file: File, conversationId?: string | null): Promise<ChatAttachment> {
   const mimeType = file.type || "application/octet-stream";
-  const presignedBody = JSON.stringify({
+  const presignedPayload: Record<string, string> = {
     purpose: "chat_attachment",
     content_type: mimeType,
     filename: file.name,
-  });
+  };
+  const conversationIdLiteral = conversationId?.trim();
+  const presignedBody =
+    conversationIdLiteral && /^\d+$/.test(conversationIdLiteral)
+      ? `${JSON.stringify(presignedPayload).slice(0, -1)},"conversation_id":${conversationIdLiteral}}`
+      : JSON.stringify(presignedPayload);
 
   const presignedResp = isLocalDev()
     ? await fetch(DEV_PRESIGN_PROXY_PATH, {

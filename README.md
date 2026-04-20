@@ -36,7 +36,7 @@ npm start
 | `VITE_DEV_USER_ID` | 开发用 user-id，注入 `x-user-id` 请求头 | - |
 | `VITE_DEV_LANE` | 开发泳道标识，注入 `x-dev-lane` 请求头 | - |
 
-聊天输入框左侧的上传按钮会先调用 BFF 的 `/api/v1/file/presigned-url`，再把成功上传后的 `public_url` 作为 `ChatStream.files` 发送给 agent，因此本地调试需要额外配置 `VITE_BFF_TOKEN`。
+聊天输入框左侧的上传按钮会先调用 BFF 的 `/api/v1/file/presigned-url`，并在可用时自动附带当前 `conversation_id`，再把成功上传后的 `public_url` 作为 `ChatStream.files` 发送给 agent，因此本地调试需要额外配置 `VITE_BFF_TOKEN`。
 
 启动后访问 `http://127.0.0.1:5173`。
 
