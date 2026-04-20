@@ -8,19 +8,6 @@ import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
 const getState = () => useConversationStore.getState();
 
-const SHEET_DEFAULT_FILES: ChatAttachment[] = [
-  {
-    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    url: "https://storage.googleapis.com/agnes-default-test/user_1088ceeb-c1a6-4660-8b00-96b9e976f41c/20260417/ef681694-5003-49e6-b85a-0a4efc0b1d01.xlsx",
-    filename: "ef681694-5003-49e6-b85a-0a4efc0b1d01.xlsx",
-  },
-  {
-    mimeType: "text/csv",
-    url: "https://storage.googleapis.com/agnes-default-test/user_1088ceeb-c1a6-4660-8b00-96b9e976f41c/20260417/edc472f6-de00-409a-b0e6-458e9a66cdbb.csv",
-    filename: "edc472f6-de00-409a-b0e6-458e9a66cdbb.csv",
-  },
-];
-
 // ── Module-level singleton abort management ──
 // Shared across all useChat() call sites — fixes the multi-instance bug.
 
@@ -406,13 +393,12 @@ export function useChat() {
     }
 
     const extraContext = Object.keys(s.extraContext).length > 0 ? s.extraContext : undefined;
-    const requestFiles = s.agentType === "sheet" && files.length === 0 ? SHEET_DEFAULT_FILES : files;
     const stream = agentClient.chatStream(
       {
         conversationId: BigInt(convId),
         query,
         agentType: s.agentType,
-        files: requestFiles.map((file) => ({
+        files: files.map((file) => ({
           mimeType: file.mimeType,
           url: file.url,
           filename: file.filename,
