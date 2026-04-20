@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 const LOCAL_SLIDE_WORKSPACE_ROOT =
   process.env.AGNES_LOCAL_SLIDE_WORKSPACE_ROOT ??
-  "/Users/au/Documents/agnes_core/services/kw-agent-service/.super_agent/workspace";
+  path.resolve(__dirname, "../agnes_core/services/kw-agent-service/.super_agent/workspace");
 const LOCAL_SLIDE_PREFIX = "/__local_slide_workspace/";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
 const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
