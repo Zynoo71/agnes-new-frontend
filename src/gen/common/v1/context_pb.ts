@@ -14,11 +14,11 @@ export const file_common_v1_context: GenFile = /*@__PURE__*/
 
 /**
  * RequestContext - 公共上下文消息体（文档性保留）
- *
+ * 
  * 当前架构下，跨切面字段统一通过 gRPC metadata + 拦截器传递：
  *   - gRPC 服务间调用：拦截器自动注入/提取 metadata
  *   - MQ 操作：由 MQ 微服务中间层封装为 gRPC 接口，全程 gRPC 通信
- *
+ * 
  * 此消息体作为 proto 层面的结构定义保留，当前无实际使用场景。
  * 业务 proto 中不需要声明 RequestContext 字段。
  *

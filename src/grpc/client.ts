@@ -11,6 +11,16 @@ function generateTraceId(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+export const ADMIN_TOKEN_STORAGE_KEY = "agnes.admin.token";
+
+function getAdminToken(): string {
+  try {
+    return localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
 const injectHeadersInterceptor: Interceptor = (next) => (req) => {
   req.header.set("x-trace-id", generateTraceId());
   if (DEV_USER_ID) {
@@ -21,6 +31,11 @@ const injectHeadersInterceptor: Interceptor = (next) => (req) => {
   }
   if (APP_ID) {
     req.header.set("x-app-id", APP_ID);
+  }
+  // Admin RPC 用，普通 RPC 后端会忽略；登录前/登出后 localStorage 为空也无害。
+  const adminToken = getAdminToken();
+  if (adminToken) {
+    req.header.set("x-admin-token", adminToken);
   }
   return next(req);
 };

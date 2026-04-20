@@ -9,7 +9,7 @@ import { enumDesc, fileDesc } from "@bufbuild/protobuf/codegenv2";
  * Describes the file kw_user_service/v1/enums.proto.
  */
 export const file_kw_user_service_v1_enums: GenFile = /*@__PURE__*/
-  fileDesc("Ch5rd191c2VyX3NlcnZpY2UvdjEvZW51bXMucHJvdG8SEmt3X3VzZXJfc2VydmljZS52MSqrAQoMQXV0aFByb3ZpZGVyEh0KGUFVVEhfUFJPVklERVJfVU5TUEVDSUZJRUQQABIXChNBVVRIX1BST1ZJREVSX0VNQUlMEAESFwoTQVVUSF9QUk9WSURFUl9QSE9ORRACEhgKFEFVVEhfUFJPVklERVJfR09PR0xFEAMSFwoTQVVUSF9QUk9WSURFUl9BUFBMRRAEEhcKE0FVVEhfUFJPVklERVJfQUdORVMQBSprCgdPdHBUeXBlEhgKFE9UUF9UWVBFX1VOU1BFQ0lGSUVEEAASFQoRT1RQX1RZUEVfUkVHSVNURVIQARISCg5PVFBfVFlQRV9MT0dJThACEhsKF09UUF9UWVBFX1JFU0VUX1BBU1NXT1JEEANCLlosYWduZXMvcHJvdG8vZ2VuL2dvL2t3X3VzZXJfc2VydmljZS92MTt1c2VydjFiBnByb3RvMw");
+  fileDesc("Ch5rd191c2VyX3NlcnZpY2UvdjEvZW51bXMucHJvdG8SEmt3X3VzZXJfc2VydmljZS52MSqrAQoMQXV0aFByb3ZpZGVyEh0KGUFVVEhfUFJPVklERVJfVU5TUEVDSUZJRUQQABIXChNBVVRIX1BST1ZJREVSX0VNQUlMEAESFwoTQVVUSF9QUk9WSURFUl9QSE9ORRACEhgKFEFVVEhfUFJPVklERVJfR09PR0xFEAMSFwoTQVVUSF9QUk9WSURFUl9BUFBMRRAEEhcKE0FVVEhfUFJPVklERVJfQUdORVMQBSprCgdPdHBUeXBlEhgKFE9UUF9UWVBFX1VOU1BFQ0lGSUVEEAASFQoRT1RQX1RZUEVfUkVHSVNURVIQARISCg5PVFBfVFlQRV9MT0dJThACEhsKF09UUF9UWVBFX1JFU0VUX1BBU1NXT1JEEAMqtgEKDVByb3Zpc2lvbktpbmQSHgoaUFJPVklTSU9OX0tJTkRfVU5TUEVDSUZJRUQQABIhCh1QUk9WSVNJT05fS0lORF9FTUFJTF9QQVNTV09SRBABEiEKHVBST1ZJU0lPTl9LSU5EX1BIT05FX1BBU1NXT1JEEAISHwobUFJPVklTSU9OX0tJTkRfR09PR0xFX09BVVRIEAMSHgoaUFJPVklTSU9OX0tJTkRfQVBQTEVfT0FVVEgQBEIuWixhZ25lcy9wcm90by9nZW4vZ28va3dfdXNlcl9zZXJ2aWNlL3YxO3VzZXJ2MWIGcHJvdG8z");
 
 /**
  * AuthProvider 登录/注册来源，与文档 auth_provider 一致
@@ -94,4 +94,42 @@ export enum OtpType {
  */
 export const OtpTypeSchema: GenEnum<OtpType> = /*@__PURE__*/
   enumDesc(file_kw_user_service_v1_enums, 1);
+
+/**
+ * ProvisionKind 可信上游代开户渠道（与 BFF internal provision 一致）
+ *
+ * @generated from enum kw_user_service.v1.ProvisionKind
+ */
+export enum ProvisionKind {
+  /**
+   * @generated from enum value: PROVISION_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PROVISION_KIND_EMAIL_PASSWORD = 1;
+   */
+  EMAIL_PASSWORD = 1,
+
+  /**
+   * @generated from enum value: PROVISION_KIND_PHONE_PASSWORD = 2;
+   */
+  PHONE_PASSWORD = 2,
+
+  /**
+   * @generated from enum value: PROVISION_KIND_GOOGLE_OAUTH = 3;
+   */
+  GOOGLE_OAUTH = 3,
+
+  /**
+   * @generated from enum value: PROVISION_KIND_APPLE_OAUTH = 4;
+   */
+  APPLE_OAUTH = 4,
+}
+
+/**
+ * Describes the enum kw_user_service.v1.ProvisionKind.
+ */
+export const ProvisionKindSchema: GenEnum<ProvisionKind> = /*@__PURE__*/
+  enumDesc(file_kw_user_service_v1_enums, 2);
 

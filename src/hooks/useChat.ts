@@ -3,7 +3,23 @@ import { agentClient } from "@/grpc/client";
 import { useConversationStore, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory } from "@/stores/conversationStore";
 import type { SourceCitation } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
+import { useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
+import {
+  hydrateConversationSkillsFromServer,
+  persistConversationSkillSelections,
+} from "@/lib/conversationSkillSync";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
+
+/**
+ * 把当前 conversation 在 chatSelectedSkillsStore 里的 selection 转成 proto 入参。
+ * 后端会校验/过滤 → 这里直接全量上送，不在前端做权限判断。
+ */
+function pickSelectedSkillsForRequest(convId: string): { skillId: string; version: string }[] {
+  const list = useChatSelectedSkillsStore.getState().get(convId);
+  return list
+    .filter((it) => it.skillId)
+    .map((it) => ({ skillId: it.skillId, version: it.version || "" }));
+}
 
 const getState = () => useConversationStore.getState();
 
@@ -218,12 +234,19 @@ export function useChat() {
       useConversationListStore.getState().update(convId, { title });
     }
 
+    try {
+      await persistConversationSkillSelections(convId);
+    } catch (e) {
+      console.warn("[useChat] persist conversation skills before ChatStream failed", e);
+    }
+
     const stream = agentClient.chatStream(
       {
         conversationId: BigInt(convId),
         query,
         agentType: s.agentType,
         ...(s.agentType === "sheet" ? { files: [...SHEET_DEFAULT_FILES] } : {}),
+        selectedSkills: pickSelectedSkillsForRequest(convId),
       },
       { signal },
     );
@@ -262,8 +285,18 @@ export function useChat() {
     s.startAssistantMessage();
     const signal = beginStream(convId);
 
+    try {
+      await persistConversationSkillSelections(convId);
+    } catch (e) {
+      console.warn("[useChat] persist conversation skills before EditResend failed", e);
+    }
+
     const stream = agentClient.editResendStream(
-      { conversationId: BigInt(convId), query: newQuery },
+      {
+        conversationId: BigInt(convId),
+        query: newQuery,
+        selectedSkills: pickSelectedSkillsForRequest(convId),
+      },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -278,8 +311,17 @@ export function useChat() {
     s.startAssistantMessage();
     const signal = beginStream(convId);
 
+    try {
+      await persistConversationSkillSelections(convId);
+    } catch (e) {
+      console.warn("[useChat] persist conversation skills before Regenerate failed", e);
+    }
+
     const stream = agentClient.regenerateStream(
-      { conversationId: BigInt(convId) },
+      {
+        conversationId: BigInt(convId),
+        selectedSkills: pickSelectedSkillsForRequest(convId),
+      },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -308,6 +350,7 @@ export function useChat() {
     abortMap.delete(id);
 
     s.setConversationId(id);
+    void hydrateConversationSkillsFromServer(id);
     s.setError(null);
     s.setLoadingHistory(true);
 

@@ -6,6 +6,8 @@ import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
 import { MessageBubble } from "@/components/MessageBubble";
 import { EventStream } from "@/components/EventStream";
 import { SystemPromptSelector } from "@/components/SystemPromptSelector";
+import { ChatSkillsPicker } from "@/components/ChatSkillsPicker";
+import { hydrateConversationSkillsFromServer } from "@/lib/conversationSkillSync";
 
 const AGENT_TYPES = ["super", "search", "research", "slide", "sheet", "pixa"] as const;
 
@@ -156,6 +158,12 @@ export function ChatPanel() {
     setShowScrollBtn(false);
   }, [conversationId]);
 
+  // 恢复本会话已持久化的 hub skill 选用（刷新 / 切换会话 / 新建会话后与 DB 对齐）
+  useEffect(() => {
+    if (!conversationId) return;
+    void hydrateConversationSkillsFromServer(conversationId);
+  }, [conversationId]);
+
   // Auto-scroll via ResizeObserver: fires whenever the content div changes
   // height (new messages rendered, streaming text appended, images loaded, etc).
   useEffect(() => {
@@ -247,6 +255,7 @@ export function ChatPanel() {
               {t}
             </button>
           ))}
+          <ChatSkillsPicker conversationId={conversationId} />
         </div>
         <SystemPromptSelector
           selectedId={systemPromptId}
