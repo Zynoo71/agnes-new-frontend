@@ -31,12 +31,19 @@ npm start
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `VITE_API_BASE_URL` | Envoy gRPC-Web 代理地址 | `http://localhost:8080` |
-| `VITE_BFF_BASE_URL` | 文件上传 REST 接口地址 | `http://127.0.0.1:8201` |
-| `VITE_BFF_TOKEN` | 文件上传使用的 Bearer Token | - |
+| `VITE_BFF_BASE_URL` | 非 localhost 场景下文件上传 REST 接口地址 | `http://127.0.0.1:8201` |
+| `VITE_BFF_TOKEN` | 非 localhost 场景下文件上传使用的 Bearer Token | - |
 | `VITE_DEV_USER_ID` | 开发用 user-id，注入 `x-user-id` 请求头 | - |
 | `VITE_DEV_LANE` | 开发泳道标识，注入 `x-dev-lane` 请求头 | - |
 
-聊天输入框左侧的上传按钮会先调用 BFF 的 `/api/v1/file/presigned-url`，并在可用时自动附带当前 `conversation_id`，再把成功上传后的 `public_url` 作为 `ChatStream.files` 发送给 agent，因此本地调试需要额外配置 `VITE_BFF_TOKEN`。
+聊天输入框左侧的上传按钮会先调用 BFF 的 `/api/v1/file/presigned-url`，并在可用时自动附带当前 `conversation_id`，再把成功上传后的 `public_url` 作为 `ChatStream.files` 发送给 agent。
+
+本地调试上传认证约定：
+
+- 如果页面运行在 `localhost` / `127.0.0.1`，Vite 会通过 `vite.config.ts` 里的开发代理自动登录远端 dev BFF，再代理预签名和对象上传。
+- 这种场景下通常不需要手动填写 `VITE_BFF_TOKEN`，也不需要临时生成 JWT。
+- 只有在页面不是本地启动、或者你要绕过本地开发代理直连 BFF 时，才需要自己配置 `VITE_BFF_TOKEN` / `VITE_BFF_BASE_URL`。
+- 如果要切换远端环境或账号，优先改 `AGNES_DEV_BFF_BASE_URL`、`AGNES_DEV_BFF_LOGIN_EMAIL`、`AGNES_DEV_BFF_LOGIN_PASSWORD`、`AGNES_DEV_BFF_APP_ID`，不要在代码里临时改上传逻辑。
 
 启动后访问 `http://127.0.0.1:5173`。
 
