@@ -11,8 +11,8 @@ const LOCAL_SLIDE_PREFIX = "/__local_slide_workspace/";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
 const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
 const DEV_BFF_BASE_URL = process.env.AGNES_DEV_BFF_BASE_URL ?? "https://api-agnes-dev.kiwiar.com";
-const DEV_BFF_LOGIN_EMAIL = process.env.AGNES_DEV_BFF_LOGIN_EMAIL ?? "";
-const DEV_BFF_LOGIN_PASSWORD = process.env.AGNES_DEV_BFF_LOGIN_PASSWORD ?? "";
+const DEV_BFF_LOGIN_EMAIL = process.env.AGNES_DEV_BFF_LOGIN_EMAIL ?? "renhua.tian@kiwiar.com";
+const DEV_BFF_LOGIN_PASSWORD = process.env.AGNES_DEV_BFF_LOGIN_PASSWORD ?? "kiwiar@2026";
 const DEV_BFF_APP_ID = process.env.AGNES_DEV_BFF_APP_ID ?? "agnes";
 
 let cachedDevBffToken: { token: string; expiresAtMs: number } | null = null;
@@ -101,11 +101,6 @@ function parseJwtExpiry(token: string): number {
 async function getDevBffToken(): Promise<string> {
   if (cachedDevBffToken && cachedDevBffToken.expiresAtMs - Date.now() > 60_000) {
     return cachedDevBffToken.token;
-  }
-  if (!DEV_BFF_LOGIN_EMAIL || !DEV_BFF_LOGIN_PASSWORD) {
-    throw new Error(
-      "Missing AGNES_DEV_BFF_LOGIN_EMAIL or AGNES_DEV_BFF_LOGIN_PASSWORD for local upload debugging",
-    );
   }
 
   const loginResp = await fetch(`${DEV_BFF_BASE_URL}/api/v1/user/login`, {
