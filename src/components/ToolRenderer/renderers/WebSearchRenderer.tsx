@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { ToolRenderProps } from "../registry";
 import { ExpandableInput } from "../ExpandableInput";
 
@@ -11,9 +11,9 @@ export function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
     (toolResult?.query as string) ??
     "";
   // If toolResult exists on first render, it's from history — start collapsed
-  const isHistoryRef = useRef(!!toolResult);
+  const isHistory = !!toolResult;
   const [userToggled, setUserToggled] = useState(false);
-  const [delayCollapsed, setDelayCollapsed] = useState(isHistoryRef.current);
+  const [delayCollapsed, setDelayCollapsed] = useState(isHistory);
 
   // Auto-expand when result arrives, then collapse after delay
   const autoExpanded = toolResult ? !delayCollapsed : true;
@@ -21,10 +21,10 @@ export function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
   const expanded = userToggled ? manualExpanded : autoExpanded;
 
   useEffect(() => {
-    if (!toolResult || userToggled || isHistoryRef.current) return;
+    if (!toolResult || userToggled || isHistory) return;
     const timer = setTimeout(() => setDelayCollapsed(true), AUTO_COLLAPSE_MS);
     return () => clearTimeout(timer);
-  }, [toolResult, userToggled]);
+  }, [isHistory, toolResult, userToggled]);
 
   const resultCount = Array.isArray(toolResult?.results) ? toolResult.results.length : 0;
 
@@ -72,4 +72,3 @@ export function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
     </div>
   );
 }
-

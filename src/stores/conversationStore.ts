@@ -109,7 +109,7 @@ export interface MemoryUpdateData {
   content: string;
 }
 
-export interface FileData extends ChatAttachment {}
+export type FileData = ChatAttachment;
 
 export type ContentBlock =
   | { type: "Message"; content: string }
