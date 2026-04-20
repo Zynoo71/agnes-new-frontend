@@ -214,15 +214,23 @@ function formatFileSize(bytes: number): string {
 }
 
 function removeAgentThinking(blocks: ContentBlock[]): ContentBlock[] {
+  // 不再硬移除：清掉 in-progress hint，items 作为永久"行为日志"保留。
+  // 若 items 也为空则真正移除（避免空块占位）。
   const idx = blocks.findIndex((b) => b.type === "AgentThinking");
   if (idx < 0) return blocks;
+  const prev = blocks[idx] as { type: "AgentThinking"; items?: string[] };
+  const items = prev.items ?? [];
   const next = [...blocks];
-  next.splice(idx, 1);
+  if (items.length === 0) {
+    next.splice(idx, 1);
+  } else {
+    next[idx] = { type: "AgentThinking", phase: undefined, hint: undefined, items };
+  }
   return next;
 }
 
 function ensureAgentThinking(blocks: ContentBlock[], phase?: string, hint?: string): ContentBlock[] {
-  // 如果已经有 AgentThinking，原地更新 phase / hint（保留 items checklist）
+  // 如果已经有 AgentThinking，原地更新 phase / hint（保留 items 行为日志）
   const idx = blocks.findIndex((b) => b.type === "AgentThinking");
   if (idx >= 0) {
     const next = [...blocks];
@@ -237,12 +245,11 @@ function appendAgentThinkingItem(blocks: ContentBlock[], item: string): ContentB
   // 找到（或创建）AgentThinking，并往 items 末尾追加一条
   const idx = blocks.findIndex((b) => b.type === "AgentThinking");
   if (idx < 0) {
-    return [...blocks, { type: "AgentThinking", phase: "thinking", hint: "智能体正在准备中...", items: [item] }];
+    return [...blocks, { type: "AgentThinking", phase: undefined, hint: undefined, items: [item] }];
   }
   const next = [...blocks];
   const prev = next[idx] as { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
   const existing = prev.items ?? [];
-  // 去重相邻重复
   if (existing[existing.length - 1] === item) return next;
   next[idx] = { ...prev, items: [...existing, item] };
   return next;
@@ -306,8 +313,8 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
     case "agentStart": {
       updated.agentStartedAt = eventTimestamp;
       updated.agentDurationMs = undefined;
-      // 立即给用户一个"思考中"的占位反馈，避免 TTFT 长时无任何视觉变化
-      updated.blocks = ensureAgentThinking(updated.blocks, "thinking", "智能体正在思考中...");
+      // 立即给用户一个"准备中"的占位反馈；具体阶段事件来了会替换文案
+      updated.blocks = ensureAgentThinking(updated.blocks, "thinking", "正在为您准备...");
       break;
     }
     case "agentEnd": {
@@ -485,20 +492,19 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
           ? (payload.visible_tools as string[])
           : [];
         const phaseHint: Record<string, string> = {
-          ingesting_uploads: "正在接收上传文件...",
-          scanning_workspace: "正在扫描工作区数据...",
-          thinking: "智能体正在思考分析路径...",
-          planning: "正在规划分析维度...",
-          profiling: "正在探查数据结构...",
-          executing: "正在执行分析任务...",
-          delivering: "正在汇总产出报告...",
+          ingesting_uploads: "正在为您接收上传的文件",
+          scanning_workspace: "正在熟悉您的数据",
+          thinking: "正在为您梳理思路",
+          planning: "正在规划分析路径",
+          profiling: "正在识别数据结构",
+          executing: "正在并行执行分析",
+          delivering: "正在汇总报告",
         };
         const hint = phaseHint[phase] ?? `阶段：${phase}`;
-        // ingesting_uploads 时 visible_tools 是文件名列表；其他阶段是 tool 名
         const toolsSuffix = visibleTools.length > 0
           ? (phase === "ingesting_uploads"
-              ? `（${visibleTools.slice(0, 3).join(", ")}${visibleTools.length > 3 ? " 等" : ""}）`
-              : `（${visibleTools.join(", ")}）`)
+              ? `（${visibleTools.slice(0, 3).join("、")}${visibleTools.length > 3 ? " 等" : ""}）`
+              : `（${visibleTools.join("、")}）`)
           : "";
         updated.blocks = ensureAgentThinking(updated.blocks, phase, hint + toolsSuffix);
         break;
@@ -507,9 +513,16 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       if (custom.type === "DataUploaded") {
         const filename = (payload.filename as string) ?? (payload.asset_id as string) ?? "";
         const sizeBytes = (payload.file_size as number) ?? 0;
+        const fileType = (payload.file_type as string) ?? "";
         if (filename) {
-          const sizeText = sizeBytes > 0 ? ` (${formatFileSize(sizeBytes)})` : "";
-          updated.blocks = appendAgentThinkingItem(updated.blocks, `📥 已接收 ${filename}${sizeText}`);
+          const failed = sizeBytes === 0 || fileType.startsWith("failed");
+          if (failed) {
+            const reason = fileType.startsWith("failed:") ? fileType.slice(7) : "下载失败";
+            updated.blocks = appendAgentThinkingItem(updated.blocks, `未能接收 ${filename}：${reason}`);
+          } else {
+            const sizeText = sizeBytes > 0 ? `（${formatFileSize(sizeBytes)}）` : "";
+            updated.blocks = appendAgentThinkingItem(updated.blocks, `已收到 ${filename}${sizeText}`);
+          }
         }
         break;
       }
@@ -518,12 +531,17 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
         const assetId = (payload.asset_id as string) ?? "";
         const rowCount = (payload.row_count as number) ?? 0;
         const colCount = (payload.column_count as number) ?? 0;
+        const columns = Array.isArray(payload.columns) ? (payload.columns as Array<{ name: string }>) : [];
         if (assetId) {
           const shortName = assetId.split("/").pop() ?? assetId;
           const dims = rowCount > 0 || colCount > 0
-            ? ` · ${rowCount.toLocaleString()} 行 × ${colCount} 列`
+            ? `${rowCount.toLocaleString()} 行 × ${colCount} 列`
             : "";
-          updated.blocks = appendAgentThinkingItem(updated.blocks, `🔎 已识别 ${shortName}${dims}`);
+          const colHint = columns.length > 0
+            ? `，主要字段：${columns.slice(0, 4).map(c => c.name).filter(Boolean).join("、")}${columns.length > 4 ? "..." : ""}`
+            : "";
+          const summary = dims ? `读懂 ${shortName}（${dims}${colHint}）` : `读懂 ${shortName}`;
+          updated.blocks = appendAgentThinkingItem(updated.blocks, summary);
         }
         break;
       }

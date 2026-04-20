@@ -630,28 +630,26 @@ function AgentThinkingBlock({
   hint?: string;
   items?: string[];
 }) {
-  const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
-  const text = hint || "智能体正在思考中...";
   const list = items ?? [];
+  const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
+  const dotColor = colorCls.replace("text-", "bg-");
+  const currentText = hint || (list.length === 0 ? "正在为您准备..." : "");
+
+  if (list.length === 0 && !currentText) return null;
+
   return (
-    <div className="my-3 flex flex-col gap-1.5 text-[12px] text-text-secondary">
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 rounded-full border border-border-light bg-surface-2/60 px-3 py-1.5">
-          <svg
-            className={`w-3.5 h-3.5 ${colorCls} animate-spin`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-          </svg>
-          <span>{text}</span>
+    <div className="my-3 flex flex-col gap-1 text-[12px] text-text-secondary">
+      {list.map((it, i) => (
+        <div key={i} className="flex items-start gap-2 leading-5">
+          <span className="mt-[7px] inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/70 flex-shrink-0" />
+          <span className="text-text-tertiary">{it}</span>
         </div>
-      </div>
-      {list.length > 0 && (
-        <ul className="ml-3 flex flex-col gap-0.5 text-[11px] text-text-tertiary">
-          {list.slice(-6).map((it, i) => (
-            <li key={i} className="leading-5">{it}</li>
-          ))}
-        </ul>
+      ))}
+      {currentText && (
+        <div className="flex items-start gap-2 leading-5">
+          <span className={`mt-[7px] inline-block w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0 animate-pulse`} />
+          <span className={colorCls}>{currentText}</span>
+        </div>
       )}
     </div>
   );
