@@ -522,7 +522,7 @@ const BlockRenderer = memo(function BlockRenderer({
     case "SheetPlan":
       return <SheetPlanPanel data={block.data} />;
     case "AgentThinking":
-      return <AgentThinkingBlock phase={block.phase} hint={block.hint} />;
+      return <AgentThinkingBlock phase={block.phase} hint={block.hint} items={block.items} />;
   }
 });
 
@@ -613,23 +613,46 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
 
 const PHASE_COLOR: Record<string, string> = {
   thinking: "text-amber-500",
+  ingesting_uploads: "text-cyan-500",
+  scanning_workspace: "text-sky-500",
   planning: "text-violet-500",
   profiling: "text-sky-500",
   executing: "text-emerald-500",
   delivering: "text-rose-500",
 };
 
-function AgentThinkingBlock({ phase, hint }: { phase?: string; hint?: string }) {
+function AgentThinkingBlock({
+  phase,
+  hint,
+  items,
+}: {
+  phase?: string;
+  hint?: string;
+  items?: string[];
+}) {
   const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
   const text = hint || "智能体正在思考中...";
+  const list = items ?? [];
   return (
-    <div className="my-3 flex items-center gap-2 text-[12px] text-text-secondary">
-      <div className="flex items-center gap-2 rounded-full border border-border-light bg-surface-2/60 px-3 py-1.5">
-        <svg className={`w-3.5 h-3.5 ${colorCls} animate-spin`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-        </svg>
-        <span>{text}</span>
+    <div className="my-3 flex flex-col gap-1.5 text-[12px] text-text-secondary">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 rounded-full border border-border-light bg-surface-2/60 px-3 py-1.5">
+          <svg
+            className={`w-3.5 h-3.5 ${colorCls} animate-spin`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+          </svg>
+          <span>{text}</span>
+        </div>
       </div>
+      {list.length > 0 && (
+        <ul className="ml-3 flex flex-col gap-0.5 text-[11px] text-text-tertiary">
+          {list.slice(-6).map((it, i) => (
+            <li key={i} className="leading-5">{it}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

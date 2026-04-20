@@ -147,7 +147,7 @@ export type ContentBlock =
   | { type: "MemoryUpdate"; data: MemoryUpdateData }
   | { type: "SheetArtifact"; data: SheetArtifactData }
   | { type: "SheetPlan"; data: SheetPlanData }
-  | { type: "AgentThinking"; phase?: string; hint?: string };
+  | { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
 
 export interface Message {
   id: string;
@@ -206,6 +206,13 @@ function asFileData(val: unknown): FileData | null {
   return { filename, mimeType, url };
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
 function removeAgentThinking(blocks: ContentBlock[]): ContentBlock[] {
   const idx = blocks.findIndex((b) => b.type === "AgentThinking");
   if (idx < 0) return blocks;
@@ -215,14 +222,30 @@ function removeAgentThinking(blocks: ContentBlock[]): ContentBlock[] {
 }
 
 function ensureAgentThinking(blocks: ContentBlock[], phase?: string, hint?: string): ContentBlock[] {
-  // 如果已经有 AgentThinking，原地更新 phase / hint
+  // 如果已经有 AgentThinking，原地更新 phase / hint（保留 items checklist）
   const idx = blocks.findIndex((b) => b.type === "AgentThinking");
   if (idx >= 0) {
     const next = [...blocks];
-    next[idx] = { type: "AgentThinking", phase, hint };
+    const prev = next[idx] as { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
+    next[idx] = { type: "AgentThinking", phase, hint, items: prev.items };
     return next;
   }
-  return [...blocks, { type: "AgentThinking", phase, hint }];
+  return [...blocks, { type: "AgentThinking", phase, hint, items: [] }];
+}
+
+function appendAgentThinkingItem(blocks: ContentBlock[], item: string): ContentBlock[] {
+  // 找到（或创建）AgentThinking，并往 items 末尾追加一条
+  const idx = blocks.findIndex((b) => b.type === "AgentThinking");
+  if (idx < 0) {
+    return [...blocks, { type: "AgentThinking", phase: "thinking", hint: "智能体正在准备中...", items: [item] }];
+  }
+  const next = [...blocks];
+  const prev = next[idx] as { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
+  const existing = prev.items ?? [];
+  // 去重相邻重复
+  if (existing[existing.length - 1] === item) return next;
+  next[idx] = { ...prev, items: [...existing, item] };
+  return next;
 }
 
 function setTtftIfNeeded(message: Message, eventTimestamp: number): Message {
@@ -462,14 +485,46 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
           ? (payload.visible_tools as string[])
           : [];
         const phaseHint: Record<string, string> = {
+          ingesting_uploads: "正在接收上传文件...",
+          scanning_workspace: "正在扫描工作区数据...",
+          thinking: "智能体正在思考分析路径...",
           planning: "正在规划分析维度...",
           profiling: "正在探查数据结构...",
           executing: "正在执行分析任务...",
           delivering: "正在汇总产出报告...",
         };
         const hint = phaseHint[phase] ?? `阶段：${phase}`;
-        const toolsSuffix = visibleTools.length > 0 ? `（${visibleTools.join(", ")}）` : "";
+        // ingesting_uploads 时 visible_tools 是文件名列表；其他阶段是 tool 名
+        const toolsSuffix = visibleTools.length > 0
+          ? (phase === "ingesting_uploads"
+              ? `（${visibleTools.slice(0, 3).join(", ")}${visibleTools.length > 3 ? " 等" : ""}）`
+              : `（${visibleTools.join(", ")}）`)
+          : "";
         updated.blocks = ensureAgentThinking(updated.blocks, phase, hint + toolsSuffix);
+        break;
+      }
+
+      if (custom.type === "DataUploaded") {
+        const filename = (payload.filename as string) ?? (payload.asset_id as string) ?? "";
+        const sizeBytes = (payload.file_size as number) ?? 0;
+        if (filename) {
+          const sizeText = sizeBytes > 0 ? ` (${formatFileSize(sizeBytes)})` : "";
+          updated.blocks = appendAgentThinkingItem(updated.blocks, `📥 已接收 ${filename}${sizeText}`);
+        }
+        break;
+      }
+
+      if (custom.type === "DataProfiled") {
+        const assetId = (payload.asset_id as string) ?? "";
+        const rowCount = (payload.row_count as number) ?? 0;
+        const colCount = (payload.column_count as number) ?? 0;
+        if (assetId) {
+          const shortName = assetId.split("/").pop() ?? assetId;
+          const dims = rowCount > 0 || colCount > 0
+            ? ` · ${rowCount.toLocaleString()} 行 × ${colCount} 列`
+            : "";
+          updated.blocks = appendAgentThinkingItem(updated.blocks, `🔎 已识别 ${shortName}${dims}`);
+        }
         break;
       }
 
