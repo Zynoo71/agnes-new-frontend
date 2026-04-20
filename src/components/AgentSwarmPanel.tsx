@@ -342,13 +342,18 @@ function HistoryWorkerCard({ worker, index }: { worker: HistoryWorker; index: nu
               </div>
             ))
           ) : worker.toolsUsed.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {worker.toolsUsed.map((t, i) => (
-                <span key={i} className="text-[10px] font-mono bg-surface-hover rounded px-1.5 py-0.5 text-text-secondary">
-                  {t}
-                </span>
-              ))}
-            </div>
+            // Fallback: 旧版后端没有 child_tool_calls，至少用空 input/result 渲染图标卡片，
+            // 保持与 SuperAgent 统一的视觉风格（不再用裸 pill）
+            worker.toolsUsed.map((t, i) => (
+              <div key={i} className="[&>div]:shadow-none [&>div]:border-0 [&>div]:bg-background [&>div]:rounded-lg">
+                <ToolCallBlock
+                  toolName={t}
+                  toolInput={{}}
+                  toolResult={{}}
+                  toolCallId={`${worker.workerId}-h-${i}`}
+                />
+              </div>
+            ))
           ) : null}
           {worker.error && (
             <p className="text-[11px] text-error mt-1.5">{worker.error}</p>
