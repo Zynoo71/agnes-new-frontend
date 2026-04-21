@@ -8,6 +8,7 @@ const LOCAL_SLIDE_WORKSPACE_ROOT =
   process.env.AGNES_LOCAL_SLIDE_WORKSPACE_ROOT ??
   path.resolve(__dirname, "../agnes_core/services/kw-agent-service/.super_agent/workspace");
 const LOCAL_SLIDE_PREFIX = "/__local_slide_workspace/";
+const DEV_CREATE_CONVERSATION_PROXY_PATH = "/__dev_agnes_conversation";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
 const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
 // Local browser upload debugging should not require agents to mint short-lived JWTs by hand.
@@ -18,8 +19,17 @@ const DEV_BFF_BASE_URL = process.env.AGNES_DEV_BFF_BASE_URL ?? "https://api-agne
 const DEV_BFF_LOGIN_EMAIL = process.env.AGNES_DEV_BFF_LOGIN_EMAIL ?? "renhua.tian@kiwiar.com";
 const DEV_BFF_LOGIN_PASSWORD = process.env.AGNES_DEV_BFF_LOGIN_PASSWORD ?? "kiwiar@2026";
 const DEV_BFF_APP_ID = process.env.AGNES_DEV_BFF_APP_ID ?? "agnes";
+const DEV_LANE = process.env.AGNES_DEV_LANE ?? process.env.VITE_DEV_LANE ?? "";
 
 let cachedDevBffToken: { token: string; expiresAtMs: number } | null = null;
+
+function getDevLane(req: { headers: Record<string, unknown> }): string {
+  const headerLane = req.headers["x-dev-lane"];
+  if (typeof headerLane === "string" && headerLane.trim()) {
+    return headerLane.trim();
+  }
+  return DEV_LANE;
+}
 
 function contentTypeFor(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
@@ -165,6 +175,7 @@ function devPresignProxyPlugin(): Plugin {
 
         try {
           const token = await getDevBffToken();
+          const devLane = getDevLane(req);
           const upstream = await fetch(`${DEV_BFF_BASE_URL}/api/v1/file/presigned-url`, {
             method: "POST",
             headers: {
@@ -172,6 +183,7 @@ function devPresignProxyPlugin(): Plugin {
               "Content-Type": "application/json",
               Accept: "application/json",
               "X-App": DEV_BFF_APP_ID,
+              ...(devLane ? { "x-dev-lane": devLane } : {}),
             },
             body: Buffer.concat(chunks),
           });
@@ -188,6 +200,60 @@ function devPresignProxyPlugin(): Plugin {
           res.statusCode = 502;
           res.setHeader("Content-Type", "text/plain; charset=utf-8");
           res.end(error instanceof Error ? error.message : "Presign proxy failed");
+        }
+      });
+    },
+  };
+}
+
+function devCreateConversationProxyPlugin(): Plugin {
+  return {
+    name: "dev-create-conversation-proxy",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const rawUrl = req.url ? req.url.split("?")[0] : "";
+        if (rawUrl !== DEV_CREATE_CONVERSATION_PROXY_PATH) {
+          next();
+          return;
+        }
+        if (req.method !== "POST") {
+          res.statusCode = 405;
+          res.end("Method Not Allowed");
+          return;
+        }
+
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+
+        try {
+          const token = await getDevBffToken();
+          const devLane = getDevLane(req);
+          const upstream = await fetch(`${DEV_BFF_BASE_URL}/api/v1/agnes/conversation`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "X-App": DEV_BFF_APP_ID,
+              ...(devLane ? { "x-dev-lane": devLane } : {}),
+            },
+            body: Buffer.concat(chunks),
+          });
+          const responseBody = Buffer.from(await upstream.arrayBuffer());
+          res.statusCode = upstream.status;
+          upstream.headers.forEach((value, key) => {
+            if (key.toLowerCase() === "content-length") {
+              return;
+            }
+            res.setHeader(key, value);
+          });
+          res.end(responseBody);
+        } catch (error) {
+          res.statusCode = 502;
+          res.setHeader("Content-Type", "text/plain; charset=utf-8");
+          res.end(error instanceof Error ? error.message : "Create conversation proxy failed");
         }
       });
     },
@@ -277,6 +343,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     localSlideWorkspacePlugin(),
+    devCreateConversationProxyPlugin(),
     devPresignProxyPlugin(),
     devUploadProxyPlugin(),
   ],

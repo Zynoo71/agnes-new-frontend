@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
+import { createAgnesConversation } from "@/api/agnesConversation";
 import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq } from "@/stores/conversationStore";
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
@@ -367,8 +368,7 @@ export function useChat() {
 
   const createConversation = useCallback(async () => {
     getState().reset();
-    const reply = await agentClient.createConversation({});
-    const id = String(reply.conversationId);
+    const id = await createAgnesConversation();
     getState().setConversationId(id);
     useConversationListStore.getState().add(id, getState().agentType, getState().systemPromptId ?? undefined);
     return id;
