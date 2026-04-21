@@ -86,7 +86,7 @@ export const PLANNING_TOOL_NAMES = new Set([
 ]);
 
 export const SWARM_TOOL_NAMES = new Set([
-  "spawn_worker", "delegate_to_image_studio",
+  "spawn_worker", "delegate_to_image_studio", "spawn_data_worker",
 ]);
 
 export interface SlideOutlineData {
@@ -109,6 +109,29 @@ export interface MemoryUpdateData {
   content: string;
 }
 
+export interface SheetArtifactData {
+  artifactId: string;
+  artifactType: string;            // CHART / TABLE / REPORT / DASHBOARD / EXPORT / TEXT / DATASET
+  name: string;
+  producerNodeId: string;
+  content: Record<string, unknown>;
+  createdAt: number;
+  invalidated?: boolean;
+  invalidatedReason?: string;
+}
+
+export interface SheetPlanDimension {
+  id: string;
+  title: string;
+  status: "pending" | "running" | "done" | "failed" | "aborted";
+  role?: string;
+  error?: string;
+}
+
+export interface SheetPlanData {
+  dimensions: SheetPlanDimension[];
+}
+
 export type FileData = ChatAttachment;
 
 export type ContentBlock =
@@ -121,7 +144,10 @@ export type ContentBlock =
   | { type: "ContextCompacting"; done: boolean }
   | { type: "SlideOutline"; data: SlideOutlineData }
   | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
-  | { type: "MemoryUpdate"; data: MemoryUpdateData };
+  | { type: "MemoryUpdate"; data: MemoryUpdateData }
+  | { type: "SheetArtifact"; data: SheetArtifactData }
+  | { type: "SheetPlan"; data: SheetPlanData }
+  | { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
 
 export interface Message {
   id: string;
@@ -180,6 +206,67 @@ function asFileData(val: unknown): FileData | null {
   return { filename, mimeType, url };
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function removeAgentThinking(blocks: ContentBlock[]): ContentBlock[] {
+  // 不再硬移除：清掉 in-progress hint，items 作为永久"行为日志"保留。
+  // 若 items 也为空则真正移除（避免空块占位）。
+  const idx = blocks.findIndex((b) => b.type === "AgentThinking");
+  if (idx < 0) return blocks;
+  const prev = blocks[idx] as { type: "AgentThinking"; items?: string[] };
+  const items = prev.items ?? [];
+  const next = [...blocks];
+  if (items.length === 0) {
+    next.splice(idx, 1);
+  } else {
+    next[idx] = { type: "AgentThinking", phase: undefined, hint: undefined, items };
+  }
+  return next;
+}
+
+function ensureAgentThinking(blocks: ContentBlock[], phase?: string, hint?: string): ContentBlock[] {
+  // 如果已经有 AgentThinking，原地更新 phase / hint（保留 items 行为日志）
+  const idx = blocks.findIndex((b) => b.type === "AgentThinking");
+  if (idx >= 0) {
+    const next = [...blocks];
+    const prev = next[idx] as { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
+    next[idx] = { type: "AgentThinking", phase, hint, items: prev.items };
+    return next;
+  }
+  return [...blocks, { type: "AgentThinking", phase, hint, items: [] }];
+}
+
+// R20-F: 按 matcher（key 函数）upsert —— 已存在匹配项则替换，否则追加。
+// 用于 DataUploaded/DataProfiled 等同 asset_id 重复事件的去重。
+function upsertAgentThinkingItem(
+  blocks: ContentBlock[],
+  matcher: (existing: string) => boolean,
+  item: string,
+): ContentBlock[] {
+  const idx = blocks.findIndex((b) => b.type === "AgentThinking");
+  if (idx < 0) {
+    return [...blocks, { type: "AgentThinking", phase: undefined, hint: undefined, items: [item] }];
+  }
+  const next = [...blocks];
+  const prev = next[idx] as { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
+  const existing = prev.items ?? [];
+  const itemIdx = existing.findIndex(matcher);
+  let merged: string[];
+  if (itemIdx >= 0) {
+    merged = [...existing];
+    merged[itemIdx] = item;
+  } else {
+    merged = [...existing, item];
+  }
+  next[idx] = { ...prev, items: merged };
+  return next;
+}
+
 function setTtftIfNeeded(message: Message, eventTimestamp: number): Message {
   if (message.role !== "assistant" || message.ttftMs != null || message.requestStartedAt == null) {
     return message;
@@ -232,34 +319,48 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
   const last = msgs[msgs.length - 1];
   if (!last || last.role !== "assistant") return msgs;
 
-  const updated = { ...last, blocks: [...last.blocks], workers: { ...last.workers }, sources: [...last.sources] };
+  const updated = {
+    ...last,
+    blocks: [...last.blocks],
+    workers: { ...last.workers },
+    sources: [...last.sources],
+  };
 
   switch (event.event.case) {
     case "agentStart": {
       updated.agentStartedAt = eventTimestamp;
       updated.agentDurationMs = undefined;
+      // R21: 不再插入"正在为您准备..."占位 —— 直接等待真实事件（避免和后续 tool 卡片重复）
       break;
     }
     case "agentEnd": {
       if (updated.agentStartedAt != null) {
         updated.agentDurationMs = Math.max(0, eventTimestamp - updated.agentStartedAt);
       }
+      updated.blocks = removeAgentThinking(updated.blocks);
       break;
     }
     case "messageDelta": {
       const delta = event.event.value;
-      if (delta.content) appendOrPushBlock(updated.blocks, "Message", delta.content);
+      if (delta.content) {
+        updated.blocks = removeAgentThinking(updated.blocks);
+        appendOrPushBlock(updated.blocks, "Message", delta.content);
+      }
       break;
     }
     case "reasoningDelta": {
       const delta = event.event.value;
-      if (delta.content) appendOrPushBlock(updated.blocks, "Reasoning", delta.content);
+      if (delta.content) {
+        updated.blocks = removeAgentThinking(updated.blocks);
+        appendOrPushBlock(updated.blocks, "Reasoning", delta.content);
+      }
       break;
     }
     case "toolCallStart": {
       const tc = event.event.value;
       const input = asRecord(tryDecodeJson(tc.toolInput));
       const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+      updated.blocks = removeAgentThinking(updated.blocks);
       updated.blocks.push({
         type: "ToolCallStart",
         data: { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
@@ -388,6 +489,182 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
         }
         break;
       }
+
+      // ── Sheet Agent v3 events ──
+      if (custom.type === "TurnStarted") {
+        // 替换/插入"思考中"占位，用 user_message_preview 提示用户在做什么
+        const preview = (payload.user_message_preview as string) ?? "";
+        updated.blocks = ensureAgentThinking(
+          updated.blocks,
+          "thinking",
+          preview ? `正在分析您的请求：${preview.slice(0, 30)}...` : "智能体正在思考中...",
+        );
+        break;
+      }
+
+      if (custom.type === "TurnPhaseChanged") {
+        // R20-E: 后端已大幅减少 phase 事件，仅 IngestUploadsHook 仍 emit ingesting_uploads。
+        // 其他 phase 即便误传过来也只更新 hint，不再硬编码大量阶段文案，让 LLM narrate 主导。
+        const phase = (payload.phase as string) ?? "";
+        const visibleTools = Array.isArray(payload.visible_tools)
+          ? (payload.visible_tools as string[])
+          : [];
+        const phaseHint: Record<string, string> = {
+          ingesting_uploads: "正在为您接收上传的文件",
+        };
+        const hint = phaseHint[phase] ?? "";
+        if (!hint) break;  // 未知 phase 不打扰
+        const toolsSuffix = visibleTools.length > 0
+          ? `（${visibleTools.slice(0, 3).join("、")}${visibleTools.length > 3 ? " 等" : ""}）`
+          : "";
+        updated.blocks = ensureAgentThinking(updated.blocks, phase, hint + toolsSuffix);
+        break;
+      }
+
+      if (custom.type === "DataUploaded") {
+        const filename = (payload.filename as string) ?? (payload.asset_id as string) ?? "";
+        const sizeBytes = (payload.file_size as number) ?? 0;
+        const fileType = (payload.file_type as string) ?? "";
+        if (filename) {
+          const failed = sizeBytes === 0 || fileType.startsWith("failed");
+          // R20-F: dedupe by filename —— 同文件多次 emit 只保留最新一条
+          const matcher = (it: string) =>
+            it.includes(`已收到 ${filename}`) || it.includes(`未能接收 ${filename}`);
+          if (failed) {
+            const reason = fileType.startsWith("failed:") ? fileType.slice(7) : "下载失败";
+            updated.blocks = upsertAgentThinkingItem(updated.blocks, matcher, `未能接收 ${filename}：${reason}`);
+          } else {
+            const sizeText = sizeBytes > 0 ? `（${formatFileSize(sizeBytes)}）` : "";
+            updated.blocks = upsertAgentThinkingItem(updated.blocks, matcher, `已收到 ${filename}${sizeText}`);
+          }
+        }
+        break;
+      }
+
+      if (custom.type === "DataProfiled") {
+        // R21: profile_data 工具本身已经渲染为独立 tool 卡片（"🔍 Profile Data inputs/xxx.csv"），
+        // DataProfiled 是 streaming 元数据，前端不再额外插入 AgentThinking "读懂 xxx" 行
+        //（避免与工具卡片重复 + 风格断裂）。如需查看 dims/columns，展开 tool 卡片 Output 即可。
+        break;
+      }
+
+      if (custom.type === "ArtifactCreated") {
+        const artifactId = (payload.artifact_id as string) ?? "";
+        if (!artifactId) break;
+        const newData: SheetArtifactData = {
+          artifactId,
+          artifactType: (payload.artifact_type as string) ?? "TEXT",
+          name: (payload.name as string) ?? artifactId.split("/").pop() ?? artifactId,
+          producerNodeId: (payload.producer_node_id as string) ?? "",
+          content: asRecord(payload.content),
+          createdAt: eventTimestamp,
+        };
+        // Dedupe: if same artifact_id already exists, replace in place.
+        const existingIdx = updated.blocks.findIndex(
+          (b) => b.type === "SheetArtifact" && b.data.artifactId === artifactId,
+        );
+        if (existingIdx >= 0) {
+          updated.blocks = [...updated.blocks];
+          updated.blocks[existingIdx] = { type: "SheetArtifact", data: newData };
+        } else {
+          updated.blocks.push({ type: "SheetArtifact", data: newData });
+        }
+        break;
+      }
+
+      if (custom.type === "ArtifactInvalidated") {
+        const artifactId = (payload.artifact_id as string) ?? "";
+        if (!artifactId) break;
+        updated.blocks = updated.blocks.map((b) =>
+          b.type === "SheetArtifact" && b.data.artifactId === artifactId
+            ? {
+                type: "SheetArtifact",
+                data: {
+                  ...b.data,
+                  invalidated: true,
+                  invalidatedReason: (payload.reason as string) ?? "",
+                },
+              }
+            : b,
+        );
+        break;
+      }
+
+      if (custom.type === "TaskPlanned") {
+        const nodes = Array.isArray(payload.nodes) ? (payload.nodes as Array<Record<string, unknown>>) : [];
+        if (nodes.length === 0) break;
+        const dims: SheetPlanDimension[] = nodes.map((n) => ({
+          id: (n.node_id as string) ?? (n.id as string) ?? "",
+          title: (n.objective as string) ?? (n.title as string) ?? (n.task_type as string) ?? "",
+          role: (n.worker_role as string) ?? undefined,
+          status: "pending",
+        }));
+        // 多文件 / 增量场景：plan_analysis 可能被多次调用。
+        // - 同一 plan 重发（dim_ids 完全相同）→ 替换最后一个 SheetPlan（幂等）
+        // - 增量 plan（部分 dim_ids 命中已有）→ merge 进对应 SheetPlan，保留旧 dims 状态
+        // - 新一轮 plan（无任何 dim_id 命中）→ append 一个新的 SheetPlan 块
+        const newIds = new Set(dims.map((d) => d.id));
+        const existingPlanIdxs = updated.blocks
+          .map((b, i) => (b.type === "SheetPlan" ? i : -1))
+          .filter((i) => i >= 0);
+        let mergeIdx = -1;
+        let isReplace = false;
+        for (const idx of existingPlanIdxs) {
+          const block = updated.blocks[idx] as { type: "SheetPlan"; data: SheetPlanData };
+          const existIds = new Set(block.data.dimensions.map((d) => d.id));
+          const overlap = [...newIds].some((id) => existIds.has(id));
+          if (overlap) {
+            mergeIdx = idx;
+            isReplace = [...newIds].every((id) => existIds.has(id))
+              && [...existIds].every((id) => newIds.has(id));
+            break;
+          }
+        }
+        updated.blocks = [...updated.blocks];
+        if (mergeIdx < 0) {
+          updated.blocks.push({ type: "SheetPlan", data: { dimensions: dims } });
+        } else if (isReplace) {
+          updated.blocks[mergeIdx] = { type: "SheetPlan", data: { dimensions: dims } };
+        } else {
+          const block = updated.blocks[mergeIdx] as { type: "SheetPlan"; data: SheetPlanData };
+          const existIds = new Set(block.data.dimensions.map((d) => d.id));
+          const merged = [
+            ...block.data.dimensions,
+            ...dims.filter((d) => !existIds.has(d.id)),
+          ];
+          updated.blocks[mergeIdx] = { type: "SheetPlan", data: { dimensions: merged } };
+        }
+        break;
+      }
+
+      if (
+        custom.type === "TaskStarted" ||
+        custom.type === "TaskCompleted" ||
+        custom.type === "TaskFailed"
+      ) {
+        const nodeId = (payload.node_id as string) ?? "";
+        if (!nodeId) break;
+        const nextStatus: SheetPlanDimension["status"] =
+          custom.type === "TaskStarted" ? "running"
+          : custom.type === "TaskCompleted" ? "done"
+          : "failed";
+        const error = custom.type === "TaskFailed" ? ((payload.error as string) ?? "") : undefined;
+        updated.blocks = updated.blocks.map((b) => {
+          if (b.type !== "SheetPlan") return b;
+          return {
+            type: "SheetPlan",
+            data: {
+              dimensions: b.data.dimensions.map((d) =>
+                d.id === nodeId
+                  ? { ...d, status: nextStatus, ...(error != null ? { error } : {}) }
+                  : d,
+              ),
+            },
+          };
+        });
+        break;
+      }
+      // ── End Sheet Agent v3 events ──
 
       // Worker events
       const workerId = payload.worker_id as string | undefined;

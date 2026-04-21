@@ -17,6 +17,9 @@ import { CitationSources } from "@/components/CitationSources";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { TaskListPanel } from "./TaskListPanel";
+import { SheetArtifactCard } from "./SheetArtifactCard";
+// R21: SheetPlanPanel 已下线（Agent Swarm 卡片完整覆盖其信息）
+// import { SheetPlanPanel } from "./SheetPlanPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
 import { useImagePreviewStore } from "@/stores/imagePreviewStore";
@@ -515,6 +518,14 @@ const BlockRenderer = memo(function BlockRenderer({
       return <SlideOutlineBlock data={block.data} />;
     case "SlideDesignSystem":
       return <SlideDesignSystemBlock data={block.data} />;
+    case "SheetArtifact":
+      return <SheetArtifactCard data={block.data} />;
+    case "SheetPlan":
+      // R21: SheetPlan 面板被下方 Agent Swarm 完整覆盖（每个 dim = 1 个 worker，
+      // worker 卡片就是 dimension 卡片）。保留类型以避免 store 端 break，但不再渲染。
+      return null;
+    case "AgentThinking":
+      return <AgentThinkingBlock phase={block.phase} hint={block.hint} items={block.items} />;
   }
 });
 
@@ -597,6 +608,80 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
           <Markdown remarkPlugins={[remarkGfm, remarkCjkFriendly]}>{content.replace(/\\n/g, "\n")}</Markdown>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Agent thinking placeholder ──
+
+const PHASE_COLOR: Record<string, string> = {
+  thinking: "text-amber-500",
+  ingesting_uploads: "text-cyan-500",
+  scanning_workspace: "text-sky-500",
+  planning: "text-violet-500",
+  profiling: "text-sky-500",
+  executing: "text-emerald-500",
+  delivering: "text-rose-500",
+};
+
+function AgentThinkingBlock({
+  phase,
+  hint,
+  items,
+}: {
+  phase?: string;
+  hint?: string;
+  items?: string[];
+}) {
+  const list = items ?? [];
+  const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
+  const dotColor = colorCls.replace("text-", "bg-");
+  const currentText = hint || (list.length === 0 ? "" : "");
+
+  // R20-F: 超 5 行折叠（默认收起，留最后 3 行 + 折叠提示）
+  const COLLAPSE_THRESHOLD = 5;
+  const TAIL_KEEP = 3;
+  const [expanded, setExpanded] = useState(false);
+  const showCollapse = list.length > COLLAPSE_THRESHOLD;
+  const visibleList = (!expanded && showCollapse)
+    ? list.slice(-TAIL_KEEP)
+    : list;
+  const hiddenCount = list.length - visibleList.length;
+
+  if (list.length === 0 && !currentText) return null;
+
+  return (
+    <div className="my-3 flex flex-col gap-1 text-[12px] text-text-secondary">
+      {showCollapse && !expanded && hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="self-start text-[11px] text-text-tertiary hover:text-text-secondary transition-colors mb-1"
+        >
+          ▸ 展开前 {hiddenCount} 步
+        </button>
+      )}
+      {showCollapse && expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="self-start text-[11px] text-text-tertiary hover:text-text-secondary transition-colors mb-1"
+        >
+          ▾ 折叠
+        </button>
+      )}
+      {visibleList.map((it, i) => (
+        <div key={`${i}-${it.slice(0, 16)}`} className="flex items-start gap-2 leading-5">
+          <span className="mt-[7px] inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/70 flex-shrink-0" />
+          <span className="text-text-tertiary">{it}</span>
+        </div>
+      ))}
+      {currentText && (
+        <div className="flex items-start gap-2 leading-5">
+          <span className={`mt-[7px] inline-block w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0 animate-pulse`} />
+          <span className={colorCls}>{currentText}</span>
+        </div>
+      )}
     </div>
   );
 }
