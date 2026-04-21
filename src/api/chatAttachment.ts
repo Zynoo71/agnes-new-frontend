@@ -3,6 +3,8 @@ import type { ChatAttachment } from "@/types/chatAttachment";
 const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
 const BFF_TOKEN = import.meta.env.VITE_BFF_TOKEN ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
+const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
+const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
 const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
 
@@ -42,6 +44,7 @@ function resolveBffBaseUrl(): string {
 
 export async function uploadChatAttachment(file: File, conversationId?: string | null): Promise<ChatAttachment> {
   const mimeType = file.type || "application/octet-stream";
+  const devLaneHeader: Record<string, string> = DEV_LANE ? { "x-dev-lane": DEV_LANE } : {};
   const presignedPayload: Record<string, string> = {
     purpose: "chat_attachment",
     content_type: mimeType,
@@ -59,6 +62,8 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
+          "x-user-id": DEV_USER_ID,
+          ...devLaneHeader,
         },
         body: presignedBody,
       })
@@ -69,6 +74,8 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
           "Content-Type": "application/json",
           Accept: "application/json",
           "X-App": APP_ID,
+          "x-user-id": DEV_USER_ID,
+          ...devLaneHeader,
         },
         body: presignedBody,
       });
