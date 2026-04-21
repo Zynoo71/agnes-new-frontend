@@ -51,11 +51,13 @@ function localDeckOutlineUrl(conversationId: string): string {
   return `/__local_slide_workspace/${encodeURIComponent(conversationId)}/deck/deck_outline.json`;
 }
 
-function useLocalDeckAvailable(conversationId: string | null, enabled: boolean) {
+function useLocalDeckAvailable(conversationId: string | null, enabled: boolean, isStreaming?: boolean) {
   const [availability, setAvailability] = useState<{ conversationId: string | null; available: boolean }>({
     conversationId: null,
     available: false,
   });
+
+  const streamingDone = enabled && isStreaming === false;
 
   useEffect(() => {
     if (!enabled || !conversationId) return;
@@ -75,7 +77,7 @@ function useLocalDeckAvailable(conversationId: string | null, enabled: boolean) 
       });
 
     return () => controller.abort();
-  }, [conversationId, enabled]);
+  }, [conversationId, enabled, streamingDone]);
 
   return Boolean(enabled && conversationId && availability.conversationId === conversationId && availability.available);
 }
@@ -170,7 +172,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         .find((block): block is { type: "SlideOutline"; data: SlideOutlineData } => block.type === "SlideOutline")
     : undefined;
   const shouldCheckLocalPreview = !isUser && !!isLast && !!conversationId;
-  const hasLocalDeck = useLocalDeckAvailable(conversationId, shouldCheckLocalPreview);
+  const hasLocalDeck = useLocalDeckAvailable(conversationId, shouldCheckLocalPreview, isStreaming);
   const shouldShowLocalPreview = shouldCheckLocalPreview && (agentType === "slide" || hasLocalDeck);
   const canOpenLocalPreview = shouldShowLocalPreview && !isStreaming && !!conversationId;
 
