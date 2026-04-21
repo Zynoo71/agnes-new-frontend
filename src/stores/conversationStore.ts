@@ -87,6 +87,7 @@ export const PLANNING_TOOL_NAMES = new Set([
 
 export const SWARM_TOOL_NAMES = new Set([
   "spawn_worker", "delegate_to_image_studio", "spawn_data_worker", "delegate_to_slide_agent",
+  "delegate_to_sheet_agent",
 ]);
 
 export interface SlideOutlineData {
@@ -418,6 +419,74 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
     case "custom": {
       const custom = event.event.value;
       const payload = (tryDecodeJson(custom.payload) ?? {}) as Record<string, unknown>;
+
+      // ── Sub-agent typed event passthrough ──
+      // SuperAgent 把 SheetAgent 的 planner 流式事件用 custom 通道转发出来,
+      // 这里按事件类型映射回与原生 typed 事件完全一致的渲染逻辑（保持 UX 与
+      // 直接选 sheet 时一致）。delegate_tool.py 侧把 type 串原样保留为
+      // "MessageDelta" / "ReasoningDelta" / "ToolCallStart" / "ToolCallResult"。
+      if (custom.type === "MessageDelta") {
+        const content = payload.content;
+        if (typeof content === "string" && content.length > 0) {
+          updated.blocks = removeAgentThinking(updated.blocks);
+          appendOrPushBlock(updated.blocks, "Message", content);
+        }
+        break;
+      }
+      if (custom.type === "ReasoningDelta") {
+        const content = payload.content;
+        if (typeof content === "string" && content.length > 0) {
+          updated.blocks = removeAgentThinking(updated.blocks);
+          appendOrPushBlock(updated.blocks, "Reasoning", content);
+        }
+        break;
+      }
+      if (custom.type === "ToolCallStart") {
+        const toolName = (payload.tool_name as string | undefined) ?? "";
+        const toolCallId = (payload.tool_call_id as string | undefined) ?? "";
+        const rawInput = payload.tool_input;
+        const input = asRecord(
+          typeof rawInput === "string" ? tryDecodeJson(rawInput) : rawInput,
+        );
+        const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+        updated.blocks = removeAgentThinking(updated.blocks);
+        updated.blocks.push({
+          type: "ToolCallStart",
+          data: { toolCallId, toolName, toolInput: input },
+        });
+        updated.ttftMs = ttftUpdated.ttftMs;
+        break;
+      }
+      if (custom.type === "ToolCallResult") {
+        const toolName = (payload.tool_name as string | undefined) ?? "";
+        const toolCallId = (payload.tool_call_id as string | undefined) ?? "";
+        const rawResult = payload.tool_result;
+        const result = asRecord(
+          typeof rawResult === "string" ? tryDecodeJson(rawResult) : rawResult,
+        );
+        const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+        const hasIdMatch = toolCallId
+          ? updated.blocks.some(
+              (b) => b.type === "ToolCallStart" && b.data.toolCallId === toolCallId,
+            )
+          : false;
+        let fallbackUsed = false;
+        updated.blocks = updated.blocks.map((block) => {
+          if (block.type !== "ToolCallStart") return block;
+          if (hasIdMatch) {
+            return block.data.toolCallId === toolCallId
+              ? { type: "ToolCallStart", data: { ...block.data, toolResult: result } }
+              : block;
+          }
+          if (!fallbackUsed && block.data.toolName === toolName && !block.data.toolResult) {
+            fallbackUsed = true;
+            return { type: "ToolCallStart", data: { ...block.data, toolResult: result } };
+          }
+          return block;
+        });
+        updated.ttftMs = ttftUpdated.ttftMs;
+        break;
+      }
 
       if (custom.type === "ContextCompactStart") {
         updated.blocks.push({ type: "ContextCompacting", done: false });
