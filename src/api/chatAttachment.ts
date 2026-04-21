@@ -23,11 +23,37 @@ function requireUploadToken(): string {
   return BFF_TOKEN;
 }
 
+/** True for loopback and typical LAN private IPv4 (RFC 1918), so dev presign/upload proxies work when opened via http://192.168.x.x:5173 etc. */
+function isPrivateLanHostname(hostname: string): boolean {
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return true;
+  }
+  const parts = hostname.split(".");
+  if (parts.length !== 4) {
+    return false;
+  }
+  const nums = parts.map((p) => Number.parseInt(p, 10));
+  if (nums.some((n) => Number.isNaN(n) || n < 0 || n > 255)) {
+    return false;
+  }
+  const [a, b] = nums;
+  if (a === 10) {
+    return true;
+  }
+  if (a === 172 && b >= 16 && b <= 31) {
+    return true;
+  }
+  if (a === 192 && b === 168) {
+    return true;
+  }
+  return false;
+}
+
 function isLocalDev(): boolean {
   if (typeof window === "undefined") {
     return false;
   }
-  return window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+  return isPrivateLanHostname(window.location.hostname);
 }
 
 function resolveBffBaseUrl(): string {

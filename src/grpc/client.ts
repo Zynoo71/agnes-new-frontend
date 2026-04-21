@@ -25,8 +25,19 @@ const injectHeadersInterceptor: Interceptor = (next) => (req) => {
   return next(req);
 };
 
+function resolveGrpcBaseUrl(): string {
+  const explicit = import.meta.env.VITE_API_BASE_URL;
+  if (explicit) {
+    return explicit;
+  }
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:8080`;
+  }
+  return "http://localhost:8080";
+}
+
 const transport = createGrpcWebTransport({
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? "",
+  baseUrl: resolveGrpcBaseUrl(),
   interceptors: [injectHeadersInterceptor],
 });
 

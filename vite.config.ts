@@ -286,16 +286,14 @@ export default defineConfig({
     },
   },
   server: {
-    host: "127.0.0.1",
+    // Listen on all interfaces so teammates on the LAN can use http://<your-ip>:5173
+    host: true,
+    allowedHosts: true,
     proxy: {
       "/api/v1/file": {
         target: "https://api-agnes-dev.kiwiar.com",
         changeOrigin: true,
         secure: true,
-      },
-      "/kw_agent_service": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
       },
     },
   },
