@@ -285,9 +285,13 @@ export function ChatPanel() {
     setIsUploadingFiles(true);
     setError(null);
     try {
+      let uploadConversationId = conversationId;
+      if (!uploadConversationId) {
+        uploadConversationId = await createConversation();
+      }
       const uploaded: ChatAttachment[] = [];
       for (const file of files) {
-        uploaded.push(await uploadChatAttachment(file));
+        uploaded.push(await uploadChatAttachment(file, uploadConversationId));
       }
       setPendingFiles((prev) => [...prev, ...uploaded]);
     } catch (uploadError) {
