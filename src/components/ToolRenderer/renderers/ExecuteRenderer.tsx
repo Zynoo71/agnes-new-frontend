@@ -1,15 +1,35 @@
+import { useEffect, useRef } from "react";
 import type { ToolRenderProps } from "../registry";
 import { ExpandableInput } from "../ExpandableInput";
 
-export function ExecuteRenderer({ toolInput, toolResult }: ToolRenderProps) {
+export function ExecuteRenderer({ toolInput, toolResult, streamStdout, streamStderr }: ToolRenderProps) {
+  const stdoutRef = useRef<HTMLPreElement | null>(null);
+  const stderrRef = useRef<HTMLPreElement | null>(null);
   const command = (toolInput.command as string) ?? (toolResult?.command as string) ?? "";
   const description = (toolInput.description as string) ?? (toolResult?.description as string) ?? "";
   
   // toolResult.error indicates the tool call ITSELF failed (e.g. command not found)
   // toolResult.stderr might contain tool output which isn't a failure of the tool call
   const isToolCallFailed = toolResult && !!toolResult["error"];
-  const stdout = typeof toolResult?.stdout === "string" ? toolResult.stdout.trim() : "";
-  const stderr = typeof toolResult?.stderr === "string" ? toolResult.stderr.trim() : "";
+  const stdout = typeof toolResult?.stdout === "string"
+    ? toolResult.stdout.trimEnd()
+    : (streamStdout ?? "").trimEnd();
+  const stderr = typeof toolResult?.stderr === "string"
+    ? toolResult.stderr.trimEnd()
+    : (streamStderr ?? "").trimEnd();
+  const isStreamingOutput = !toolResult && (!!stdout || !!stderr);
+
+  useEffect(() => {
+    if (stdoutRef.current) {
+      stdoutRef.current.scrollTop = stdoutRef.current.scrollHeight;
+    }
+  }, [stdout]);
+
+  useEffect(() => {
+    if (stderrRef.current) {
+      stderrRef.current.scrollTop = stderrRef.current.scrollHeight;
+    }
+  }, [stderr]);
 
   return (
     <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 text-sm shadow-sm">
@@ -31,7 +51,9 @@ export function ExecuteRenderer({ toolInput, toolResult }: ToolRenderProps) {
       {stdout && (
         <div className="mt-2">
           <div className="flex items-center justify-between mb-1 px-0.5">
-            <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">Output</span>
+            <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">
+              {isStreamingOutput ? "Live Output" : "Output"}
+            </span>
             <button
               onClick={() => navigator.clipboard.writeText(stdout)}
               className="text-[10px] text-text-tertiary hover:text-text-secondary transition-colors flex items-center gap-1"
@@ -42,7 +64,7 @@ export function ExecuteRenderer({ toolInput, toolResult }: ToolRenderProps) {
               Copy
             </button>
           </div>
-          <pre className="text-[11px] bg-console-bg text-console-text rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap font-mono max-h-48 overflow-y-auto border border-white/5">
+          <pre ref={stdoutRef} className="text-[11px] bg-console-bg text-console-text rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap font-mono max-h-48 overflow-y-auto border border-white/5">
             {stdout}
           </pre>
         </div>
@@ -52,7 +74,9 @@ export function ExecuteRenderer({ toolInput, toolResult }: ToolRenderProps) {
       {stderr && (
         <div className="mt-2">
           <div className="flex items-center justify-between mb-1 px-0.5">
-            <span className="text-[10px] font-medium text-error uppercase tracking-wider">Error Output (stderr)</span>
+            <span className="text-[10px] font-medium text-error uppercase tracking-wider">
+              {isStreamingOutput ? "Live Error Output (stderr)" : "Error Output (stderr)"}
+            </span>
             <button
               onClick={() => navigator.clipboard.writeText(stderr)}
               className="text-[10px] text-text-tertiary hover:text-text-secondary transition-colors flex items-center gap-1"
@@ -63,7 +87,7 @@ export function ExecuteRenderer({ toolInput, toolResult }: ToolRenderProps) {
               Copy
             </button>
           </div>
-          <pre className="text-[11px] bg-console-bg text-red-400 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap font-mono max-h-48 overflow-y-auto border border-red-900/20">
+          <pre ref={stderrRef} className="text-[11px] bg-console-bg text-red-400 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap font-mono max-h-48 overflow-y-auto border border-red-900/20">
             {stderr}
           </pre>
         </div>
@@ -76,4 +100,3 @@ export function ExecuteRenderer({ toolInput, toolResult }: ToolRenderProps) {
     </div>
   );
 }
-
