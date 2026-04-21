@@ -22,6 +22,21 @@ function asRecord(val: unknown): Record<string, unknown> {
   return typeof val === "object" && val !== null ? (val as Record<string, unknown>) : {};
 }
 
+// EmitEvent envelope {event_id, data: {...}} → flatten to the inner data.
+// Framework events and PixaLegacyEvent keep flat shape (no event_id), so they pass through untouched.
+function unwrapEmitEvent(payload: Record<string, unknown>): Record<string, unknown> {
+  if (
+    typeof payload.event_id === "string" &&
+    payload.event_id.startsWith("evt_") &&
+    payload.data &&
+    typeof payload.data === "object" &&
+    !Array.isArray(payload.data)
+  ) {
+    return payload.data as Record<string, unknown>;
+  }
+  return payload;
+}
+
 // Per-turn max seq tracking for ResumeStream(from_seq).
 // Lives outside the store (non-reactive); cleared on turn-end events
 // (AgentEnd/AgentError/AgentCancelled) and on new-turn initiation.
@@ -417,7 +432,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
     }
     case "custom": {
       const custom = event.event.value;
-      const payload = (tryDecodeJson(custom.payload) ?? {}) as Record<string, unknown>;
+      const payload = unwrapEmitEvent(asRecord(tryDecodeJson(custom.payload)));
 
       if (custom.type === "ContextCompactStart") {
         updated.blocks.push({ type: "ContextCompacting", done: false });
@@ -991,7 +1006,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
       // Extract tasks from TaskUpdate custom events
       let newTasks: AgentTask[] | undefined;
       if (event.event.case === "custom" && event.event.value.type === "TaskUpdate") {
-        const payload = asRecord(tryDecodeJson(event.event.value.payload));
+        const payload = unwrapEmitEvent(asRecord(tryDecodeJson(event.event.value.payload)));
         const action = payload.action as string;
         if (action === "create") {
           const existing = get().tasks;
