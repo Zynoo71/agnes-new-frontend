@@ -361,8 +361,9 @@ export default defineConfig({
         secure: true,
       },
       "/kw_agent_service": {
-        target: "http://localhost:8080",
+        target: process.env.VITE_API_BASE_URL || "https://agnesx-dev-sg.kiwiar.com",
         changeOrigin: true,
+        secure: true,
       },
     },
   },

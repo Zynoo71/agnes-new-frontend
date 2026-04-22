@@ -9,7 +9,7 @@ import { EventStream } from "@/components/EventStream";
 import { SystemPromptSelector } from "@/components/SystemPromptSelector";
 import type { ChatAttachment } from "@/types/chatAttachment";
 
-const AGENT_TYPES = ["super", "search", "research", "slide", "sheet", "pixa"] as const;
+const AGENT_TYPES = ["super", "search", "research", "slide", "design", "sheet", "pixa"] as const;
 
 const SCROLL_HINTS_ROW1 = [
   "Search the latest AI news",
