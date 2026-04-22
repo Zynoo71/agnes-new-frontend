@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 import remarkCjkFriendly from "remark-cjk-friendly";
-import type { ToolCallData, WorkerState } from "@/stores/conversationStore";
+import type { ToolCallData, WorkerItem, WorkerState } from "@/stores/conversationStore";
 import { getWorkerAvatar, pickWorkerCharacter, type WorkerCharacter } from "@/workerCharacters";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 
@@ -197,14 +197,43 @@ export function AgentSwarmPanel({ liveWorkers, spawnToolCalls }: AgentSwarmPanel
 
 // ── Live Worker Card ──
 
+function WorkerItemRow({ item, itemId }: { item: WorkerItem; itemId: string }) {
+  if (item.kind === "tool") {
+    return (
+      <div className="[&>div]:shadow-none [&>div]:border-0 [&>div]:bg-background [&>div]:rounded-lg">
+        <ToolCallBlock
+          toolName={item.toolName}
+          toolInput={item.toolInput}
+          toolResult={item.toolResult}
+          toolCallId={itemId}
+        />
+      </div>
+    );
+  }
+  if (!item.content) return null;
+  return (
+    <div className="pl-3 border-l-2 border-border-light max-h-32 overflow-y-auto prose-reasoning text-[11px] leading-relaxed text-text-secondary">
+      <Markdown remarkPlugins={[remarkCjkFriendly]}>{item.content}</Markdown>
+    </div>
+  );
+}
+
 function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const avatarUri = useMemo(() => getWorkerAvatar(worker.character.name), [worker.character.name]);
 
   const isRunning = worker.status === "running";
-  const completedToolCount = worker.toolCalls.filter((tc) => tc.toolResult).length;
-  const runningToolCount = worker.toolCalls.filter((tc) => !tc.toolResult).length;
-  const hasDetails = worker.toolCalls.length > 0 || worker.text || worker.summary || worker.error;
+  const { toolTotal, toolCompleted } = useMemo(() => {
+    let total = 0, completed = 0;
+    for (const it of worker.items) {
+      if (it.kind === "tool") {
+        total++;
+        if (it.toolResult) completed++;
+      }
+    }
+    return { toolTotal: total, toolCompleted: completed };
+  }, [worker.items]);
+  const hasDetails = worker.items.length > 0 || worker.summary || worker.error;
 
   return (
     <div
@@ -228,9 +257,9 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ProgressDots
-            total={worker.toolCalls.length}
-            completed={completedToolCount}
-            running={runningToolCount}
+            total={toolTotal}
+            completed={toolCompleted}
+            running={toolTotal - toolCompleted}
             status={worker.status}
             color={worker.character.color}
           />
@@ -252,24 +281,9 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
       {/* Expandable details */}
       <Collapsible open={expanded}>
         <div className="border-t border-border-light px-3 py-2.5 ml-9 space-y-2">
-          {worker.toolCalls.map((tc, i) => (
-            <div key={i} className="[&>div]:shadow-none [&>div]:border-0 [&>div]:bg-background [&>div]:rounded-lg">
-              <ToolCallBlock
-                toolName={tc.toolName}
-                toolInput={tc.toolInput}
-                toolResult={tc.toolResult}
-                toolCallId={`${worker.workerId}-${i}`}
-              />
-            </div>
+          {worker.items.map((it, i) => (
+            <WorkerItemRow key={i} item={it} itemId={`${worker.workerId}-${i}`} />
           ))}
-
-          {worker.text && (
-            <div className="pl-3 border-l-2 border-border-light max-h-32 overflow-y-auto">
-              <div className="prose-reasoning text-[11px] leading-relaxed text-text-secondary">
-                <Markdown remarkPlugins={[remarkCjkFriendly]}>{worker.text}</Markdown>
-              </div>
-            </div>
-          )}
 
           {worker.summary && (
             <div className="rounded-lg bg-success-light/50 px-2.5 py-2">

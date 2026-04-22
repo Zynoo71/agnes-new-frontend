@@ -1,9 +1,11 @@
+import { agentClient } from "@/grpc/client";
+
 const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
 const BFF_TOKEN = import.meta.env.VITE_BFF_TOKEN ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
-const DEV_CREATE_CONVERSATION_PROXY_PATH = "/__dev_agnes_conversation";
+export const DEV_CREATE_CONVERSATION_PROXY_PATH = "/__dev_agnes_conversation";
 
 interface CreateConversationResponse {
   code?: string;
@@ -38,30 +40,28 @@ function resolveBffBaseUrl(): string {
 }
 
 export async function createAgnesConversation(): Promise<string> {
+  if (isLocalDev()) {
+    const { conversationId } = await agentClient.createConversation({});
+    const id = String(conversationId ?? "").trim();
+    if (!id || id === "0") {
+      throw new Error("create conversation via gRPC returned empty id");
+    }
+    return id;
+  }
+
   const devLaneHeader: Record<string, string> = DEV_LANE ? { "x-dev-lane": DEV_LANE } : {};
-  const response = isLocalDev()
-    ? await fetch(DEV_CREATE_CONVERSATION_PROXY_PATH, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "x-user-id": DEV_USER_ID,
-          ...devLaneHeader,
-        },
-        body: "{}",
-      })
-    : await fetch(`${resolveBffBaseUrl()}/api/v1/agnes/conversation`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${requireBffToken()}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "X-App": APP_ID,
-          "x-user-id": DEV_USER_ID,
-          ...devLaneHeader,
-        },
-        body: "{}",
-      });
+  const response = await fetch(`${resolveBffBaseUrl()}/api/v1/agnes/conversation`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${requireBffToken()}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-App": APP_ID,
+      "x-user-id": DEV_USER_ID,
+      ...devLaneHeader,
+    },
+    body: "{}",
+  });
 
   if (!response.ok) {
     throw new Error(`create conversation request failed: HTTP ${response.status}`);

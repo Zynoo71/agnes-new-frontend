@@ -22,6 +22,21 @@ function asRecord(val: unknown): Record<string, unknown> {
   return typeof val === "object" && val !== null ? (val as Record<string, unknown>) : {};
 }
 
+// EmitEvent envelope {event_id, data: {...}} → flatten to the inner data.
+// Framework events and PixaLegacyEvent keep flat shape (no event_id), so they pass through untouched.
+function unwrapEmitEvent(payload: Record<string, unknown>): Record<string, unknown> {
+  if (
+    typeof payload.event_id === "string" &&
+    payload.event_id.startsWith("evt_") &&
+    payload.data &&
+    typeof payload.data === "object" &&
+    !Array.isArray(payload.data)
+  ) {
+    return payload.data as Record<string, unknown>;
+  }
+  return payload;
+}
+
 // Per-turn max seq tracking for ResumeStream(from_seq).
 // Lives outside the store (non-reactive); cleared on turn-end events
 // (AgentEnd/AgentError/AgentCancelled) and on new-turn initiation.
@@ -54,11 +69,14 @@ export interface HumanReviewData {
   resolved: boolean;
 }
 
-export interface WorkerToolCall {
-  toolName: string;
-  toolInput: Record<string, unknown>;
-  toolResult?: Record<string, unknown>;
-}
+export type WorkerItem =
+  | { kind: "text"; messageId: string; content: string; finalized: boolean }
+  | {
+      kind: "tool";
+      toolName: string;
+      toolInput: Record<string, unknown>;
+      toolResult?: Record<string, unknown>;
+    };
 
 export interface WorkerState {
   workerId: string;
@@ -66,8 +84,7 @@ export interface WorkerState {
   status: "running" | "done" | "error";
   character: WorkerCharacter;
   characterIndex: number;
-  text: string;
-  toolCalls: WorkerToolCall[];
+  items: WorkerItem[];
   summary?: string;
   error?: string;
 }
@@ -79,6 +96,158 @@ export interface AgentTask {
   status: "pending" | "in_progress" | "done";
   result: string | null;
   depends_on: number[];
+}
+
+// ── Worker items helpers ──
+
+// Tool boundary closes a text segment; scanning past it would cross into a prior segment.
+function findOpenTextSegment(items: WorkerItem[], messageId: string, requireOpen: boolean): number {
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i];
+    if (it.kind === "tool") return -1;
+    if (it.messageId === messageId && (!requireOpen || !it.finalized)) return i;
+  }
+  return -1;
+}
+
+function appendWorkerDelta(items: WorkerItem[], messageId: string, content: string): WorkerItem[] {
+  if (!content) return items;
+  const idx = findOpenTextSegment(items, messageId, true);
+  if (idx >= 0) {
+    const next = [...items];
+    const it = next[idx] as Extract<WorkerItem, { kind: "text" }>;
+    next[idx] = { ...it, content: it.content + content };
+    return next;
+  }
+  return [...items, { kind: "text", messageId, content, finalized: false }];
+}
+
+function finalizeWorkerMessage(items: WorkerItem[], messageId: string, content: string): WorkerItem[] {
+  const idx = findOpenTextSegment(items, messageId, false);
+  if (idx >= 0) {
+    const next = [...items];
+    const it = next[idx] as Extract<WorkerItem, { kind: "text" }>;
+    next[idx] = { ...it, content, finalized: true };
+    return next;
+  }
+  return [...items, { kind: "text", messageId, content, finalized: true }];
+}
+
+function finalizeAllText(items: WorkerItem[]): WorkerItem[] {
+  let changed = false;
+  const next = items.map((it) => {
+    if (it.kind === "text" && !it.finalized) {
+      changed = true;
+      return { ...it, finalized: true };
+    }
+    return it;
+  });
+  return changed ? next : items;
+}
+
+// Unified Worker block reducer — shared by live SSE handler and history replay parser.
+// Live stream uses aliases (ToolCallStart/Result, MessageDelta, WorkerEnd): normalize via
+// `normalizeWorkerBlockType` before calling. WorkerDelta stays ephemeral/stream-only.
+export type WorkerBlockType =
+  | "WorkerStart"
+  | "WorkerMessage"
+  | "WorkerToolCall"
+  | "WorkerToolResult"
+  | "WorkerComplete"
+  | "WorkerError";
+
+const STREAM_ALIAS_TO_WORKER_TYPE: Record<string, WorkerBlockType> = {
+  WorkerStart: "WorkerStart",
+  WorkerMessage: "WorkerMessage",
+  WorkerToolCall: "WorkerToolCall",
+  ToolCallStart: "WorkerToolCall",
+  WorkerToolResult: "WorkerToolResult",
+  ToolCallResult: "WorkerToolResult",
+  WorkerComplete: "WorkerComplete",
+  WorkerEnd: "WorkerComplete",
+  WorkerError: "WorkerError",
+};
+
+export function normalizeWorkerBlockType(customType: string): WorkerBlockType | null {
+  return STREAM_ALIAS_TO_WORKER_TYPE[customType] ?? null;
+}
+
+export function applyWorkerContentBlock(
+  workers: Record<string, WorkerState>,
+  type: WorkerBlockType,
+  data: Record<string, unknown>,
+): Record<string, WorkerState> {
+  const workerId = (data.worker_id as string) ?? "";
+  if (!workerId) return workers;
+
+  if (type === "WorkerStart") {
+    const usedIndices = new Set(Object.values(workers).map((w) => w.characterIndex));
+    const { index, character } = pickWorkerCharacter(usedIndices, workerId);
+    return {
+      ...workers,
+      [workerId]: {
+        workerId,
+        description: (data.description as string) ?? "",
+        status: "running",
+        character,
+        characterIndex: index,
+        items: [],
+      },
+    };
+  }
+
+  const w = workers[workerId];
+  if (!w) return workers;
+
+  let next: WorkerState;
+  switch (type) {
+    case "WorkerMessage":
+      next = {
+        ...w,
+        items: finalizeWorkerMessage(w.items, (data.message_id as string) ?? "", (data.content as string) ?? ""),
+      };
+      break;
+    case "WorkerToolCall": {
+      const items = finalizeAllText(w.items);
+      items.push({
+        kind: "tool",
+        toolName: (data.tool_name as string) ?? "",
+        toolInput: (data.tool_input as Record<string, unknown>) ?? {},
+      });
+      next = { ...w, items };
+      break;
+    }
+    case "WorkerToolResult": {
+      const toolName = (data.tool_name as string) ?? "";
+      const items = [...w.items];
+      for (let i = items.length - 1; i >= 0; i--) {
+        const it = items[i];
+        if (it.kind === "tool" && it.toolName === toolName && !it.toolResult) {
+          items[i] = { ...it, toolResult: (data.tool_result as Record<string, unknown>) ?? {} };
+          break;
+        }
+      }
+      next = { ...w, items };
+      break;
+    }
+    case "WorkerComplete":
+      next = {
+        ...w,
+        status: "done",
+        summary: (data.summary as string) ?? "",
+        items: finalizeAllText(w.items),
+      };
+      break;
+    case "WorkerError":
+      next = {
+        ...w,
+        status: "error",
+        error: (data.error as string) ?? "Unknown error",
+        items: finalizeAllText(w.items),
+      };
+      break;
+  }
+  return { ...workers, [workerId]: next };
 }
 
 export const PLANNING_TOOL_NAMES = new Set([
@@ -418,7 +587,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
     }
     case "custom": {
       const custom = event.event.value;
-      const payload = (tryDecodeJson(custom.payload) ?? {}) as Record<string, unknown>;
+      const payload = unwrapEmitEvent(asRecord(tryDecodeJson(custom.payload)));
 
       // ── Sub-agent typed event passthrough ──
       // SuperAgent 把 SheetAgent 的 planner 流式事件用 custom 通道转发出来,
@@ -738,70 +907,18 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       // Worker events
       const workerId = payload.worker_id as string | undefined;
       if (workerId) {
-        updated.workers = { ...updated.workers };
-        switch (custom.type) {
-          case "WorkerStart": {
-            const usedIndices = new Set(Object.values(updated.workers).map((w) => w.characterIndex));
-            const { index, character } = pickWorkerCharacter(usedIndices, workerId);
+        if (custom.type === "WorkerDelta" || custom.type === "MessageDelta") {
+          const w = updated.workers[workerId];
+          if (w) {
             updated.workers[workerId] = {
-              workerId,
-              description: (payload.description as string) ?? "",
-              status: "running",
-              character,
-              characterIndex: index,
-              text: "",
-              toolCalls: [],
+              ...w,
+              items: appendWorkerDelta(w.items, (payload.message_id as string) ?? "", (payload.content as string) ?? ""),
             };
-            break;
           }
-          case "WorkerDelta":
-          case "MessageDelta": {
-            const w = updated.workers[workerId];
-            if (w) {
-              updated.workers[workerId] = { ...w, text: w.text + ((payload.content as string) ?? "") };
-            }
-            break;
-          }
-          case "WorkerToolCall":
-          case "ToolCallStart": {
-            const w = updated.workers[workerId];
-            if (w) {
-              updated.workers[workerId] = {
-                ...w,
-                toolCalls: [...w.toolCalls, { toolName: (payload.tool_name as string) ?? "", toolInput: (payload.tool_input as Record<string, unknown>) ?? {} }],
-              };
-            }
-            break;
-          }
-          case "WorkerToolResult":
-          case "ToolCallResult": {
-            const w = updated.workers[workerId];
-            if (w) {
-              const toolCalls = [...w.toolCalls];
-              for (let i = toolCalls.length - 1; i >= 0; i--) {
-                if (toolCalls[i].toolName === (payload.tool_name as string) && !toolCalls[i].toolResult) {
-                  toolCalls[i] = { ...toolCalls[i], toolResult: payload.tool_result as Record<string, unknown> };
-                  break;
-                }
-              }
-              updated.workers[workerId] = { ...w, toolCalls };
-            }
-            break;
-          }
-          case "WorkerComplete":
-          case "WorkerEnd": {
-            const w = updated.workers[workerId];
-            if (w) {
-              updated.workers[workerId] = { ...w, status: "done", summary: (payload.summary as string) ?? "" };
-            }
-            break;
-          }
-          case "WorkerError": {
-            const w = updated.workers[workerId];
-            if (w) {
-              updated.workers[workerId] = { ...w, status: "error", error: (payload.error as string) ?? "Unknown error" };
-            }
-            break;
+        } else {
+          const workerType = normalizeWorkerBlockType(custom.type);
+          if (workerType) {
+            updated.workers = applyWorkerContentBlock(updated.workers, workerType, payload);
           }
         }
       }
@@ -1060,7 +1177,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
       // Extract tasks from TaskUpdate custom events
       let newTasks: AgentTask[] | undefined;
       if (event.event.case === "custom" && event.event.value.type === "TaskUpdate") {
-        const payload = asRecord(tryDecodeJson(event.event.value.payload));
+        const payload = unwrapEmitEvent(asRecord(tryDecodeJson(event.event.value.payload)));
         const action = payload.action as string;
         if (action === "create") {
           const existing = get().tasks;
