@@ -10,11 +10,12 @@ function nextMessageId(): string {
   return `msg-${Date.now()}-${++messageIdCounter}`;
 }
 
-function tryDecodeJson(bytes: Uint8Array): unknown {
+function tryDecodeJson(bytes: Uint8Array | string): unknown {
   try {
-    return JSON.parse(new TextDecoder().decode(bytes));
+    const text = typeof bytes === "string" ? bytes : new TextDecoder().decode(bytes);
+    return JSON.parse(text);
   } catch {
-    return new TextDecoder().decode(bytes);
+    return typeof bytes === "string" ? bytes : new TextDecoder().decode(bytes);
   }
 }
 
