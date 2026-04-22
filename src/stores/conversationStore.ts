@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
+import type { ChatAttachment } from "@/types/chatAttachment";
 import { pickWorkerCharacter, type WorkerCharacter } from "@/workerCharacters";
 
 // ── Helpers ──
@@ -9,16 +10,45 @@ function nextMessageId(): string {
   return `msg-${Date.now()}-${++messageIdCounter}`;
 }
 
-function tryDecodeJson(bytes: Uint8Array): unknown {
+function tryDecodeJson(bytes: Uint8Array | string): unknown {
   try {
-    return JSON.parse(new TextDecoder().decode(bytes));
+    const text = typeof bytes === "string" ? bytes : new TextDecoder().decode(bytes);
+    return JSON.parse(text);
   } catch {
-    return new TextDecoder().decode(bytes);
+    return typeof bytes === "string" ? bytes : new TextDecoder().decode(bytes);
   }
 }
 
 function asRecord(val: unknown): Record<string, unknown> {
   return typeof val === "object" && val !== null ? (val as Record<string, unknown>) : {};
+}
+
+// EmitEvent envelope {event_id, data: {...}} → flatten to the inner data.
+// Framework events and PixaLegacyEvent keep flat shape (no event_id), so they pass through untouched.
+function unwrapEmitEvent(payload: Record<string, unknown>): Record<string, unknown> {
+  if (
+    typeof payload.event_id === "string" &&
+    payload.event_id.startsWith("evt_") &&
+    payload.data &&
+    typeof payload.data === "object" &&
+    !Array.isArray(payload.data)
+  ) {
+    return payload.data as Record<string, unknown>;
+  }
+  return payload;
+}
+
+// Per-turn max seq tracking for ResumeStream(from_seq).
+// Lives outside the store (non-reactive); cleared on turn-end events
+// (AgentEnd/AgentError/AgentCancelled) and on new-turn initiation.
+const latestSeqByConv = new Map<string, bigint>();
+
+export function getLatestSeq(convId: string): bigint {
+  return latestSeqByConv.get(convId) ?? 0n;
+}
+
+export function resetLatestSeq(convId: string): void {
+  latestSeqByConv.delete(convId);
 }
 
 // ── Types ──
@@ -28,6 +58,8 @@ export interface ToolCallData {
   toolName: string;
   toolInput: Record<string, unknown>;
   toolResult?: Record<string, unknown>;
+  streamStdout?: string;
+  streamStderr?: string;
 }
 
 export interface NodeData {
@@ -40,11 +72,14 @@ export interface HumanReviewData {
   resolved: boolean;
 }
 
-export interface WorkerToolCall {
-  toolName: string;
-  toolInput: Record<string, unknown>;
-  toolResult?: Record<string, unknown>;
-}
+export type WorkerItem =
+  | { kind: "text"; messageId: string; content: string; finalized: boolean }
+  | {
+      kind: "tool";
+      toolName: string;
+      toolInput: Record<string, unknown>;
+      toolResult?: Record<string, unknown>;
+    };
 
 export interface WorkerState {
   workerId: string;
@@ -52,12 +87,9 @@ export interface WorkerState {
   status: "running" | "done" | "error";
   character: WorkerCharacter;
   characterIndex: number;
-  text: string;
-  toolCalls: WorkerToolCall[];
+  items: WorkerItem[];
   summary?: string;
   error?: string;
-  phase?: string;
-  groupId?: string;
 }
 
 export interface AgentTask {
@@ -69,8 +101,165 @@ export interface AgentTask {
   depends_on: number[];
 }
 
+// ── Worker items helpers ──
+
+// Tool boundary closes a text segment; scanning past it would cross into a prior segment.
+function findOpenTextSegment(items: WorkerItem[], messageId: string, requireOpen: boolean): number {
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i];
+    if (it.kind === "tool") return -1;
+    if (it.messageId === messageId && (!requireOpen || !it.finalized)) return i;
+  }
+  return -1;
+}
+
+function appendWorkerDelta(items: WorkerItem[], messageId: string, content: string): WorkerItem[] {
+  if (!content) return items;
+  const idx = findOpenTextSegment(items, messageId, true);
+  if (idx >= 0) {
+    const next = [...items];
+    const it = next[idx] as Extract<WorkerItem, { kind: "text" }>;
+    next[idx] = { ...it, content: it.content + content };
+    return next;
+  }
+  return [...items, { kind: "text", messageId, content, finalized: false }];
+}
+
+function finalizeWorkerMessage(items: WorkerItem[], messageId: string, content: string): WorkerItem[] {
+  const idx = findOpenTextSegment(items, messageId, false);
+  if (idx >= 0) {
+    const next = [...items];
+    const it = next[idx] as Extract<WorkerItem, { kind: "text" }>;
+    next[idx] = { ...it, content, finalized: true };
+    return next;
+  }
+  return [...items, { kind: "text", messageId, content, finalized: true }];
+}
+
+function finalizeAllText(items: WorkerItem[]): WorkerItem[] {
+  let changed = false;
+  const next = items.map((it) => {
+    if (it.kind === "text" && !it.finalized) {
+      changed = true;
+      return { ...it, finalized: true };
+    }
+    return it;
+  });
+  return changed ? next : items;
+}
+
+// Unified Worker block reducer — shared by live SSE handler and history replay parser.
+// Live stream uses aliases (ToolCallStart/Result, MessageDelta, WorkerEnd): normalize via
+// `normalizeWorkerBlockType` before calling. WorkerDelta stays ephemeral/stream-only.
+export type WorkerBlockType =
+  | "WorkerStart"
+  | "WorkerMessage"
+  | "WorkerToolCall"
+  | "WorkerToolResult"
+  | "WorkerComplete"
+  | "WorkerError";
+
+const STREAM_ALIAS_TO_WORKER_TYPE: Record<string, WorkerBlockType> = {
+  WorkerStart: "WorkerStart",
+  WorkerMessage: "WorkerMessage",
+  WorkerToolCall: "WorkerToolCall",
+  ToolCallStart: "WorkerToolCall",
+  WorkerToolResult: "WorkerToolResult",
+  ToolCallResult: "WorkerToolResult",
+  WorkerComplete: "WorkerComplete",
+  WorkerEnd: "WorkerComplete",
+  WorkerError: "WorkerError",
+};
+
+export function normalizeWorkerBlockType(customType: string): WorkerBlockType | null {
+  return STREAM_ALIAS_TO_WORKER_TYPE[customType] ?? null;
+}
+
+export function applyWorkerContentBlock(
+  workers: Record<string, WorkerState>,
+  type: WorkerBlockType,
+  data: Record<string, unknown>,
+): Record<string, WorkerState> {
+  const workerId = (data.worker_id as string) ?? "";
+  if (!workerId) return workers;
+
+  if (type === "WorkerStart") {
+    const usedIndices = new Set(Object.values(workers).map((w) => w.characterIndex));
+    const { index, character } = pickWorkerCharacter(usedIndices, workerId);
+    return {
+      ...workers,
+      [workerId]: {
+        workerId,
+        description: (data.description as string) ?? "",
+        status: "running",
+        character,
+        characterIndex: index,
+        items: [],
+      },
+    };
+  }
+
+  const w = workers[workerId];
+  if (!w) return workers;
+
+  let next: WorkerState;
+  switch (type) {
+    case "WorkerMessage":
+      next = {
+        ...w,
+        items: finalizeWorkerMessage(w.items, (data.message_id as string) ?? "", (data.content as string) ?? ""),
+      };
+      break;
+    case "WorkerToolCall": {
+      const items = finalizeAllText(w.items);
+      items.push({
+        kind: "tool",
+        toolName: (data.tool_name as string) ?? "",
+        toolInput: (data.tool_input as Record<string, unknown>) ?? {},
+      });
+      next = { ...w, items };
+      break;
+    }
+    case "WorkerToolResult": {
+      const toolName = (data.tool_name as string) ?? "";
+      const items = [...w.items];
+      for (let i = items.length - 1; i >= 0; i--) {
+        const it = items[i];
+        if (it.kind === "tool" && it.toolName === toolName && !it.toolResult) {
+          items[i] = { ...it, toolResult: (data.tool_result as Record<string, unknown>) ?? {} };
+          break;
+        }
+      }
+      next = { ...w, items };
+      break;
+    }
+    case "WorkerComplete":
+      next = {
+        ...w,
+        status: "done",
+        summary: (data.summary as string) ?? "",
+        items: finalizeAllText(w.items),
+      };
+      break;
+    case "WorkerError":
+      next = {
+        ...w,
+        status: "error",
+        error: (data.error as string) ?? "Unknown error",
+        items: finalizeAllText(w.items),
+      };
+      break;
+  }
+  return { ...workers, [workerId]: next };
+}
+
 export const PLANNING_TOOL_NAMES = new Set([
   "create_task", "update_task", "list_tasks", "get_task",
+]);
+
+export const SWARM_TOOL_NAMES = new Set([
+  "spawn_worker", "delegate_to_image_studio", "spawn_data_worker", "delegate_to_slide_agent",
+  "delegate_to_sheet_agent",
 ]);
 
 export interface SlideOutlineData {
@@ -93,8 +282,34 @@ export interface MemoryUpdateData {
   content: string;
 }
 
+export interface SheetArtifactData {
+  artifactId: string;
+  artifactType: string;            // CHART / TABLE / REPORT / DASHBOARD / EXPORT / TEXT / DATASET
+  name: string;
+  producerNodeId: string;
+  content: Record<string, unknown>;
+  createdAt: number;
+  invalidated?: boolean;
+  invalidatedReason?: string;
+}
+
+export interface SheetPlanDimension {
+  id: string;
+  title: string;
+  status: "pending" | "running" | "done" | "failed" | "aborted";
+  role?: string;
+  error?: string;
+}
+
+export interface SheetPlanData {
+  dimensions: SheetPlanDimension[];
+}
+
+export type FileData = ChatAttachment;
+
 export type ContentBlock =
   | { type: "Message"; content: string }
+  | { type: "File"; data: FileData }
   | { type: "Reasoning"; content: string }
   | { type: "ToolCallStart"; data: ToolCallData }
   | { type: "human_review"; data: HumanReviewData }
@@ -103,14 +318,9 @@ export type ContentBlock =
   | { type: "SlideOutline"; data: SlideOutlineData }
   | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
   | { type: "MemoryUpdate"; data: MemoryUpdateData }
-  | { type: "PhaseTransition"; data: { phase: string; completedCount: number; failedCount: number; totalCount: number; message: string } }
-  | { type: "AnalysisPhaseDigest"; data: { digestText: string; producerCompleted: number; producerFailed: number } }
-  | { type: "DeliverablePhaseStarted"; data: { deliverableCount: number; deliverableTypes: string[] } }
-  | { type: "SheetProgress"; data: { step: string; icon: string; label: string; detail: string } }
-  | { type: "SheetToolProgress"; data: { toolName: string; step: string; stepLabel: string; stepIndex: number; totalSteps: number } }
-  | { type: "SheetDeliverableReady"; data: { kind: string; icon: string; label: string; path: string; extra?: string } }
-  | { type: "SheetTaskStatus"; data: { taskId: string; title: string; engine: string; status: "running" | "done" | "failed"; errorMessage?: string } }
-  | { type: "SwarmGroupStarted"; data: { groupId: string; phase: string; workerCount: number; label: string } };
+  | { type: "SheetArtifact"; data: SheetArtifactData }
+  | { type: "SheetPlan"; data: SheetPlanData }
+  | { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
 
 export interface Message {
   id: string;
@@ -119,6 +329,10 @@ export interface Message {
   nodes: NodeData[];
   workers: Record<string, WorkerState>;
   sources: SourceCitation[];
+  requestStartedAt?: number;
+  ttftMs?: number;
+  agentStartedAt?: number;
+  agentDurationMs?: number;
   error?: { errorType: string; message: string; recoverable: boolean };
 }
 
@@ -127,6 +341,8 @@ export interface RawEvent {
   type: string;
   data: unknown;
   role?: "user" | "assistant";
+  seq?: number;
+  messageId?: string;
 }
 
 // ── Event processing (pure functions) ──
@@ -150,7 +366,150 @@ function appendOrPushBlock(
   blocks.push({ type: blockType, content });
 }
 
-export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): Message[] {
+function asFileData(val: unknown): FileData | null {
+  const data = asRecord(val);
+  const url = typeof data.url === "string" ? data.url : "";
+  const mimeType = typeof data.mime_type === "string"
+    ? data.mime_type
+    : typeof data.mimeType === "string"
+      ? data.mimeType
+      : "";
+  const filename = typeof data.filename === "string" ? data.filename : "";
+  if (!url || !mimeType) return null;
+  return { filename, mimeType, url };
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function removeAgentThinking(blocks: ContentBlock[]): ContentBlock[] {
+  // 不再硬移除：清掉 in-progress hint，items 作为永久"行为日志"保留。
+  // 若 items 也为空则真正移除（避免空块占位）。
+  const idx = blocks.findIndex((b) => b.type === "AgentThinking");
+  if (idx < 0) return blocks;
+  const prev = blocks[idx] as { type: "AgentThinking"; items?: string[] };
+  const items = prev.items ?? [];
+  const next = [...blocks];
+  if (items.length === 0) {
+    next.splice(idx, 1);
+  } else {
+    next[idx] = { type: "AgentThinking", phase: undefined, hint: undefined, items };
+  }
+  return next;
+}
+
+function appendExecuteStreamDelta(
+  blocks: ContentBlock[],
+  payload: Record<string, unknown>,
+): ContentBlock[] {
+  const content = typeof payload.content === "string" ? payload.content : "";
+  if (!content) return blocks;
+
+  const streamKey = payload.stream === "stderr" ? "streamStderr" : "streamStdout";
+  const toolCallId = typeof payload.tool_call_id === "string" ? payload.tool_call_id : "";
+  const nextBlocks = [...blocks];
+
+  let matchIndex = -1;
+  if (toolCallId) {
+    matchIndex = nextBlocks.findIndex(
+      (block) => block.type === "ToolCallStart" && block.data.toolCallId === toolCallId,
+    );
+  }
+  if (matchIndex < 0) {
+    for (let i = nextBlocks.length - 1; i >= 0; i--) {
+      const block = nextBlocks[i];
+      if (
+        block.type === "ToolCallStart"
+        && block.data.toolName === "execute"
+        && !block.data.toolResult
+      ) {
+        matchIndex = i;
+        break;
+      }
+    }
+  }
+  if (matchIndex < 0) return blocks;
+
+  const block = nextBlocks[matchIndex];
+  if (block.type !== "ToolCallStart") return blocks;
+  const timedOut = block.data.toolResult?.timed_out === true;
+  const prevStdout = block.data.streamStdout ?? (timedOut && typeof block.data.toolResult?.stdout === "string"
+    ? block.data.toolResult.stdout
+    : "");
+  const prevStderr = block.data.streamStderr ?? (timedOut && typeof block.data.toolResult?.stderr === "string"
+    ? block.data.toolResult.stderr
+    : "");
+  const prev = streamKey === "streamStderr" ? prevStderr : prevStdout;
+  const nextData: ToolCallData = {
+    ...block.data,
+    streamStdout: prevStdout,
+    streamStderr: prevStderr,
+    [streamKey]: prev + content,
+  };
+  if (timedOut) {
+    nextData.toolResult = undefined;
+  }
+  nextBlocks[matchIndex] = {
+    type: "ToolCallStart",
+    data: nextData,
+  };
+  return nextBlocks;
+}
+
+function ensureAgentThinking(blocks: ContentBlock[], phase?: string, hint?: string): ContentBlock[] {
+  // 如果已经有 AgentThinking，原地更新 phase / hint（保留 items 行为日志）
+  const idx = blocks.findIndex((b) => b.type === "AgentThinking");
+  if (idx >= 0) {
+    const next = [...blocks];
+    const prev = next[idx] as { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
+    next[idx] = { type: "AgentThinking", phase, hint, items: prev.items };
+    return next;
+  }
+  return [...blocks, { type: "AgentThinking", phase, hint, items: [] }];
+}
+
+// R20-F: 按 matcher（key 函数）upsert —— 已存在匹配项则替换，否则追加。
+// 用于 DataUploaded/DataProfiled 等同 asset_id 重复事件的去重。
+function upsertAgentThinkingItem(
+  blocks: ContentBlock[],
+  matcher: (existing: string) => boolean,
+  item: string,
+): ContentBlock[] {
+  const idx = blocks.findIndex((b) => b.type === "AgentThinking");
+  if (idx < 0) {
+    return [...blocks, { type: "AgentThinking", phase: undefined, hint: undefined, items: [item] }];
+  }
+  const next = [...blocks];
+  const prev = next[idx] as { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
+  const existing = prev.items ?? [];
+  const itemIdx = existing.findIndex(matcher);
+  let merged: string[];
+  if (itemIdx >= 0) {
+    merged = [...existing];
+    merged[itemIdx] = item;
+  } else {
+    merged = [...existing, item];
+  }
+  next[idx] = { ...prev, items: merged };
+  return next;
+}
+
+function setTtftIfNeeded(message: Message, eventTimestamp: number): Message {
+  if (message.role !== "assistant" || message.ttftMs != null || message.requestStartedAt == null) {
+    return message;
+  }
+
+  return {
+    ...message,
+    ttftMs: Math.max(0, eventTimestamp - message.requestStartedAt),
+  };
+}
+
+export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, eventTimestamp = Date.now()): Message[] {
   const msgs = [...messages];
 
   // HumanInput: insert user message before the trailing assistant message (ResumeStream replay)
@@ -163,10 +522,19 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
         .filter((b) => b.type === "Message")
         .map((b) => ((b.data as Record<string, unknown>)?.content as string) ?? "")
         .join("\n");
-      if (userText) {
+      const fileBlocks = blocks
+        .filter((b) => b.type === "File")
+        .map((b) => asFileData(b.data))
+        .filter((b): b is FileData => b !== null)
+        .map((data) => ({ type: "File", data }) as ContentBlock);
+      if (userText || fileBlocks.length > 0) {
         const userMsg: Message = {
           id: nextMessageId(), role: "user",
-          blocks: [{ type: "Message", content: userText }], nodes: [], workers: {}, sources: [],
+          blocks: [
+            ...(userText ? [{ type: "Message", content: userText } as ContentBlock] : []),
+            ...fileBlocks,
+          ],
+          nodes: [], workers: {}, sources: [],
         };
         const lastIdx = msgs.length - 1;
         if (msgs[lastIdx]?.role === "assistant") {
@@ -182,31 +550,59 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
   const last = msgs[msgs.length - 1];
   if (!last || last.role !== "assistant") return msgs;
 
-  const updated = { ...last, blocks: [...last.blocks], workers: { ...last.workers }, sources: [...last.sources] };
+  const updated = {
+    ...last,
+    blocks: [...last.blocks],
+    workers: { ...last.workers },
+    sources: [...last.sources],
+  };
 
   switch (event.event.case) {
+    case "agentStart": {
+      updated.agentStartedAt = eventTimestamp;
+      updated.agentDurationMs = undefined;
+      // R21: 不再插入"正在为您准备..."占位 —— 直接等待真实事件（避免和后续 tool 卡片重复）
+      break;
+    }
+    case "agentEnd": {
+      if (updated.agentStartedAt != null) {
+        updated.agentDurationMs = Math.max(0, eventTimestamp - updated.agentStartedAt);
+      }
+      updated.blocks = removeAgentThinking(updated.blocks);
+      break;
+    }
     case "messageDelta": {
       const delta = event.event.value;
-      if (delta.content) appendOrPushBlock(updated.blocks, "Message", delta.content);
+      if (delta.content) {
+        updated.blocks = removeAgentThinking(updated.blocks);
+        appendOrPushBlock(updated.blocks, "Message", delta.content);
+      }
       break;
     }
     case "reasoningDelta": {
       const delta = event.event.value;
-      if (delta.content) appendOrPushBlock(updated.blocks, "Reasoning", delta.content);
+      if (delta.content) {
+        updated.blocks = removeAgentThinking(updated.blocks);
+        appendOrPushBlock(updated.blocks, "Reasoning", delta.content);
+      }
       break;
     }
     case "toolCallStart": {
       const tc = event.event.value;
       const input = asRecord(tryDecodeJson(tc.toolInput));
+      const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+      updated.blocks = removeAgentThinking(updated.blocks);
       updated.blocks.push({
         type: "ToolCallStart",
         data: { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
       });
+      updated.ttftMs = ttftUpdated.ttftMs;
       break;
     }
     case "toolCallResult": {
       const tr = event.event.value;
       const result = asRecord(tryDecodeJson(tr.toolResult));
+      const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
       const hasIdMatch = tr.toolCallId
         ? updated.blocks.some(
             (b) => b.type === "ToolCallStart" && b.data.toolCallId === tr.toolCallId,
@@ -226,6 +622,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
         }
         return block;
       });
+      updated.ttftMs = ttftUpdated.ttftMs;
       break;
     }
     case "nodeStart": {
@@ -251,7 +648,75 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
     }
     case "custom": {
       const custom = event.event.value;
-      const payload = (tryDecodeJson(custom.payload) ?? {}) as Record<string, unknown>;
+      const payload = unwrapEmitEvent(asRecord(tryDecodeJson(custom.payload)));
+
+      // ── Sub-agent typed event passthrough ──
+      // SuperAgent 把 SheetAgent 的 planner 流式事件用 custom 通道转发出来,
+      // 这里按事件类型映射回与原生 typed 事件完全一致的渲染逻辑（保持 UX 与
+      // 直接选 sheet 时一致）。delegate_tool.py 侧把 type 串原样保留为
+      // "MessageDelta" / "ReasoningDelta" / "ToolCallStart" / "ToolCallResult"。
+      if (custom.type === "MessageDelta") {
+        const content = payload.content;
+        if (typeof content === "string" && content.length > 0) {
+          updated.blocks = removeAgentThinking(updated.blocks);
+          appendOrPushBlock(updated.blocks, "Message", content);
+        }
+        break;
+      }
+      if (custom.type === "ReasoningDelta") {
+        const content = payload.content;
+        if (typeof content === "string" && content.length > 0) {
+          updated.blocks = removeAgentThinking(updated.blocks);
+          appendOrPushBlock(updated.blocks, "Reasoning", content);
+        }
+        break;
+      }
+      if (custom.type === "ToolCallStart") {
+        const toolName = (payload.tool_name as string | undefined) ?? "";
+        const toolCallId = (payload.tool_call_id as string | undefined) ?? "";
+        const rawInput = payload.tool_input;
+        const input = asRecord(
+          typeof rawInput === "string" ? tryDecodeJson(rawInput) : rawInput,
+        );
+        const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+        updated.blocks = removeAgentThinking(updated.blocks);
+        updated.blocks.push({
+          type: "ToolCallStart",
+          data: { toolCallId, toolName, toolInput: input },
+        });
+        updated.ttftMs = ttftUpdated.ttftMs;
+        break;
+      }
+      if (custom.type === "ToolCallResult") {
+        const toolName = (payload.tool_name as string | undefined) ?? "";
+        const toolCallId = (payload.tool_call_id as string | undefined) ?? "";
+        const rawResult = payload.tool_result;
+        const result = asRecord(
+          typeof rawResult === "string" ? tryDecodeJson(rawResult) : rawResult,
+        );
+        const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+        const hasIdMatch = toolCallId
+          ? updated.blocks.some(
+              (b) => b.type === "ToolCallStart" && b.data.toolCallId === toolCallId,
+            )
+          : false;
+        let fallbackUsed = false;
+        updated.blocks = updated.blocks.map((block) => {
+          if (block.type !== "ToolCallStart") return block;
+          if (hasIdMatch) {
+            return block.data.toolCallId === toolCallId
+              ? { type: "ToolCallStart", data: { ...block.data, toolResult: result } }
+              : block;
+          }
+          if (!fallbackUsed && block.data.toolName === toolName && !block.data.toolResult) {
+            fallbackUsed = true;
+            return { type: "ToolCallStart", data: { ...block.data, toolResult: result } };
+          }
+          return block;
+        });
+        updated.ttftMs = ttftUpdated.ttftMs;
+        break;
+      }
 
       if (custom.type === "ContextCompactStart") {
         updated.blocks.push({ type: "ContextCompacting", done: false });
@@ -274,6 +739,11 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
           type: "human_review",
           data: { payload, resolved: false },
         });
+        break;
+      }
+
+      if (custom.type === "ExecuteStreamDelta") {
+        updated.blocks = appendExecuteStreamDelta(updated.blocks, payload);
         break;
       }
 
@@ -324,366 +794,197 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent): 
         break;
       }
 
-      // Phase transition event from sheet_agent
-      if (custom.type === "SheetProducerPhaseComplete") {
-        updated.blocks.push({
-          type: "PhaseTransition",
-          data: {
-            phase: "producer_complete",
-            completedCount: (payload.completed_count as number) ?? 0,
-            failedCount: (payload.failed_count as number) ?? 0,
-            totalCount: (payload.total_count as number) ?? 0,
-            message: "分析阶段已完成，正在生成最终交付物…",
-          },
-        });
+      // ── Sheet Agent v3 events ──
+      if (custom.type === "TurnStarted") {
+        // 替换/插入"思考中"占位，用 user_message_preview 提示用户在做什么
+        const preview = (payload.user_message_preview as string) ?? "";
+        updated.blocks = ensureAgentThinking(
+          updated.blocks,
+          "thinking",
+          preview ? `正在分析您的请求：${preview.slice(0, 30)}...` : "智能体正在思考中...",
+        );
         break;
       }
 
-      // Analysis phase digest — transition summary between producer and deliverable phases
-      if (custom.type === "SheetAnalysisPhaseDigest") {
-        updated.blocks.push({
-          type: "AnalysisPhaseDigest",
-          data: {
-            digestText: (payload.digest_text as string) ?? "",
-            producerCompleted: (payload.producer_completed as number) ?? 0,
-            producerFailed: (payload.producer_failed as number) ?? 0,
-          },
-        });
-        break;
-      }
-
-      // Deliverable phase started — parallel deliverable generation begins
-      if (custom.type === "SheetDeliverablePhaseStarted") {
-        updated.blocks.push({
-          type: "DeliverablePhaseStarted",
-          data: {
-            deliverableCount: (payload.deliverable_count as number) ?? 0,
-            deliverableTypes: (payload.deliverable_types as string[]) ?? [],
-          },
-        });
-        break;
-      }
-
-      // ── Sheet progress events (pipeline stage notifications) ──
-      if (custom.type === "SheetFilesIngested") {
-        const fileCount = (payload.imported_files_count as number) ?? 0;
-        const primaryInput = (payload.primary_input_path as string) ?? "";
-        const name = primaryInput ? primaryInput.split("/").pop() : "";
-        updated.blocks.push({
-          type: "SheetProgress",
-          data: {
-            step: "files_ingested",
-            icon: "📁",
-            label: `已接收 ${fileCount} 个文件`,
-            detail: name ? `主文件：${name}` : "",
-          },
-        });
-        break;
-      }
-
-      if (custom.type === "SheetRequestIntentInferred") {
-        const goal = (payload.primary_goal as string) ?? "";
-        const goalLabels: Record<string, string> = {
-          report: "数据分析报告", dashboard: "数据座舱", analyze: "通用分析",
-          chart_only: "图表生成", pivot: "透视汇总", export: "格式导出",
-          search_table: "搜索成表", enrich: "数据扩充", generate_table: "创意建表",
+      if (custom.type === "TurnPhaseChanged") {
+        // R20-E: 后端已大幅减少 phase 事件，仅 IngestUploadsHook 仍 emit ingesting_uploads。
+        // 其他 phase 即便误传过来也只更新 hint，不再硬编码大量阶段文案，让 LLM narrate 主导。
+        const phase = (payload.phase as string) ?? "";
+        const visibleTools = Array.isArray(payload.visible_tools)
+          ? (payload.visible_tools as string[])
+          : [];
+        const phaseHint: Record<string, string> = {
+          ingesting_uploads: "正在为您接收上传的文件",
         };
-        const isMultiGoal = payload.is_multi_goal as boolean;
-        updated.blocks.push({
-          type: "SheetProgress",
-          data: {
-            step: "intent_inferred",
-            icon: "🎯",
-            label: `意图识别：${goalLabels[goal] ?? goal}`,
-            detail: isMultiGoal ? "多目标请求" : "",
-          },
-        });
+        const hint = phaseHint[phase] ?? "";
+        if (!hint) break;  // 未知 phase 不打扰
+        const toolsSuffix = visibleTools.length > 0
+          ? `（${visibleTools.slice(0, 3).join("、")}${visibleTools.length > 3 ? " 等" : ""}）`
+          : "";
+        updated.blocks = ensureAgentThinking(updated.blocks, phase, hint + toolsSuffix);
         break;
       }
 
-      if (custom.type === "SheetExcelStructureInspected") {
-        const sheetCount = (payload.sheet_count as number) ?? 0;
-        updated.blocks.push({
-          type: "SheetProgress",
-          data: {
-            step: "excel_inspected",
-            icon: "🔍",
-            label: `Excel 结构探查完成`,
-            detail: sheetCount > 0 ? `发现 ${sheetCount} 个工作表` : "",
-          },
-        });
+      if (custom.type === "DataUploaded") {
+        const filename = (payload.filename as string) ?? (payload.asset_id as string) ?? "";
+        const sizeBytes = (payload.file_size as number) ?? 0;
+        const fileType = (payload.file_type as string) ?? "";
+        if (filename) {
+          const failed = sizeBytes === 0 || fileType.startsWith("failed");
+          // R20-F: dedupe by filename —— 同文件多次 emit 只保留最新一条
+          const matcher = (it: string) =>
+            it.includes(`已收到 ${filename}`) || it.includes(`未能接收 ${filename}`);
+          if (failed) {
+            const reason = fileType.startsWith("failed:") ? fileType.slice(7) : "下载失败";
+            updated.blocks = upsertAgentThinkingItem(updated.blocks, matcher, `未能接收 ${filename}：${reason}`);
+          } else {
+            const sizeText = sizeBytes > 0 ? `（${formatFileSize(sizeBytes)}）` : "";
+            updated.blocks = upsertAgentThinkingItem(updated.blocks, matcher, `已收到 ${filename}${sizeText}`);
+          }
+        }
         break;
       }
 
-      if (custom.type === "SheetDatasetProfileGenerated") {
-        const rows = (payload.row_count as number) ?? 0;
-        const cols = (payload.column_count as number) ?? 0;
-        updated.blocks.push({
-          type: "SheetProgress",
-          data: {
-            step: "profile_generated",
-            icon: "📊",
-            label: `数据画像完成`,
-            detail: rows > 0 ? `${rows.toLocaleString()} 行 × ${cols} 列` : "",
-          },
-        });
+      if (custom.type === "DataProfiled") {
+        // R21: profile_data 工具本身已经渲染为独立 tool 卡片（"🔍 Profile Data inputs/xxx.csv"），
+        // DataProfiled 是 streaming 元数据，前端不再额外插入 AgentThinking "读懂 xxx" 行
+        //（避免与工具卡片重复 + 风格断裂）。如需查看 dims/columns，展开 tool 卡片 Output 即可。
         break;
       }
 
-      if (custom.type === "SheetAnalysisPlanCreated") {
-        const taskCount = (payload.task_count as number) ?? 0;
-        updated.blocks.push({
-          type: "SheetProgress",
-          data: {
-            step: "plan_created",
-            icon: "📋",
-            label: `分析计划已生成`,
-            detail: taskCount > 0 ? `共 ${taskCount} 个分析任务` : "",
-          },
-        });
+      if (custom.type === "ArtifactCreated") {
+        const artifactId = (payload.artifact_id as string) ?? "";
+        if (!artifactId) break;
+        const newData: SheetArtifactData = {
+          artifactId,
+          artifactType: (payload.artifact_type as string) ?? "TEXT",
+          name: (payload.name as string) ?? artifactId.split("/").pop() ?? artifactId,
+          producerNodeId: (payload.producer_node_id as string) ?? "",
+          content: asRecord(payload.content),
+          createdAt: eventTimestamp,
+        };
+        // Dedupe: if same artifact_id already exists, replace in place.
+        const existingIdx = updated.blocks.findIndex(
+          (b) => b.type === "SheetArtifact" && b.data.artifactId === artifactId,
+        );
+        if (existingIdx >= 0) {
+          updated.blocks = [...updated.blocks];
+          updated.blocks[existingIdx] = { type: "SheetArtifact", data: newData };
+        } else {
+          updated.blocks.push({ type: "SheetArtifact", data: newData });
+        }
         break;
       }
 
-      // ── Sheet deliverable ready events ──
-      if (custom.type === "SheetHtmlReportReady") {
-        updated.blocks.push({
-          type: "SheetDeliverableReady",
-          data: {
-            kind: "report",
-            icon: "📄",
-            label: "HTML 报告已生成",
-            path: (payload.report_path as string) ?? "",
-          },
-        });
+      if (custom.type === "ArtifactInvalidated") {
+        const artifactId = (payload.artifact_id as string) ?? "";
+        if (!artifactId) break;
+        updated.blocks = updated.blocks.map((b) =>
+          b.type === "SheetArtifact" && b.data.artifactId === artifactId
+            ? {
+                type: "SheetArtifact",
+                data: {
+                  ...b.data,
+                  invalidated: true,
+                  invalidatedReason: (payload.reason as string) ?? "",
+                },
+              }
+            : b,
+        );
         break;
       }
 
-      if (custom.type === "SheetDashboardReady") {
-        updated.blocks.push({
-          type: "SheetDeliverableReady",
-          data: {
-            kind: "dashboard",
-            icon: "📈",
-            label: "数据座舱已生成",
-            path: (payload.output_path as string) ?? "",
-          },
-        });
+      if (custom.type === "TaskPlanned") {
+        const nodes = Array.isArray(payload.nodes) ? (payload.nodes as Array<Record<string, unknown>>) : [];
+        if (nodes.length === 0) break;
+        const dims: SheetPlanDimension[] = nodes.map((n) => ({
+          id: (n.node_id as string) ?? (n.id as string) ?? "",
+          title: (n.objective as string) ?? (n.title as string) ?? (n.task_type as string) ?? "",
+          role: (n.worker_role as string) ?? undefined,
+          status: "pending",
+        }));
+        // 多文件 / 增量场景：plan_analysis 可能被多次调用。
+        // - 同一 plan 重发（dim_ids 完全相同）→ 替换最后一个 SheetPlan（幂等）
+        // - 增量 plan（部分 dim_ids 命中已有）→ merge 进对应 SheetPlan，保留旧 dims 状态
+        // - 新一轮 plan（无任何 dim_id 命中）→ append 一个新的 SheetPlan 块
+        const newIds = new Set(dims.map((d) => d.id));
+        const existingPlanIdxs = updated.blocks
+          .map((b, i) => (b.type === "SheetPlan" ? i : -1))
+          .filter((i) => i >= 0);
+        let mergeIdx = -1;
+        let isReplace = false;
+        for (const idx of existingPlanIdxs) {
+          const block = updated.blocks[idx] as { type: "SheetPlan"; data: SheetPlanData };
+          const existIds = new Set(block.data.dimensions.map((d) => d.id));
+          const overlap = [...newIds].some((id) => existIds.has(id));
+          if (overlap) {
+            mergeIdx = idx;
+            isReplace = [...newIds].every((id) => existIds.has(id))
+              && [...existIds].every((id) => newIds.has(id));
+            break;
+          }
+        }
+        updated.blocks = [...updated.blocks];
+        if (mergeIdx < 0) {
+          updated.blocks.push({ type: "SheetPlan", data: { dimensions: dims } });
+        } else if (isReplace) {
+          updated.blocks[mergeIdx] = { type: "SheetPlan", data: { dimensions: dims } };
+        } else {
+          const block = updated.blocks[mergeIdx] as { type: "SheetPlan"; data: SheetPlanData };
+          const existIds = new Set(block.data.dimensions.map((d) => d.id));
+          const merged = [
+            ...block.data.dimensions,
+            ...dims.filter((d) => !existIds.has(d.id)),
+          ];
+          updated.blocks[mergeIdx] = { type: "SheetPlan", data: { dimensions: merged } };
+        }
         break;
       }
 
-      if (custom.type === "SheetFinalSummaryReady") {
-        const primaryOutput = (payload.primary_output as string) ?? "";
-        updated.blocks.push({
-          type: "SheetDeliverableReady",
-          data: {
-            kind: "summary",
-            icon: "✨",
-            label: "分析完成",
-            path: (payload.summary_path as string) ?? "",
-            extra: primaryOutput ? `主产物：${primaryOutput.split("/").pop()}` : "",
-          },
+      if (
+        custom.type === "TaskStarted" ||
+        custom.type === "TaskCompleted" ||
+        custom.type === "TaskFailed"
+      ) {
+        const nodeId = (payload.node_id as string) ?? "";
+        if (!nodeId) break;
+        const nextStatus: SheetPlanDimension["status"] =
+          custom.type === "TaskStarted" ? "running"
+          : custom.type === "TaskCompleted" ? "done"
+          : "failed";
+        const error = custom.type === "TaskFailed" ? ((payload.error as string) ?? "") : undefined;
+        updated.blocks = updated.blocks.map((b) => {
+          if (b.type !== "SheetPlan") return b;
+          return {
+            type: "SheetPlan",
+            data: {
+              dimensions: b.data.dimensions.map((d) =>
+                d.id === nodeId
+                  ? { ...d, status: nextStatus, ...(error != null ? { error } : {}) }
+                  : d,
+              ),
+            },
+          };
         });
         break;
       }
-
-      if (custom.type === "SheetExcelExported") {
-        const sheetCount = (payload.sheet_count as number) ?? 0;
-        updated.blocks.push({
-          type: "SheetDeliverableReady",
-          data: {
-            kind: "excel",
-            icon: "📊",
-            label: "Excel 已导出",
-            path: (payload.export_path as string) ?? "",
-            extra: sheetCount > 0 ? `${sheetCount} 个工作表` : "",
-          },
-        });
-        break;
-      }
-
-      // ── Sandbox task lifecycle events ──
-      if (custom.type === "SheetSandboxTaskStarted") {
-        updated.blocks.push({
-          type: "SheetTaskStatus",
-          data: {
-            taskId: (payload.task_id as string) ?? "",
-            title: (payload.title as string) ?? "",
-            engine: (payload.engine as string) ?? "",
-            status: "running",
-          },
-        });
-        break;
-      }
-
-      if (custom.type === "SheetSandboxTaskCompleted") {
-        const status = (payload.status as string) ?? "";
-        const isFailed = status === "failed";
-        updated.blocks.push({
-          type: "SheetTaskStatus",
-          data: {
-            taskId: (payload.task_id as string) ?? "",
-            title: "",
-            engine: (payload.engine as string) ?? "",
-            status: isFailed ? "failed" : "done",
-            errorMessage: isFailed ? ((payload.error_message as string) ?? "") : undefined,
-          },
-        });
-        break;
-      }
-
-      if (custom.type === "SheetChartGenerated") {
-        updated.blocks.push({
-          type: "SheetDeliverableReady",
-          data: {
-            kind: "chart",
-            icon: "📉",
-            label: "图表已生成",
-            path: (payload.chart_output_path as string) ?? "",
-          },
-        });
-        break;
-      }
-
-      // Tool progress events (creative_table, search_table step updates)
-      if (custom.type === "SheetToolProgress") {
-        updated.blocks.push({
-          type: "SheetToolProgress",
-          data: {
-            toolName: (payload.tool_name as string) ?? "",
-            step: (payload.step as string) ?? "",
-            stepLabel: (payload.step_label as string) ?? "",
-            stepIndex: (payload.step_index as number) ?? 0,
-            totalSteps: (payload.total_steps as number) ?? 0,
-          },
-        });
-        break;
-      }
-
-      if (custom.type === "SheetCreativeTableReady") {
-        updated.blocks.push({
-          type: "SheetDeliverableReady",
-          data: {
-            kind: "creative_table",
-            icon: "📝",
-            label: `创意表格「${(payload.table_name as string) ?? ""}」已生成`,
-            path: (payload.output_path as string) ?? "",
-            extra: `${(payload.row_count as number) ?? 0} 行`,
-          },
-        });
-        break;
-      }
-
-      if (custom.type === "SheetSearchTableReady") {
-        updated.blocks.push({
-          type: "SheetDeliverableReady",
-          data: {
-            kind: "search_table",
-            icon: "🔍",
-            label: "搜索成表完成",
-            path: (payload.output_path as string) ?? "",
-            extra: `${(payload.row_count as number) ?? 0} 行 × ${(payload.column_count as number) ?? 0} 列`,
-          },
-        });
-        break;
-      }
-
-      if (custom.type === "SheetDataEnriched") {
-        updated.blocks.push({
-          type: "SheetDeliverableReady",
-          data: {
-            kind: "enriched",
-            icon: "🔗",
-            label: "数据扩充完成",
-            path: (payload.output_path as string) ?? "",
-            extra: `${(payload.row_count as number) ?? 0} 行`,
-          },
-        });
-        break;
-      }
-
-      // Swarm group started — marks the beginning of a new worker group
-      if (custom.type === "SwarmGroupStarted") {
-        updated.blocks.push({
-          type: "SwarmGroupStarted",
-          data: {
-            groupId: (payload.group_id as string) ?? "",
-            phase: (payload.phase as string) ?? "producer",
-            workerCount: (payload.worker_count as number) ?? 0,
-            label: (payload.label as string) ?? "",
-          },
-        });
-        break;
-      }
+      // ── End Sheet Agent v3 events ──
 
       // Worker events
       const workerId = payload.worker_id as string | undefined;
       if (workerId) {
-        updated.workers = { ...updated.workers };
-        switch (custom.type) {
-          case "WorkerStart": {
-            const usedIndices = new Set(Object.values(updated.workers).map((w) => w.characterIndex));
-            const { index, character } = pickWorkerCharacter(usedIndices, workerId);
+        if (custom.type === "WorkerDelta" || custom.type === "MessageDelta") {
+          const w = updated.workers[workerId];
+          if (w) {
             updated.workers[workerId] = {
-              workerId,
-              description: (payload.description as string) ?? "",
-              status: "running",
-              character,
-              characterIndex: index,
-              text: "",
-              toolCalls: [],
-              phase: (payload.phase as string) ?? "producer",
-              groupId: (payload.group_id as string) ?? "",
+              ...w,
+              items: appendWorkerDelta(w.items, (payload.message_id as string) ?? "", (payload.content as string) ?? ""),
             };
-            break;
           }
-          case "WorkerDelta":
-          case "MessageDelta": {
-            const w = updated.workers[workerId];
-            if (w) {
-              updated.workers[workerId] = { ...w, text: w.text + ((payload.content as string) ?? "") };
-            }
-            break;
-          }
-          case "WorkerToolCall":
-          case "ToolCallStart": {
-            const w = updated.workers[workerId];
-            if (w) {
-              updated.workers[workerId] = {
-                ...w,
-                toolCalls: [...w.toolCalls, { toolName: (payload.tool_name as string) ?? "", toolInput: (payload.tool_input as Record<string, unknown>) ?? {} }],
-              };
-            }
-            break;
-          }
-          case "WorkerToolResult":
-          case "ToolCallResult": {
-            const w = updated.workers[workerId];
-            if (w) {
-              const toolCalls = [...w.toolCalls];
-              for (let i = toolCalls.length - 1; i >= 0; i--) {
-                if (toolCalls[i].toolName === (payload.tool_name as string) && !toolCalls[i].toolResult) {
-                  toolCalls[i] = { ...toolCalls[i], toolResult: payload.tool_result as Record<string, unknown> };
-                  break;
-                }
-              }
-              updated.workers[workerId] = { ...w, toolCalls };
-            }
-            break;
-          }
-          case "WorkerComplete":
-          case "WorkerEnd": {
-            const w = updated.workers[workerId];
-            if (w) {
-              updated.workers[workerId] = { ...w, status: "done", summary: (payload.summary as string) ?? "" };
-            }
-            break;
-          }
-          case "WorkerError": {
-            const w = updated.workers[workerId];
-            if (w) {
-              updated.workers[workerId] = { ...w, status: "error", error: (payload.error as string) ?? "Unknown error" };
-            }
-            break;
+        } else {
+          const workerType = normalizeWorkerBlockType(custom.type);
+          if (workerType) {
+            updated.workers = applyWorkerContentBlock(updated.workers, workerType, payload);
           }
         }
       }
@@ -705,7 +1006,15 @@ export function buildRawEvent(event: AgentStreamEvent): RawEvent {
       ])
     );
   }
-  return { timestamp: Date.now(), type: event.event.case ?? "unknown", data: cleaned, role: "assistant" };
+  const seq = event.seq > 0n ? Number(event.seq) : undefined;
+  return {
+    timestamp: Date.now(),
+    type: event.event.case ?? "unknown",
+    data: cleaned,
+    role: "assistant",
+    seq,
+    messageId: event.messageId || undefined,
+  };
 }
 
 function pushRawEvent(events: RawEvent[], event: RawEvent): RawEvent[] {
@@ -754,6 +1063,7 @@ interface ConversationStore {
   conversationId: string | null;
   agentType: string;
   systemPromptId: string | null;
+  extraContext: { [key: string]: string };
   messages: Message[];
   rawEvents: RawEvent[];
   tasks: AgentTask[];
@@ -769,11 +1079,12 @@ interface ConversationStore {
   setConversationId: (id: string) => void;
   setAgentType: (type: string) => void;
   setSystemPromptId: (id: string | null) => void;
+  setExtraContext: (ctx: { [key: string]: string }) => void;
   setStreaming: (v: boolean) => void;
   setLoadingHistory: (v: boolean) => void;
   setError: (err: string | null) => void;
-  addUserMessage: (content: string) => void;
-  startAssistantMessage: () => void;
+  addUserMessage: (content: string, files?: ChatAttachment[]) => void;
+  startAssistantMessage: (requestStartedAt?: number) => void;
   resolveHumanReview: () => void;
   removeLastRound: () => void;
   removeLastAssistantMessage: () => void;
@@ -807,6 +1118,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
     conversationId: null,
     agentType: "super",
     systemPromptId: null,
+    extraContext: {},
     messages: [],
     rawEvents: [],
     tasks: [],
@@ -820,23 +1132,34 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
     setConversationId: (id) => set({ conversationId: id }),
     setAgentType: (type) => set({ agentType: type }),
     setSystemPromptId: (id) => set({ systemPromptId: id }),
+    setExtraContext: (ctx) => set({ extraContext: ctx }),
     setStreaming: (v) => set({ isStreaming: v }),
     setLoadingHistory: (v) => set({ isLoadingHistory: v }),
     setError: (err) => set({ error: err }),
 
-    addUserMessage: (content) =>
+    addUserMessage: (content, files = []) =>
       set((s) => ({
         messages: [
           ...s.messages,
-          { id: nextMessageId(), role: "user", blocks: [{ type: "Message", content }], nodes: [], workers: {}, sources: [] },
+          {
+            id: nextMessageId(),
+            role: "user",
+            blocks: [
+              ...(content ? [{ type: "Message", content } as ContentBlock] : []),
+              ...files.map((file) => ({ type: "File", data: file }) as ContentBlock),
+            ],
+            nodes: [],
+            workers: {},
+            sources: [],
+          },
         ],
       })),
 
-    startAssistantMessage: () =>
+    startAssistantMessage: (requestStartedAt) =>
       set((s) => ({
         messages: [
           ...s.messages,
-          { id: nextMessageId(), role: "assistant", blocks: [], nodes: [], workers: {}, sources: [] },
+          { id: nextMessageId(), role: "assistant", blocks: [], nodes: [], workers: {}, sources: [], requestStartedAt },
         ],
       })),
 
@@ -861,7 +1184,19 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
     processEventForConv: (convId, event) => {
       const s = get();
       if (s.conversationId !== convId) return;
-      
+
+      // Track per-turn max seq for ResumeStream resume.
+      // seq === 0n means unpopulated (legacy server or non-resume path); ignore.
+      if (event.seq > 0n) {
+        const cur = latestSeqByConv.get(convId) ?? 0n;
+        if (event.seq > cur) latestSeqByConv.set(convId, event.seq);
+      }
+      // Turn boundary: clear seq so the next turn starts fresh from 0.
+      const caseName = event.event.case;
+      if (caseName === "agentEnd" || caseName === "agentError" || caseName === "agentCancelled") {
+        latestSeqByConv.delete(convId);
+      }
+
       const rawEvent = buildRawEvent(event);
 
       // Handle text deltas via queue
@@ -869,6 +1204,17 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         const value = event.event.value;
         if (!value?.content) return;
         set((prev) => ({
+          messages: prev.messages.length > 0
+            ? (() => {
+                const msgs = [...prev.messages];
+                const last = msgs[msgs.length - 1];
+                if (!last || last.role !== "assistant" || last.ttftMs != null || last.requestStartedAt == null) {
+                  return prev.messages;
+                }
+                msgs[msgs.length - 1] = setTtftIfNeeded(last, rawEvent.timestamp);
+                return msgs;
+              })()
+            : prev.messages,
           pendingTextQueue: [...prev.pendingTextQueue, { convId, type: "Message", content: value.content }],
           rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
         }));
@@ -897,11 +1243,21 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
       // Extract tasks from TaskUpdate custom events
       let newTasks: AgentTask[] | undefined;
       if (event.event.case === "custom" && event.event.value.type === "TaskUpdate") {
-        const payload = asRecord(tryDecodeJson(event.event.value.payload));
+        const payload = unwrapEmitEvent(asRecord(tryDecodeJson(event.event.value.payload)));
         const action = payload.action as string;
         if (action === "create") {
-          const tasks = payload.tasks as AgentTask[] | undefined;
-          if (tasks) newTasks = tasks;
+          const existing = get().tasks;
+          const task = payload.task as AgentTask | undefined;
+          if (task && !existing.some((t) => t.id === task.id)) {
+            // Incremental add: append single new task (order-safe for concurrent emits)
+            newTasks = [...existing, task];
+          } else {
+            // Fallback: accept full list only if it's strictly longer (prevents out-of-order overwrites)
+            const tasks = payload.tasks as AgentTask[] | undefined;
+            if (tasks && tasks.length > existing.length) {
+              newTasks = tasks;
+            }
+          }
         } else if (action === "update") {
           const taskId = payload.task_id as number;
           const status = payload.status as AgentTask["status"];
@@ -914,7 +1270,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
       }
 
       set((prev) => ({
-        messages: applyStreamEvent(prev.messages, event),
+        messages: applyStreamEvent(prev.messages, event, rawEvent.timestamp),
         rawEvents: pushRawEvent(prev.rawEvents, rawEvent),
         ...(newTasks !== undefined ? { tasks: newTasks } : {}),
       }));
@@ -994,7 +1350,10 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
 
     setMessages: (messages) => set({ messages, rawEvents: [] }),
 
-    reset: () =>
-      set({ conversationId: null, systemPromptId: null, messages: [], rawEvents: [], tasks: [], isStreaming: false, isLoadingHistory: false, error: null, pendingTextQueue: [], isTyping: false }),
+    reset: () => {
+      const cur = get().conversationId;
+      if (cur) latestSeqByConv.delete(cur);
+      set({ conversationId: null, systemPromptId: null, messages: [], rawEvents: [], tasks: [], isStreaming: false, isLoadingHistory: false, error: null, pendingTextQueue: [], isTyping: false });
+    },
   };
 });

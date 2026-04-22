@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 import remarkCjkFriendly from "remark-cjk-friendly";
-import type { ToolCallData, WorkerState } from "@/stores/conversationStore";
+import type { ToolCallData, WorkerItem, WorkerState } from "@/stores/conversationStore";
 import { getWorkerAvatar, pickWorkerCharacter, type WorkerCharacter } from "@/workerCharacters";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 
@@ -10,21 +10,17 @@ import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 interface HistoryWorker {
   workerId: string;
   description: string;
-  status: "completed" | "failed" | "skipped";
+  status: "completed" | "failed";
   toolsUsed: string[];
+  childToolCalls: { toolName: string; toolInput: Record<string, unknown>; toolResult?: Record<string, unknown> }[];
   durationSeconds: number;
   error?: string;
   character: WorkerCharacter;
-  phase?: string;
-  summary?: string;
-  skipReason?: string;
 }
 
 interface AgentSwarmPanelProps {
   liveWorkers: Record<string, WorkerState>;
   spawnToolCalls: ToolCallData[];
-  groupLabel?: string;
-  groupPhase?: string;
 }
 
 // ── Helpers ──
@@ -38,52 +34,30 @@ function formatDuration(seconds: number): string {
 
 function buildHistoryWorkers(toolCalls: ToolCallData[]): HistoryWorker[] {
   const usedIndices = new Set<number>();
-  const workers: HistoryWorker[] = [];
-
-  for (const tc of toolCalls) {
-    if (!tc.toolResult) continue;
-    const r = tc.toolResult;
-
-    // spawn_worker_group: 从 worker_results 数组提取每个 worker
-    if (tc.toolName === "spawn_worker_group" && Array.isArray(r.worker_results)) {
-      for (const wr of r.worker_results as Record<string, unknown>[]) {
-        const wId = (wr.worker_id as string) ?? `group-${workers.length}`;
-        const { index, character } = pickWorkerCharacter(usedIndices, wId);
-        usedIndices.add(index);
-        const rawStatus = (wr.status as string) ?? "completed";
-        workers.push({
-          workerId: wId,
-          description: (wr.description as string) ?? "",
-          status: rawStatus === "completed" ? "completed" : rawStatus === "skipped" ? "skipped" : "failed",
-          toolsUsed: (wr.tools_used as string[]) ?? [],
-          durationSeconds: (wr.duration_seconds as number) ?? 0,
-          error: wr.error as string | undefined,
-          character,
-          phase: (wr.phase as string) ?? "producer",
-          summary: (wr.summary as string) ?? "",
-          skipReason: wr.skip_reason as string | undefined,
-        });
-      }
-    } else {
-      // spawn_worker: 单个 worker 结果
+  return toolCalls
+    .filter((tc) => tc.toolResult && tc.toolResult.worker_id)
+    .map((tc) => {
+      const r = tc.toolResult!;
       const wId = (r.worker_id as string) ?? tc.toolCallId;
       const { index, character } = pickWorkerCharacter(usedIndices, wId);
       usedIndices.add(index);
-      workers.push({
+      return {
         workerId: wId,
         description: (r.description as string) ?? "",
         status: (r.status as "completed" | "failed") ?? "completed",
         toolsUsed: (r.tools_used as string[]) ?? [],
+        childToolCalls: Array.isArray(r.child_tool_calls)
+          ? (r.child_tool_calls as { tool_name?: string; tool_input?: Record<string, unknown>; tool_result?: Record<string, unknown> }[]).map((c) => ({
+              toolName: c.tool_name ?? "",
+              toolInput: c.tool_input ?? {},
+              toolResult: c.tool_result,
+            }))
+          : [],
         durationSeconds: (r.duration_seconds as number) ?? 0,
         error: r.error as string | undefined,
         character,
-        phase: "producer",
-        summary: "",
-      });
-    }
-  }
-
-  return workers;
+      };
+    });
 }
 
 /** Smooth height transition wrapper. */
@@ -129,16 +103,6 @@ function StatusBadge({ status, duration }: { status: string; duration?: number }
       </span>
     );
   }
-  if (status === "skipped") {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded-full">
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l4-4 4 4M7 4v16" />
-        </svg>
-        Skipped
-      </span>
-    );
-  }
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error bg-error/8 px-1.5 py-0.5 rounded-full">
       Failed
@@ -148,67 +112,9 @@ function StatusBadge({ status, duration }: { status: string; duration?: number }
 
 // ── Main Panel ──
 
-// ── 从 spawn_worker_group 结果提取 group 级别元信息 ──
-interface GroupMeta {
-  overallStatus: string;
-  producerStatus: string;
-  finalizerStatus: string;
-  finalizerSkipped: boolean;
-  skipReason: string;
-  totalDuration: number;
-  producerCount: number;
-  finalizerCount: number;
-}
-
-function extractGroupMeta(toolCalls: ToolCallData[]): GroupMeta | null {
-  for (const tc of toolCalls) {
-    if (tc.toolName === "spawn_worker_group" && tc.toolResult) {
-      const r = tc.toolResult as Record<string, unknown>;
-      return {
-        overallStatus: (r.status as string) ?? "",
-        producerStatus: (r.producer_status as string) ?? "",
-        finalizerStatus: (r.finalizer_status as string) ?? "",
-        finalizerSkipped: (r.finalizer_skipped as boolean) ?? false,
-        skipReason: (r.finalizer_skip_reason as string) ?? "",
-        totalDuration: (r.total_duration_seconds as number) ?? 0,
-        producerCount: (r.producer_count as number) ?? 0,
-        finalizerCount: (r.finalizer_count as number) ?? 0,
-      };
-    }
-  }
-  return null;
-}
-
-// ── Group Status Badge ──
-
-function GroupStatusBadge({ status }: { status: string }) {
-  if (status === "all_completed") {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/8 px-1.5 py-0.5 rounded-full">
-        ✅ 全部完成
-      </span>
-    );
-  }
-  if (status === "partial_success") {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
-        ⚠️ 部分完成
-      </span>
-    );
-  }
-  if (status === "all_failed") {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error bg-error/8 px-1.5 py-0.5 rounded-full">
-        ❌ 全部失败
-      </span>
-    );
-  }
-  return null;
-}
-
 const MAX_VISIBLE_HEIGHT = 400;
 
-export function AgentSwarmPanel({ liveWorkers, spawnToolCalls, groupLabel, groupPhase }: AgentSwarmPanelProps) {
+export function AgentSwarmPanel({ liveWorkers, spawnToolCalls }: AgentSwarmPanelProps) {
   const hasLiveWorkers = Object.keys(liveWorkers).length > 0;
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLDivElement>(null);
@@ -220,18 +126,11 @@ export function AgentSwarmPanel({ liveWorkers, spawnToolCalls, groupLabel, group
     [historyKey, hasLiveWorkers],
   );
 
-  // 从 spawn_worker_group 结果提取 group 级别元信息（仅历史模式有值）
-  const groupMeta = useMemo(
-    () => (hasLiveWorkers ? null : extractGroupMeta(spawnToolCalls)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [historyKey, hasLiveWorkers],
-  );
-
   const liveEntries = Object.values(liveWorkers);
   const taskCount = hasLiveWorkers ? liveEntries.length : historyWorkers.length;
   const doneCount = hasLiveWorkers
     ? liveEntries.filter((w) => w.status === "done").length
-    : historyWorkers.filter((w) => w.status === "completed" || w.status === "skipped").length;
+    : historyWorkers.filter((w) => w.status === "completed").length;
   const hasRunning = hasLiveWorkers && liveEntries.some((w) => w.status === "running");
 
   // Auto-scroll to the active (running) worker
@@ -258,14 +157,9 @@ export function AgentSwarmPanel({ liveWorkers, spawnToolCalls, groupLabel, group
           <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
         </svg>
         <span className="text-xs font-semibold text-text-primary">Agent Swarm</span>
-        {groupLabel && (
-          <span className="text-[11px] font-medium text-accent">{groupLabel}</span>
-        )}
         <span className="text-[11px] text-text-tertiary">
           {doneCount}/{taskCount}
         </span>
-        {/* Group status badge (history mode only) */}
-        {groupMeta && <GroupStatusBadge status={groupMeta.overallStatus} />}
         {/* Mini progress bar */}
         <div className="flex-1 h-1 rounded-full bg-border-light overflow-hidden max-w-[80px]">
           <div
@@ -273,23 +167,10 @@ export function AgentSwarmPanel({ liveWorkers, spawnToolCalls, groupLabel, group
             style={{ width: `${progress}%` }}
           />
         </div>
-        {/* Total duration (history mode) */}
-        {groupMeta && groupMeta.totalDuration > 0 && (
-          <span className="text-[10px] text-text-tertiary">{formatDuration(groupMeta.totalDuration)}</span>
-        )}
         {hasRunning && (
           <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" />
         )}
       </div>
-
-      {/* Group-level finalizer skip reason */}
-      {groupMeta?.finalizerSkipped && groupMeta.skipReason && (
-        <div className="mx-2.5 mb-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1.5">
-          <p className="text-[11px] text-amber-700 dark:text-amber-400">
-            ⚠️ 收口任务已跳过：{groupMeta.skipReason}
-          </p>
-        </div>
-      )}
 
       {/* Scrollable worker list */}
       <div
@@ -316,14 +197,43 @@ export function AgentSwarmPanel({ liveWorkers, spawnToolCalls, groupLabel, group
 
 // ── Live Worker Card ──
 
+function WorkerItemRow({ item, itemId }: { item: WorkerItem; itemId: string }) {
+  if (item.kind === "tool") {
+    return (
+      <div className="[&>div]:shadow-none [&>div]:border-0 [&>div]:bg-background [&>div]:rounded-lg">
+        <ToolCallBlock
+          toolName={item.toolName}
+          toolInput={item.toolInput}
+          toolResult={item.toolResult}
+          toolCallId={itemId}
+        />
+      </div>
+    );
+  }
+  if (!item.content) return null;
+  return (
+    <div className="pl-3 border-l-2 border-border-light max-h-32 overflow-y-auto prose-reasoning text-[11px] leading-relaxed text-text-secondary">
+      <Markdown remarkPlugins={[remarkCjkFriendly]}>{item.content}</Markdown>
+    </div>
+  );
+}
+
 function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const avatarUri = useMemo(() => getWorkerAvatar(worker.character.name), [worker.character.name]);
 
   const isRunning = worker.status === "running";
-  const completedToolCount = worker.toolCalls.filter((tc) => tc.toolResult).length;
-  const runningToolCount = worker.toolCalls.filter((tc) => !tc.toolResult).length;
-  const hasDetails = worker.toolCalls.length > 0 || worker.text || worker.summary || worker.error;
+  const { toolTotal, toolCompleted } = useMemo(() => {
+    let total = 0, completed = 0;
+    for (const it of worker.items) {
+      if (it.kind === "tool") {
+        total++;
+        if (it.toolResult) completed++;
+      }
+    }
+    return { toolTotal: total, toolCompleted: completed };
+  }, [worker.items]);
+  const hasDetails = worker.items.length > 0 || worker.summary || worker.error;
 
   return (
     <div
@@ -341,18 +251,15 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-text-primary truncate">{worker.character.name}</span>
-            {worker.phase === "finalizer" && (
-              <span className="text-[9px] font-medium text-accent/80 bg-accent/8 px-1 py-0.5 rounded">收口</span>
-            )}
             <StatusBadge status={worker.status} />
           </div>
-          <p className="text-[11px] text-text-secondary truncate mt-0.5">{worker.description || "任务正在执行..."}</p>
+          <p className="text-[11px] text-text-secondary truncate mt-0.5">{worker.description}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ProgressDots
-            total={worker.toolCalls.length}
-            completed={completedToolCount}
-            running={runningToolCount}
+            total={toolTotal}
+            completed={toolCompleted}
+            running={toolTotal - toolCompleted}
             status={worker.status}
             color={worker.character.color}
           />
@@ -374,24 +281,9 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
       {/* Expandable details */}
       <Collapsible open={expanded}>
         <div className="border-t border-border-light px-3 py-2.5 ml-9 space-y-2">
-          {worker.toolCalls.map((tc, i) => (
-            <div key={i} className="[&>div]:shadow-none [&>div]:border-0 [&>div]:bg-background [&>div]:rounded-lg">
-              <ToolCallBlock
-                toolName={tc.toolName}
-                toolInput={tc.toolInput}
-                toolResult={tc.toolResult}
-                toolCallId={`${worker.workerId}-${i}`}
-              />
-            </div>
+          {worker.items.map((it, i) => (
+            <WorkerItemRow key={i} item={it} itemId={`${worker.workerId}-${i}`} />
           ))}
-
-          {worker.text && (
-            <div className="pl-3 border-l-2 border-border-light max-h-32 overflow-y-auto">
-              <div className="prose-reasoning text-[11px] leading-relaxed text-text-secondary">
-                <Markdown remarkPlugins={[remarkCjkFriendly]}>{worker.text}</Markdown>
-              </div>
-            </div>
-          )}
 
           {worker.summary && (
             <div className="rounded-lg bg-success-light/50 px-2.5 py-2">
@@ -417,20 +309,12 @@ function LiveWorkerCard({ worker, index }: { worker: WorkerState; index: number 
 function HistoryWorkerCard({ worker, index }: { worker: HistoryWorker; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const avatarUri = useMemo(() => getWorkerAvatar(worker.character.name), [worker.character.name]);
-  const hasDetails = worker.toolsUsed.length > 0 || worker.error || worker.summary || worker.skipReason;
+  const hasDetails = worker.toolsUsed.length > 0 || worker.childToolCalls.length > 0 || worker.error;
 
   return (
     <div
-      className={`rounded-lg border overflow-hidden ${
-        worker.status === "skipped" ? "border-border-light bg-surface opacity-70" : "border-border-light bg-surface"
-      }`}
-      style={{
-        borderLeftWidth: 3,
-        borderLeftColor:
-          worker.status === "failed" ? "var(--color-error)"
-          : worker.status === "skipped" ? "var(--color-border)"
-          : worker.character.color,
-      }}
+      className="rounded-lg border border-border-light bg-surface overflow-hidden"
+      style={{ borderLeftWidth: 3, borderLeftColor: worker.status === "failed" ? "var(--color-error)" : worker.character.color }}
     >
       <div className="flex items-center gap-2 px-3 py-2">
         <span className="text-[10px] font-mono text-text-tertiary/60 w-4 text-right shrink-0">
@@ -440,9 +324,6 @@ function HistoryWorkerCard({ worker, index }: { worker: HistoryWorker; index: nu
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-text-primary truncate">{worker.character.name}</span>
-            {worker.phase === "finalizer" && (
-              <span className="text-[9px] font-medium text-accent/80 bg-accent/8 px-1 py-0.5 rounded">收口</span>
-            )}
             <StatusBadge status={worker.status} duration={worker.durationSeconds} />
           </div>
           <p className="text-[11px] text-text-secondary truncate mt-0.5">{worker.description}</p>
@@ -462,26 +343,32 @@ function HistoryWorkerCard({ worker, index }: { worker: HistoryWorker; index: nu
       </div>
 
       <Collapsible open={expanded}>
-        <div className="border-t border-border-light px-3 py-2 ml-9 space-y-1.5">
-          {worker.summary && (
-            <div className="rounded-lg bg-success-light/50 px-2.5 py-2">
-              <p className="text-[11px] leading-relaxed text-text-primary line-clamp-4">{worker.summary}</p>
-            </div>
-          )}
-          {worker.toolsUsed.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {worker.toolsUsed.map((t, i) => (
-                <span key={i} className="text-[10px] font-mono bg-surface-hover rounded px-1.5 py-0.5 text-text-secondary">
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
-          {worker.skipReason && (
-            <div className="rounded-lg bg-surface-hover px-2.5 py-2">
-              <p className="text-[11px] text-text-tertiary">{worker.skipReason}</p>
-            </div>
-          )}
+        <div className="border-t border-border-light px-3 py-2.5 ml-9 space-y-2">
+          {worker.childToolCalls.length > 0 ? (
+            worker.childToolCalls.map((tc, i) => (
+              <div key={i} className="[&>div]:shadow-none [&>div]:border-0 [&>div]:bg-background [&>div]:rounded-lg">
+                <ToolCallBlock
+                  toolName={tc.toolName}
+                  toolInput={tc.toolInput}
+                  toolResult={tc.toolResult}
+                  toolCallId={`${worker.workerId}-h-${i}`}
+                />
+              </div>
+            ))
+          ) : worker.toolsUsed.length > 0 ? (
+            // Fallback: 旧版后端没有 child_tool_calls，至少用空 input/result 渲染图标卡片，
+            // 保持与 SuperAgent 统一的视觉风格（不再用裸 pill）
+            worker.toolsUsed.map((t, i) => (
+              <div key={i} className="[&>div]:shadow-none [&>div]:border-0 [&>div]:bg-background [&>div]:rounded-lg">
+                <ToolCallBlock
+                  toolName={t}
+                  toolInput={{}}
+                  toolResult={{}}
+                  toolCallId={`${worker.workerId}-h-${i}`}
+                />
+              </div>
+            ))
+          ) : null}
           {worker.error && (
             <p className="text-[11px] text-error mt-1.5">{worker.error}</p>
           )}

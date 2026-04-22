@@ -2,7 +2,7 @@ import { createClient, type Interceptor } from "@connectrpc/connect";
 import { createGrpcWebTransport } from "@connectrpc/connect-web";
 import { KwAgentServiceService } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
 
-const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "";
+const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "";
 
@@ -41,7 +41,7 @@ const injectHeadersInterceptor: Interceptor = (next) => (req) => {
 };
 
 const transport = createGrpcWebTransport({
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? "",
+  baseUrl: import.meta.env.VITE_API_BASE_URL || "https://agnesx-dev-sg.kiwiar.com",
   interceptors: [injectHeadersInterceptor],
 });
 

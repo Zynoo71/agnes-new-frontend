@@ -7,16 +7,19 @@ import type {
   ContentBlock,
   HumanReviewData,
   ToolCallData,
+  FileData,
   MemoryUpdateData,
   SlideOutlineData,
   SlideDesignSystemData,
-  WorkerState,
 } from "@/stores/conversationStore";
-import { PLANNING_TOOL_NAMES, useConversationStore } from "@/stores/conversationStore";
+import { PLANNING_TOOL_NAMES, SWARM_TOOL_NAMES, useConversationStore } from "@/stores/conversationStore";
 import { CitationSources } from "@/components/CitationSources";
 import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { TaskListPanel } from "./TaskListPanel";
+import { SheetArtifactCard } from "./SheetArtifactCard";
+// R21: SheetPlanPanel 已下线（Agent Swarm 卡片完整覆盖其信息）
+// import { SheetPlanPanel } from "./SheetPlanPanel";
 import { CodeBlock } from "./CodeBlock";
 import { NodeSteps } from "./NodeSteps";
 import { useImagePreviewStore } from "@/stores/imagePreviewStore";
@@ -25,15 +28,36 @@ import { useLocalSlidePreviewStore } from "@/stores/localSlidePreviewStore";
 // ── Stable references for Markdown (avoid remounting custom elements on re-render) ──
 const REMARK_PLUGINS = [remarkGfm, remarkCjkFriendly];
 
+function formatNaturalDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h${minutes > 0 ? `${minutes}min` : ""}${seconds > 0 ? `${seconds}s` : ""}`;
+  }
+  if (minutes > 0) {
+    return `${minutes}min${seconds > 0 ? `${seconds}s` : ""}`;
+  }
+  return `${seconds}s`;
+}
+
+function formatTtft(durationMs: number): string {
+  return `${(Math.max(0, durationMs) / 1000).toFixed(2)}s`;
+}
+
 function localDeckOutlineUrl(conversationId: string): string {
   return `/__local_slide_workspace/${encodeURIComponent(conversationId)}/deck/deck_outline.json`;
 }
 
-function useLocalDeckAvailable(conversationId: string | null, enabled: boolean) {
+function useLocalDeckAvailable(conversationId: string | null, enabled: boolean, isStreaming?: boolean) {
   const [availability, setAvailability] = useState<{ conversationId: string | null; available: boolean }>({
     conversationId: null,
     available: false,
   });
+
+  const streamingDone = enabled && isStreaming === false;
 
   useEffect(() => {
     if (!enabled || !conversationId) return;
@@ -53,7 +77,7 @@ function useLocalDeckAvailable(conversationId: string | null, enabled: boolean) 
       });
 
     return () => controller.abort();
-  }, [conversationId, enabled]);
+  }, [conversationId, enabled, streamingDone]);
 
   return Boolean(enabled && conversationId && availability.conversationId === conversationId && availability.available);
 }
@@ -138,8 +162,9 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
   const conversationId = useConversationStore((s) => s.conversationId);
   const agentType = useConversationStore((s) => s.agentType);
   const openLocalPreview = useLocalSlidePreviewStore((s) => s.open);
+  const hasFileBlocks = message.blocks.some((block) => block.type === "File");
 
-  const canEdit = isUser && isLast && onEditResend && !isStreaming;
+  const canEdit = isUser && isLast && onEditResend && !isStreaming && !hasFileBlocks;
   const canRegenerate = !isUser && isLast && onRegenerate && !isStreaming;
   const slideOutlineBlock = !isUser
     ? [...message.blocks]
@@ -147,7 +172,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         .find((block): block is { type: "SlideOutline"; data: SlideOutlineData } => block.type === "SlideOutline")
     : undefined;
   const shouldCheckLocalPreview = !isUser && !!isLast && !!conversationId;
-  const hasLocalDeck = useLocalDeckAvailable(conversationId, shouldCheckLocalPreview);
+  const hasLocalDeck = useLocalDeckAvailable(conversationId, shouldCheckLocalPreview, isStreaming);
   const shouldShowLocalPreview = shouldCheckLocalPreview && (agentType === "slide" || hasLocalDeck);
   const canOpenLocalPreview = shouldShowLocalPreview && !isStreaming && !!conversationId;
 
@@ -262,20 +287,22 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
     <div className={`${animate ? "animate-message-in" : ""} group flex gap-2.5 mb-5`}>
       <AssistantAvatar />
       <div className="max-w-[85%] py-1 flex-1 min-w-0">
+        {message.ttftMs != null && (
+          <div className="mb-2 text-[11px] text-text-tertiary">
+            TTFT {formatTtft(message.ttftMs)}
+          </div>
+        )}
         {message.nodes.length > 0 && <NodeSteps nodes={message.nodes} />}
 
         {(() => {
-          // spawn_worker 和 spawn_worker_group 都属于 Swarm 类工具，统一展示 AgentSwarmPanel
-          const isSpawnTool = (name: string) => name === "spawn_worker" || name === "spawn_worker_group";
-
-          const spawnToolCalls: ToolCallData[] = message.blocks
+          const swarmToolCalls: ToolCallData[] = message.blocks
             .filter((b): b is { type: "ToolCallStart"; data: ToolCallData } =>
-              b.type === "ToolCallStart" && isSpawnTool(b.data.toolName))
+              b.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(b.data.toolName))
             .map((b) => b.data);
 
           const nonSpawnBlocks = message.blocks.filter(
             (b) =>
-              !(b.type === "ToolCallStart" && isSpawnTool(b.data.toolName)) &&
+              !(b.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(b.data.toolName)) &&
               !(b.type === "ToolCallStart" && PLANNING_TOOL_NAMES.has(b.data.toolName)) &&
               b.type !== "TaskList",
           );
@@ -285,74 +312,31 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
           let seen = false;
           for (const block of message.blocks) {
             toolSeenBefore.push(seen);
-            const isSpawn = block.type === "ToolCallStart" && isSpawnTool(block.data.toolName);
-            if (block.type === "ToolCallStart" || isSpawn) seen = true;
+            const isSwarm = block.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(block.data.toolName);
+            if (block.type === "ToolCallStart" || isSwarm) seen = true;
           }
 
-          // Collect SwarmGroupStarted blocks to split workers into groups
-          const swarmGroups = message.blocks
-            .filter((b): b is { type: "SwarmGroupStarted"; data: { groupId: string; phase: string; workerCount: number; label: string } } =>
-              b.type === "SwarmGroupStarted")
-            .map((b) => b.data);
-
-          // Build per-group worker maps (live mode)
-          const allWorkers = Object.values(message.workers);
-          const hasGroups = swarmGroups.length > 0 && allWorkers.some((w) => w.groupId);
-
-          // Index of the first spawn tool block (render AgentSwarmPanel at this position)
-          const firstSpawnIdx = message.blocks.findIndex(
-            (b) => b.type === "ToolCallStart" && isSpawnTool(b.data.toolName),
+          // Index of the first swarm tool block (render AgentSwarmPanel only once)
+          const firstSwarmIdx = message.blocks.findIndex(
+            (b) => b.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(b.data.toolName),
           );
 
-          let swarmRendered = false;
-
           const rendered = message.blocks.map((block, i) => {
-            const isSpawn = block.type === "ToolCallStart" && isSpawnTool(block.data.toolName);
+            const isSwarm = block.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(block.data.toolName);
 
-            if (isSpawn) {
-              if (swarmRendered) return null;
-              swarmRendered = true;
-
-              // If we have group info, render separate panels per group
-              if (hasGroups && swarmGroups.length > 0) {
-                return swarmGroups.map((group) => {
-                  const groupWorkers: Record<string, WorkerState> = {};
-                  for (const [wid, w] of Object.entries(message.workers)) {
-                    if (w.groupId === group.groupId) {
-                      groupWorkers[wid] = w;
-                    }
-                  }
-                  // Skip rendering empty groups
-                  if (Object.keys(groupWorkers).length === 0) return null;
-                  return (
-                    <AgentSwarmPanel
-                      key={`swarm-${group.groupId}`}
-                      liveWorkers={groupWorkers}
-                      spawnToolCalls={spawnToolCalls}
-                      groupLabel={group.label}
-                      groupPhase={group.phase}
-                    />
-                  );
-                });
-              }
-
-              // Fallback: single panel (no group_id info, e.g. non-sheet agents)
+            if (isSwarm) {
+              if (i !== firstSwarmIdx) return null;
               return (
                 <AgentSwarmPanel
                   key={`swarm-${i}`}
                   liveWorkers={message.workers}
-                  spawnToolCalls={spawnToolCalls}
+                  spawnToolCalls={swarmToolCalls}
                 />
               );
             }
 
             // Planning tools & cite_sources → filter out
             if (block.type === "ToolCallStart" && (PLANNING_TOOL_NAMES.has(block.data.toolName) || block.data.toolName === "cite_sources")) {
-              return null;
-            }
-
-            // SwarmGroupStarted blocks are consumed above for grouping, skip rendering
-            if (block.type === "SwarmGroupStarted") {
               return null;
             }
 
@@ -443,6 +427,15 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
           </button>
         )}
 
+        {message.agentDurationMs != null && (
+          <div className="mt-4">
+            <div className="border-t border-border-light" />
+            <div className="pt-2 text-[11px] text-text-tertiary">
+              <span>已处理 {formatNaturalDuration(message.agentDurationMs)}</span>
+            </div>
+          </div>
+        )}
+
         {!isStreaming && (
           <div className="mt-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
@@ -499,6 +492,8 @@ const BlockRenderer = memo(function BlockRenderer({
           >{block.content}</Markdown>
         </div>
       );
+    case "File":
+      return <FileBlock data={block.data} />;
     case "Reasoning":
       return <ReasoningBlock content={block.content} isStreaming={isStreaming} autoCollapse={autoCollapse} />;
     case "ToolCallStart":
@@ -521,102 +516,43 @@ const BlockRenderer = memo(function BlockRenderer({
       return <ContextCompactingBlock done={block.done || !isStreaming} />;
     case "MemoryUpdate":
       return <MemoryUpdateBlock data={block.data} />;
-    case "PhaseTransition":
-      return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-sm border border-blue-200 dark:border-blue-800">
-          <span className="text-base">✅</span>
-          <span>{block.data.message}</span>
-          {block.data.totalCount > 0 && (
-            <span className="text-xs opacity-70">
-              （{block.data.completedCount}/{block.data.totalCount} 完成{block.data.failedCount > 0 ? `，${block.data.failedCount} 失败` : ""}）
-            </span>
-          )}
-        </div>
-      );
-    case "AnalysisPhaseDigest":
-      return (
-        <div className="px-3 py-2 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-sm border border-indigo-200 dark:border-indigo-800 space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-base">📋</span>
-            <span className="font-medium">分析阶段摘要</span>
-            <span className="text-xs opacity-70">
-              （{block.data.producerCompleted} 完成{block.data.producerFailed > 0 ? `，${block.data.producerFailed} 失败` : ""}）
-            </span>
-          </div>
-          {block.data.digestText && <p className="text-xs opacity-80 whitespace-pre-wrap">{block.data.digestText}</p>}
-        </div>
-      );
-    case "DeliverablePhaseStarted":
-      return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-sm border border-emerald-200 dark:border-emerald-800">
-          <span className="text-base">🚀</span>
-          <span>正在并行生成 {block.data.deliverableCount} 个交付物</span>
-          {block.data.deliverableTypes.length > 0 && (
-            <span className="text-xs opacity-70">（{block.data.deliverableTypes.join("、")}）</span>
-          )}
-        </div>
-      );
-    case "SheetProgress":
-      return (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm border border-slate-200 dark:border-slate-800">
-          <span className="text-base">{block.data.icon}</span>
-          <span>{block.data.label}</span>
-          {block.data.detail && <span className="text-xs opacity-60">{block.data.detail}</span>}
-        </div>
-      );
-    case "SheetToolProgress":
-      return (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-300 text-sm border border-blue-200 dark:border-blue-800">
-          <span className="text-base">⏳</span>
-          <span>{block.data.stepLabel}</span>
-          {block.data.totalSteps > 0 && (
-            <span className="text-xs opacity-60 ml-auto">
-              {block.data.stepIndex}/{block.data.totalSteps}
-            </span>
-          )}
-        </div>
-      );
-    case "SheetDeliverableReady":
-      return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 text-sm border border-green-200 dark:border-green-800">
-          <span className="text-base">{block.data.icon}</span>
-          <span className="font-medium">{block.data.label}</span>
-          {block.data.extra && <span className="text-xs opacity-70">{block.data.extra}</span>}
-        </div>
-      );
-    case "SheetTaskStatus": {
-      const isFailed = block.data.status === "failed";
-      const isRunning = block.data.status === "running";
-      if (isFailed) {
-        return (
-          <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">
-            <span className="text-base shrink-0">❌</span>
-            <div>
-              <span className="font-medium">任务执行失败</span>
-              {block.data.errorMessage && <p className="text-xs opacity-80 mt-0.5">{block.data.errorMessage}</p>}
-            </div>
-          </div>
-        );
-      }
-      if (isRunning) {
-        return (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-sm border border-amber-200 dark:border-amber-800">
-            <span className="text-base animate-pulse">⚙️</span>
-            <span>正在执行：{block.data.title}</span>
-            {block.data.engine && <span className="text-xs opacity-60">（{block.data.engine}）</span>}
-          </div>
-        );
-      }
-      return null;
-    }
-    case "SwarmGroupStarted":
-      return null;
     case "SlideOutline":
       return <SlideOutlineBlock data={block.data} />;
     case "SlideDesignSystem":
       return <SlideDesignSystemBlock data={block.data} />;
+    case "SheetArtifact":
+      return <SheetArtifactCard data={block.data} />;
+    case "SheetPlan":
+      // R21: SheetPlan 面板被下方 Agent Swarm 完整覆盖（每个 dim = 1 个 worker，
+      // worker 卡片就是 dimension 卡片）。保留类型以避免 store 端 break，但不再渲染。
+      return null;
+    case "AgentThinking":
+      return <AgentThinkingBlock phase={block.phase} hint={block.hint} items={block.items} />;
   }
 });
+
+function FileBlock({ data }: { data: FileData }) {
+  const label = data.filename || data.url.split("/").pop() || "attachment";
+
+  return (
+    <a
+      href={data.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-2 flex items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50/80 px-3 py-2 text-left transition-colors hover:border-sky-300 hover:bg-sky-100/80"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-700">
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-7.5A2.25 2.25 0 0017.25 4.5h-10.5A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25h7.5m5.25-5.25L12 21m0 0l-2.25-2.25M12 21V10.5" />
+        </svg>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-text-primary">{label}</span>
+        <span className="block truncate text-xs text-text-secondary">{data.mimeType}</span>
+      </span>
+    </a>
+  );
+}
 
 // ── Reasoning block with smooth transition ──
 const AUTO_COLLAPSE_DELAY = 2000;
@@ -674,6 +610,80 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
           <Markdown remarkPlugins={[remarkGfm, remarkCjkFriendly]}>{content.replace(/\\n/g, "\n")}</Markdown>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Agent thinking placeholder ──
+
+const PHASE_COLOR: Record<string, string> = {
+  thinking: "text-amber-500",
+  ingesting_uploads: "text-cyan-500",
+  scanning_workspace: "text-sky-500",
+  planning: "text-violet-500",
+  profiling: "text-sky-500",
+  executing: "text-emerald-500",
+  delivering: "text-rose-500",
+};
+
+function AgentThinkingBlock({
+  phase,
+  hint,
+  items,
+}: {
+  phase?: string;
+  hint?: string;
+  items?: string[];
+}) {
+  const list = items ?? [];
+  const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
+  const dotColor = colorCls.replace("text-", "bg-");
+  const currentText = hint || (list.length === 0 ? "" : "");
+
+  // R20-F: 超 5 行折叠（默认收起，留最后 3 行 + 折叠提示）
+  const COLLAPSE_THRESHOLD = 5;
+  const TAIL_KEEP = 3;
+  const [expanded, setExpanded] = useState(false);
+  const showCollapse = list.length > COLLAPSE_THRESHOLD;
+  const visibleList = (!expanded && showCollapse)
+    ? list.slice(-TAIL_KEEP)
+    : list;
+  const hiddenCount = list.length - visibleList.length;
+
+  if (list.length === 0 && !currentText) return null;
+
+  return (
+    <div className="my-3 flex flex-col gap-1 text-[12px] text-text-secondary">
+      {showCollapse && !expanded && hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="self-start text-[11px] text-text-tertiary hover:text-text-secondary transition-colors mb-1"
+        >
+          ▸ 展开前 {hiddenCount} 步
+        </button>
+      )}
+      {showCollapse && expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="self-start text-[11px] text-text-tertiary hover:text-text-secondary transition-colors mb-1"
+        >
+          ▾ 折叠
+        </button>
+      )}
+      {visibleList.map((it, i) => (
+        <div key={`${i}-${it.slice(0, 16)}`} className="flex items-start gap-2 leading-5">
+          <span className="mt-[7px] inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/70 flex-shrink-0" />
+          <span className="text-text-tertiary">{it}</span>
+        </div>
+      ))}
+      {currentText && (
+        <div className="flex items-start gap-2 leading-5">
+          <span className={`mt-[7px] inline-block w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0 animate-pulse`} />
+          <span className={colorCls}>{currentText}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -739,6 +749,9 @@ function MemoryUpdateBlock({ data }: { data: MemoryUpdateData }) {
 // ── Review type display config ──
 const REVIEW_TYPE_CONFIG: Record<string, { title: string; description: string }> = {
   research_plan: { title: "Research Plan", description: "Review the proposed tasks before execution" },
+  prompt_enhancement: { title: "Prompt Enhancement", description: "Review the enhanced prompt before generation" },
+  material_supplement: { title: "Material Confirmation", description: "Confirm materials to use for generation" },
+  batch_generation_plan: { title: "Generation Plan", description: "Review the batch generation plan" },
 };
 
 function HumanReviewBlock({
@@ -751,7 +764,7 @@ function HumanReviewBlock({
   disabled?: boolean;
 }) {
   const reviewType = data.payload.review_type as string | undefined;
-  const reviewData = data.payload.data as Record<string, unknown> | undefined;
+  const reviewData = (data.payload.details ?? data.payload.data) as Record<string, unknown> | undefined;
   const timeoutSeconds = data.payload.timeout_seconds as number | undefined;
   const defaultAction = (data.payload.default_action as string) ?? "approve";
   const config = REVIEW_TYPE_CONFIG[reviewType ?? ""] ?? {
@@ -867,8 +880,215 @@ function ResearchPlanRenderer(data: Record<string, unknown>) {
   );
 }
 
+function PromptEnhancementRenderer(data: Record<string, unknown>) {
+  const original = (data.original_prompt as string) ?? "";
+  const enhanced = (data.enhanced_prompt as string) ?? "";
+  const mediaType = (data.media_type as string) ?? "image";
+  const style = (data.style as string) ?? "";
+  const message = (data.message as string) ?? "";
+
+  return (
+    <div className="space-y-3">
+      {message && (
+        <p className="text-xs text-text-secondary leading-relaxed">{message}</p>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="rounded-lg bg-surface border border-border-light p-3">
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Original</div>
+          <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{original}</p>
+        </div>
+        <div className="rounded-lg bg-accent/5 border border-accent/20 p-3">
+          <div className="text-[10px] font-medium text-accent uppercase tracking-wide mb-1.5">Enhanced</div>
+          <p className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap">{enhanced}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        {mediaType && (
+          <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+            {mediaType}
+          </span>
+        )}
+        {style && (
+          <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+            {style.startsWith("custom:") ? style.slice(7) : style}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface MaterialCandidate {
+  url: string;
+  source: string;
+  type?: string;
+  desc?: string;
+}
+
+interface MaterialSlot {
+  role: string;
+  desc: string;
+  required: boolean;
+  candidates: MaterialCandidate[];
+  selected_index: number | null;
+}
+
+function MaterialSupplementRenderer(data: Record<string, unknown>) {
+  const slots = (data.slots as MaterialSlot[]) ?? [];
+  const contextSummary = (data.context_summary as string) ?? "";
+  const message = (data.message as string) ?? "";
+
+  return (
+    <div className="space-y-3">
+      {message && (
+        <p className="text-xs text-text-secondary leading-relaxed">{message}</p>
+      )}
+      {slots.length > 0 && (
+        <div className="space-y-3">
+          {slots.map((slot, si) => (
+            <div key={si} className="rounded-lg border border-border-light bg-surface p-3">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-sm font-medium text-text-primary">{slot.role}</span>
+                {!slot.required && (
+                  <span className="text-[10px] text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+                    optional
+                  </span>
+                )}
+              </div>
+              {slot.desc && (
+                <p className="text-[11px] text-text-tertiary mb-2">{slot.desc}</p>
+              )}
+              {slot.candidates.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {slot.candidates.map((c, ci) => {
+                    const isSelected = slot.selected_index === ci;
+                    return (
+                      <div
+                        key={ci}
+                        className={`rounded-lg border overflow-hidden ${
+                          isSelected
+                            ? "border-accent ring-2 ring-accent/30"
+                            : "border-border-light"
+                        }`}
+                      >
+                        {c.type === "video" ? (
+                          <div className="w-full h-24 bg-surface-hover flex items-center justify-center">
+                            <span className="text-[10px] text-text-tertiary">VIDEO</span>
+                          </div>
+                        ) : (
+                          <img src={c.url} alt={c.desc ?? ""} className="w-full h-24 object-cover" loading="lazy" />
+                        )}
+                        <div className="px-2 py-1.5">
+                          {c.desc && <p className="text-[11px] text-text-secondary truncate">{c.desc}</p>}
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1 py-0.5 rounded">
+                              {c.source}
+                            </span>
+                            {isSelected && (
+                              <span className="text-[10px] font-medium text-accent bg-accent/10 px-1 py-0.5 rounded">
+                                selected
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : slot.required ? (
+                <div className="rounded-lg border border-dashed border-warning/40 bg-warning/5 p-3 text-center">
+                  <p className="text-[11px] text-warning">No candidates — upload or search to fill this slot</p>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+      {contextSummary && (
+        <p className="text-[11px] text-text-tertiary leading-relaxed">{contextSummary}</p>
+      )}
+    </div>
+  );
+}
+
+interface BatchPlanMaterial {
+  url: string;
+  source?: string;
+  type?: string;
+  desc?: string;
+}
+
+interface BatchPlanItem {
+  title: string;
+  prompt: string;
+  ratio?: string;
+  style?: string;
+  model_code?: string | null;
+  num_images?: number;
+  materials?: BatchPlanMaterial[];
+}
+
+function BatchGenerationPlanRenderer(data: Record<string, unknown>) {
+  const items = (data.items as BatchPlanItem[]) ?? [];
+  const sharedStyle = (data.shared_style as string) ?? "";
+  const totalCount = (data.total_count as number) ?? items.length;
+  const message = (data.message as string) ?? "";
+
+  return (
+    <div className="space-y-3">
+      {message && (
+        <p className="text-xs text-text-secondary leading-relaxed">{message}</p>
+      )}
+      <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
+        <span>{totalCount} images</span>
+        {sharedStyle && (
+          <>
+            <span className="text-border-light">|</span>
+            <span>{sharedStyle}</span>
+          </>
+        )}
+      </div>
+      <div className="space-y-2">
+        {items.map((item, i) => (
+          <div key={i} className="rounded-lg bg-surface border border-border-light p-3">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[10px] font-mono text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+                #{i + 1}
+              </span>
+              <span className="text-sm font-medium text-text-primary">{item.title}</span>
+              {item.ratio && (
+                <span className="text-[10px] text-text-tertiary bg-surface-hover px-1 py-0.5 rounded ml-auto">
+                  {item.ratio}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{item.prompt}</p>
+            {item.materials && item.materials.length > 0 && (
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {item.materials.map((m, j) => (
+                  <div key={j} className="flex flex-col items-center gap-0.5">
+                    <img src={m.url} alt={m.desc ?? ""} className="w-12 h-12 rounded object-cover border border-border-light" loading="lazy" />
+                    {m.desc && (
+                      <span className="text-[10px] text-text-tertiary max-w-[56px] truncate text-center" title={m.desc}>
+                        {m.desc}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const REVIEW_RENDERERS: Record<string, ReviewRenderer> = {
   research_plan: ResearchPlanRenderer,
+  prompt_enhancement: PromptEnhancementRenderer,
+  material_supplement: MaterialSupplementRenderer,
+  batch_generation_plan: BatchGenerationPlanRenderer,
 };
 
 function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Record<string, unknown> }) {

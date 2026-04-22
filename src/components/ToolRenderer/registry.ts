@@ -8,12 +8,17 @@ import { WebReadRenderer } from "./renderers/WebReadRenderer";
 import { ScheduleManagerRenderer } from "./renderers/ScheduleManagerRenderer";
 import { SlideToolRenderer } from "./renderers/SlideToolRenderer";
 import { GenerateImageRenderer } from "./renderers/GenerateImageRenderer";
+import { GenerateVideoRenderer } from "./renderers/GenerateVideoRenderer";
+import { WeatherRenderer } from "./renderers/WeatherRenderer";
+import { SheetToolRenderer } from "./renderers/SheetToolRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
   toolInput: Record<string, unknown>;
   toolResult?: Record<string, unknown>;
   toolCallId: string;
+  streamStdout?: string;
+  streamStderr?: string;
   /** True when subsequent content (text/tool_call) has arrived after this block. */
   autoCollapse?: boolean;
 }
@@ -38,6 +43,21 @@ const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   render_html: SlideToolRenderer,
   delegate_to_slide_agent: SlideToolRenderer,
   generate_image: GenerateImageRenderer,
+  generate_video: GenerateVideoRenderer,
+  query_weather: WeatherRenderer,
+  // Sheet Agent v3 (R21) tools
+  plan_analysis: SheetToolRenderer,
+  profile_data: SheetToolRenderer,
+  list_assets: SheetToolRenderer,
+  read_artifact: SheetToolRenderer,
+  query_data: SheetToolRenderer,
+  run_python: SheetToolRenderer,
+  search_table: SheetToolRenderer,
+  make_chart: SheetToolRenderer,
+  write_report: SheetToolRenderer,
+  compose_report: SheetToolRenderer,
+  record_insight: SheetToolRenderer,
+  spawn_worker: SheetToolRenderer,
 };
 
 export function getToolRenderer(toolName: string): FC<ToolRenderProps> | undefined {

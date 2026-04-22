@@ -1,38 +1,13 @@
 import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
-import { useConversationStore, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory } from "@/stores/conversationStore";
-import type { SourceCitation } from "@/stores/conversationStore";
+import { createAgnesConversation } from "@/api/agnesConversation";
+import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType } from "@/stores/conversationStore";
+import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
+import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
-import { useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
-import {
-  hydrateConversationSkillsFromServer,
-  persistConversationSkillSelections,
-} from "@/lib/conversationSkillSync";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
-/**
- * 把当前 conversation 在 chatSelectedSkillsStore 里的 selection 转成 proto 入参。
- * 后端会校验/过滤 → 这里直接全量上送，不在前端做权限判断。
- */
-function pickSelectedSkillsForRequest(convId: string): { skillId: string; version: string }[] {
-  const list = useChatSelectedSkillsStore.getState().get(convId);
-  return list
-    .filter((it) => it.skillId)
-    .map((it) => ({ skillId: it.skillId, version: it.version || "" }));
-}
-
 const getState = () => useConversationStore.getState();
-
-/** Sheet 模式：每次 ChatStream 默认附带的固定测试文件（用于 sheet_agent 端到端联调） */
-const SHEET_DEFAULT_FILES = [
-  {
-    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    url: "https://storage.googleapis.com/agnes-default/user_e88f2c99-e17d-433b-adf0-32d8792148bc/20260413/f8b424e3-65a9-4f90-98b6-498385510783.xlsx",
-    filename: "f8b424e3-65a9-4f90-98b6-498385510783.xlsx",
-    data: new Uint8Array(),
-  },
-] as const;
-
 // ── Module-level singleton abort management ──
 // Shared across all useChat() call sites — fixes the multi-instance bug.
 
@@ -48,6 +23,19 @@ function beginStream(convId: string): AbortSignal {
   return ac.signal;
 }
 
+// Reset per-turn seq tracker before initiating a new turn
+// (ChatStream / EditResend / Regenerate / HitlResume-modify).
+// Note: HitlResume-approve keeps seq since the backend reuses the request_id.
+function beginNewTurn(convId: string): AbortSignal {
+  resetLatestSeq(convId);
+  return beginStream(convId);
+}
+
+function isAlreadyExists(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("already_exists") || msg.includes("ALREADY_EXISTS");
+}
+
 async function runStream(
   iter: AsyncIterable<AgentStreamEvent>,
   signal: AbortSignal,
@@ -60,6 +48,19 @@ async function runStream(
     }
   } catch (err) {
     if (signal.aborted) return;
+    // Backend has an active stream for this conversation (spec §6.6) —
+    // don't retry ChatStream, fall back to ResumeStream(from_seq=0) to
+    // pick up the existing stream from the beginning.
+    if (isAlreadyExists(err)) {
+      console.warn(`Active stream exists for conv ${convId}, falling back to resumeStream(from_seq=0)`);
+      const resumeIter = agentClient.resumeStream(
+        { conversationId: BigInt(convId), fromSeq: 0n },
+        { signal },
+      );
+      // Tail-call: delegate cleanup to the resumed runStream invocation.
+      await runStream(resumeIter, signal, convId);
+      return;
+    }
     const msg = err instanceof Error ? err.message : String(err);
     console.error("Stream error:", err);
     if (getState().conversationId === convId) {
@@ -94,19 +95,57 @@ function turnsToRawEvents(turns: { user: unknown[]; assistant: unknown[] }[]): R
   return events;
 }
 
+/**
+ * Rebuild tasks from TaskUpdate custom events in raw history turns.
+ * This handles agents (e.g. SuperAgent) that hide planning tools via _hidden_tools,
+ * where ToolCallStart/ToolCallResult for create_task/update_task are absent from history
+ * but TaskUpdate custom events are still recorded.
+ */
+function rebuildTasksFromTurns(turns: { user: unknown[]; assistant: unknown[] }[]): AgentTask[] {
+  let tasks: AgentTask[] = [];
+  for (const turn of turns) {
+    for (const block of turn.assistant as { type: string; data: unknown }[]) {
+      if (block.type !== "TaskUpdate") continue;
+      const data = (block.data ?? {}) as Record<string, unknown>;
+      const action = data.action as string;
+      if (action === "create" && Array.isArray(data.tasks)) {
+        tasks = data.tasks as AgentTask[];
+      } else if (action === "update" && typeof data.task_id === "number" && data.status) {
+        tasks = tasks.map((t) =>
+          t.id === data.task_id ? { ...t, status: data.status as AgentTask["status"] } : t,
+        );
+      } else if (action === "reset") {
+        tasks = [];
+      }
+    }
+  }
+  return tasks;
+}
+
 function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): Message[] {
   const messages: Message[] = [];
   for (const turn of turns) {
     const userBlocks = turn.user as { type: string; data: unknown }[];
-    const userText = userBlocks
+    const userTextBlocks = userBlocks
       .filter((b) => b.type === "Message")
-      .map((b) => (b.data as Record<string, unknown>)?.content ?? JSON.stringify(b.data))
-      .join("\n");
-    if (userText) {
-      messages.push({ id: nextHistoryId(), role: "user", blocks: [{ type: "Message", content: userText }], nodes: [], workers: {}, sources: [] });
+      .map((b) => ({ type: "Message", content: ((b.data as Record<string, unknown>)?.content as string) ?? JSON.stringify(b.data) }) as ContentBlock);
+    const fileBlocks = userBlocks
+      .filter((b) => b.type === "File")
+      .map((b) => {
+        const data = (b.data ?? {}) as Record<string, unknown>;
+        const url = typeof data.url === "string" ? data.url : "";
+        const mimeType = typeof data.mime_type === "string" ? data.mime_type : "";
+        const filename = typeof data.filename === "string" ? data.filename : "";
+        if (!url || !mimeType) return null;
+        return { type: "File", data: { filename, mimeType, url } } as ContentBlock;
+      })
+      .filter((b): b is ContentBlock => b !== null);
+    if (userTextBlocks.length > 0 || fileBlocks.length > 0) {
+      messages.push({ id: nextHistoryId(), role: "user", blocks: [...userTextBlocks, ...fileBlocks], nodes: [], workers: {}, sources: [] });
     }
     const assistantBlocks: ContentBlock[] = [];
     const turnSources: SourceCitation[] = [];
+    let workers: Record<string, WorkerState> = {};
     const aBlocks = turn.assistant as { type: string; data: unknown; toolCallId?: string }[];
     for (const block of aBlocks) {
       if (block.type === "Message") {
@@ -168,17 +207,136 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
             data: { field, content },
           });
         }
+      } else if (block.type === "ArtifactCreated") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const artifactId = (data.artifact_id as string) ?? "";
+        if (!artifactId) continue;
+        const newData: SheetArtifactData = {
+          artifactId,
+          artifactType: (data.artifact_type as string) ?? "TEXT",
+          name: (data.name as string) ?? artifactId.split("/").pop() ?? artifactId,
+          producerNodeId: (data.producer_node_id as string) ?? "",
+          content: (data.content as Record<string, unknown>) ?? {},
+          createdAt: 0,
+        };
+        const existingIdx = assistantBlocks.findIndex(
+          (b) => b.type === "SheetArtifact" && b.data.artifactId === artifactId,
+        );
+        if (existingIdx >= 0) {
+          assistantBlocks[existingIdx] = { type: "SheetArtifact", data: newData };
+        } else {
+          assistantBlocks.push({ type: "SheetArtifact", data: newData });
+        }
+      } else if (block.type === "ArtifactInvalidated") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const artifactId = (data.artifact_id as string) ?? "";
+        if (!artifactId) continue;
+        for (let i = 0; i < assistantBlocks.length; i++) {
+          const b = assistantBlocks[i];
+          if (b.type === "SheetArtifact" && b.data.artifactId === artifactId) {
+            assistantBlocks[i] = {
+              type: "SheetArtifact",
+              data: {
+                ...b.data,
+                invalidated: true,
+                invalidatedReason: (data.reason as string) ?? "",
+              },
+            };
+          }
+        }
+      } else if (block.type === "TaskPlanned") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const nodes = Array.isArray(data.nodes) ? (data.nodes as Array<Record<string, unknown>>) : [];
+        if (nodes.length === 0) continue;
+        const dims: SheetPlanDimension[] = nodes.map((n) => ({
+          id: (n.node_id as string) ?? (n.id as string) ?? "",
+          title: (n.objective as string) ?? (n.title as string) ?? (n.task_type as string) ?? "",
+          role: (n.worker_role as string) ?? undefined,
+          status: "pending",
+        }));
+        // 同 conversationStore：多 plan_analysis 的 merge / replace / append 逻辑
+        const newIds = new Set(dims.map((d) => d.id));
+        let mergeIdx = -1;
+        let isReplace = false;
+        for (let i = 0; i < assistantBlocks.length; i++) {
+          const b = assistantBlocks[i];
+          if (b.type !== "SheetPlan") continue;
+          const existIds = new Set(b.data.dimensions.map((d) => d.id));
+          const overlap = [...newIds].some((id) => existIds.has(id));
+          if (overlap) {
+            mergeIdx = i;
+            isReplace = [...newIds].every((id) => existIds.has(id))
+              && [...existIds].every((id) => newIds.has(id));
+            break;
+          }
+        }
+        if (mergeIdx < 0) {
+          assistantBlocks.push({ type: "SheetPlan", data: { dimensions: dims } });
+        } else if (isReplace) {
+          assistantBlocks[mergeIdx] = { type: "SheetPlan", data: { dimensions: dims } };
+        } else {
+          const existing = assistantBlocks[mergeIdx];
+          if (existing.type === "SheetPlan") {
+            const existIds = new Set(existing.data.dimensions.map((d) => d.id));
+            assistantBlocks[mergeIdx] = {
+              type: "SheetPlan",
+              data: {
+                dimensions: [
+                  ...existing.data.dimensions,
+                  ...dims.filter((d) => !existIds.has(d.id)),
+                ],
+              },
+            };
+          }
+        }
+      } else if (normalizeWorkerBlockType(block.type)) {
+        workers = applyWorkerContentBlock(
+          workers,
+          normalizeWorkerBlockType(block.type)!,
+          (block.data ?? {}) as Record<string, unknown>,
+        );
+      } else if (
+        block.type === "TaskStarted" ||
+        block.type === "TaskCompleted" ||
+        block.type === "TaskFailed"
+      ) {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const nodeId = (data.node_id as string) ?? "";
+        if (!nodeId) continue;
+        const nextStatus: SheetPlanDimension["status"] =
+          block.type === "TaskStarted" ? "running"
+          : block.type === "TaskCompleted" ? "done"
+          : "failed";
+        const error = block.type === "TaskFailed" ? ((data.error as string) ?? "") : undefined;
+        for (let i = 0; i < assistantBlocks.length; i++) {
+          const b = assistantBlocks[i];
+          if (b.type !== "SheetPlan") continue;
+          assistantBlocks[i] = {
+            type: "SheetPlan",
+            data: {
+              dimensions: b.data.dimensions.map((d) =>
+                d.id === nodeId
+                  ? { ...d, status: nextStatus, ...(error != null ? { error } : {}) }
+                  : d,
+              ),
+            },
+          };
+        }
       }
     }
     // Inject TaskList anchor if this message has a create_task tool call
+    // or a TaskUpdate "create" custom event (for agents that hide planning tools)
     const hasCreateTask = assistantBlocks.some(
       (b) => b.type === "ToolCallStart" && b.data.toolName === "create_task",
     );
-    if (hasCreateTask && !assistantBlocks.some((b) => b.type === "TaskList")) {
+    const hasTaskUpdateCreate = aBlocks.some(
+      (b) => b.type === "TaskUpdate" && (b.data as Record<string, unknown>)?.action === "create",
+    );
+    if ((hasCreateTask || hasTaskUpdateCreate) && !assistantBlocks.some((b) => b.type === "TaskList")) {
       assistantBlocks.push({ type: "TaskList" });
     }
     if (assistantBlocks.length > 0) {
-      messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers: {}, sources: turnSources });
+      messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers, sources: turnSources });
     }
   }
   return messages;
@@ -204,7 +362,12 @@ export function useChat() {
       }
     }
     // Set messages, tasks, and history events in a single state update
-    const tasks = rebuildTasksFromHistory(messages);
+    // Try tool-result-based reconstruction first, then fall back to TaskUpdate custom events
+    // (needed for agents like SuperAgent that hide planning tools via _hidden_tools)
+    let tasks = rebuildTasksFromHistory(messages);
+    if (tasks.length === 0) {
+      tasks = rebuildTasksFromTurns(resp.turns as { user: unknown[]; assistant: unknown[] }[]);
+    }
     const rawEvents = turnsToRawEvents(resp.turns as { user: unknown[]; assistant: unknown[] }[]);
     useConversationStore.setState({ messages, rawEvents, tasks });
     return resp;
@@ -212,41 +375,43 @@ export function useChat() {
 
   const createConversation = useCallback(async () => {
     getState().reset();
-    const reply = await agentClient.createConversation({});
-    const id = String(reply.conversationId);
+    const id = await createAgnesConversation();
     getState().setConversationId(id);
     useConversationListStore.getState().add(id, getState().agentType, getState().systemPromptId ?? undefined);
     return id;
   }, []);
 
-  const sendMessage = useCallback(async (query: string) => {
+  const sendMessage = useCallback(async (query: string, files: ChatAttachment[] = []) => {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
     const isFirstMessage = s.messages.every((m) => m.role !== "user");
+    const requestStartedAt = Date.now();
 
-    s.addUserMessage(query);
-    s.startAssistantMessage();
-    const signal = beginStream(convId);
+    s.addUserMessage(query, files);
+    s.startAssistantMessage(requestStartedAt);
+    const signal = beginNewTurn(convId);
 
     if (isFirstMessage) {
-      const title = query.length > 50 ? query.slice(0, 50) + "..." : query;
+      const titleSource = query || files[0]?.filename || "New chat";
+      const title = titleSource.length > 50 ? titleSource.slice(0, 50) + "..." : titleSource;
       useConversationListStore.getState().update(convId, { title });
     }
 
-    try {
-      await persistConversationSkillSelections(convId);
-    } catch (e) {
-      console.warn("[useChat] persist conversation skills before ChatStream failed", e);
-    }
-
+    const extraContext = Object.keys(s.extraContext).length > 0 ? s.extraContext : undefined;
     const stream = agentClient.chatStream(
       {
         conversationId: BigInt(convId),
         query,
         agentType: s.agentType,
-        ...(s.agentType === "sheet" ? { files: [...SHEET_DEFAULT_FILES] } : {}),
-        selectedSkills: pickSelectedSkillsForRequest(convId),
+        files: files.map((file) => ({
+          mimeType: file.mimeType,
+          url: file.url,
+          filename: file.filename,
+          data: new Uint8Array(),
+        })),
+        systemPromptId: s.systemPromptId ? BigInt(s.systemPromptId) : 0n,
+        extraContext,
       },
       { signal },
     );
@@ -257,10 +422,13 @@ export function useChat() {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
+    const requestStartedAt = Date.now();
 
     s.resolveHumanReview();
-    s.startAssistantMessage();
-    const signal = beginStream(convId);
+    s.startAssistantMessage(requestStartedAt);
+    // `modify` starts a new turn (new request_id, seq resets to 1 on backend).
+    // `approve` continues the current turn (same request_id), so keep seq.
+    const signal = action === "modify" ? beginNewTurn(convId) : beginStream(convId);
 
     const resumePayload: Record<string, unknown> = { action };
     if (action === "modify" && feedback) resumePayload.feedback = feedback;
@@ -279,24 +447,15 @@ export function useChat() {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
+    const requestStartedAt = Date.now();
 
     s.removeLastRound();
     s.addUserMessage(newQuery);
-    s.startAssistantMessage();
-    const signal = beginStream(convId);
-
-    try {
-      await persistConversationSkillSelections(convId);
-    } catch (e) {
-      console.warn("[useChat] persist conversation skills before EditResend failed", e);
-    }
+    s.startAssistantMessage(requestStartedAt);
+    const signal = beginNewTurn(convId);
 
     const stream = agentClient.editResendStream(
-      {
-        conversationId: BigInt(convId),
-        query: newQuery,
-        selectedSkills: pickSelectedSkillsForRequest(convId),
-      },
+      { conversationId: BigInt(convId), query: newQuery },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -306,22 +465,14 @@ export function useChat() {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
+    const requestStartedAt = Date.now();
 
     s.removeLastAssistantMessage();
-    s.startAssistantMessage();
-    const signal = beginStream(convId);
-
-    try {
-      await persistConversationSkillSelections(convId);
-    } catch (e) {
-      console.warn("[useChat] persist conversation skills before Regenerate failed", e);
-    }
+    s.startAssistantMessage(requestStartedAt);
+    const signal = beginNewTurn(convId);
 
     const stream = agentClient.regenerateStream(
-      {
-        conversationId: BigInt(convId),
-        selectedSkills: pickSelectedSkillsForRequest(convId),
-      },
+      { conversationId: BigInt(convId) },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -350,7 +501,6 @@ export function useChat() {
     abortMap.delete(id);
 
     s.setConversationId(id);
-    void hydrateConversationSkillsFromServer(id);
     s.setError(null);
     s.setLoadingHistory(true);
 
@@ -377,8 +527,14 @@ export function useChat() {
 
     if (shouldResume) {
       getState().startAssistantMessage();
+      // Preserve seq across selectConversation so resume picks up where we left off.
+      // 0n means we never received an event with seq (or legacy server) → full replay.
+      const fromSeq = getLatestSeq(id);
       const signal = beginStream(id);
-      const stream = agentClient.resumeStream({ conversationId: BigInt(id) }, { signal });
+      const stream = agentClient.resumeStream(
+        { conversationId: BigInt(id), fromSeq },
+        { signal },
+      );
       runStream(stream, signal, id);
     } else {
       getState().setStreaming(false);
