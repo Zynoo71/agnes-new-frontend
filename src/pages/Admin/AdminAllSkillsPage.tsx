@@ -6,7 +6,7 @@ import { Pagination } from "@/pages/AgnesHub/Pagination";
 import { SkillDetailModal } from "@/pages/AgnesHub/SkillDetailModal";
 import { AdminLayout } from "./AdminLayout";
 
-const HARD_DELETE_ALLOWED = new Set(["agnes", "github", "gitee"]);
+const HARD_DELETE_ALLOWED = new Set(["agnes", "github", "gitee", "user"]);
 
 const SOURCE_FILTERS: { value: string; label: string }[] = [
   { value: "", label: "All sources" },
@@ -180,11 +180,19 @@ export function AdminAllSkillsPage() {
 
   const onClickDelete = async (skill: SkillInfo) => {
     if (!HARD_DELETE_ALLOWED.has(skill.source)) return;
+    const isUserOwned = skill.source === "user";
+    const extra = isUserOwned
+      ? "\n\n⚠  USER-OWNED skill: this will also remove it from every\n" +
+        "   user's \"My Skills\" and break any in-flight conversation\n" +
+        "   that selected it. Use admin_reject_skill instead if a soft\n" +
+        "   state is enough."
+      : "";
     const ok = window.confirm(
       `Hard delete "${skill.name}"?\n\n` +
         `Source: ${skill.source}\n` +
         `Owner: ${skill.ownerUserId || "—"}\n\n` +
-        `This will purge DB rows + S3 files and cannot be undone.`,
+        `This will purge DB rows + S3 files and cannot be undone.` +
+        extra,
     );
     if (!ok) return;
     setDeletingId(skill.id);
@@ -207,8 +215,8 @@ export function AdminAllSkillsPage() {
             <p className="text-xs text-text-tertiary mt-1">
               {loaded ? headerHint : "Loading…"}
               <span className="ml-2 text-text-tertiary">
-                · View any skill across tenants; hard delete only for{" "}
-                <span className="font-mono">agnes / github / gitee</span> sources.
+                · View any skill across tenants; hard delete allowed for{" "}
+                <span className="font-mono">agnes / github / gitee / user</span> sources.
               </span>
             </p>
           </div>
