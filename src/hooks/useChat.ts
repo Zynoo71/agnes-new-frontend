@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { agentClient } from "@/grpc/client";
 import { createAgnesConversation } from "@/api/agnesConversation";
-import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq } from "@/stores/conversationStore";
-import type { SourceCitation, SheetArtifactData, SheetPlanDimension } from "@/stores/conversationStore";
+import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType } from "@/stores/conversationStore";
+import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
@@ -145,6 +145,7 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
     }
     const assistantBlocks: ContentBlock[] = [];
     const turnSources: SourceCitation[] = [];
+    let workers: Record<string, WorkerState> = {};
     const aBlocks = turn.assistant as { type: string; data: unknown; toolCallId?: string }[];
     for (const block of aBlocks) {
       if (block.type === "Message") {
@@ -288,6 +289,12 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
             };
           }
         }
+      } else if (normalizeWorkerBlockType(block.type)) {
+        workers = applyWorkerContentBlock(
+          workers,
+          normalizeWorkerBlockType(block.type)!,
+          (block.data ?? {}) as Record<string, unknown>,
+        );
       } else if (
         block.type === "TaskStarted" ||
         block.type === "TaskCompleted" ||
@@ -329,7 +336,7 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       assistantBlocks.push({ type: "TaskList" });
     }
     if (assistantBlocks.length > 0) {
-      messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers: {}, sources: turnSources });
+      messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers, sources: turnSources });
     }
   }
   return messages;

@@ -764,7 +764,7 @@ function HumanReviewBlock({
   disabled?: boolean;
 }) {
   const reviewType = data.payload.review_type as string | undefined;
-  const reviewData = data.payload.data as Record<string, unknown> | undefined;
+  const reviewData = (data.payload.details ?? data.payload.data) as Record<string, unknown> | undefined;
   const timeoutSeconds = data.payload.timeout_seconds as number | undefined;
   const defaultAction = (data.payload.default_action as string) ?? "approve";
   const config = REVIEW_TYPE_CONFIG[reviewType ?? ""] ?? {
