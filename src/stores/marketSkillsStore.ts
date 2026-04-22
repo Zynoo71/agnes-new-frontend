@@ -2,6 +2,13 @@ import { create } from "zustand";
 import { agentClient } from "@/grpc/client";
 import type { SkillInfo } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
 
+function formatRpcError(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message.replace(/^\[\w+\]\s*/, "");
+  }
+  return String(err);
+}
+
 interface MarketSkillsStore {
   items: SkillInfo[];
   total: number;
@@ -11,6 +18,8 @@ interface MarketSkillsStore {
   source: string; // "" = all
   loading: boolean;
   loaded: boolean;
+  /** 最近一次 list 失败（网络 / gRPC）；成功或重试前清空 */
+  loadError: string | null;
   addingId: string | null;
 
   load: (opts?: {
@@ -36,6 +45,7 @@ export const useMarketSkillsStore = create<MarketSkillsStore>((set, get) => ({
   source: "",
   loading: false,
   loaded: false,
+  loadError: null,
   addingId: null,
 
   load: async (opts) => {
@@ -44,7 +54,7 @@ export const useMarketSkillsStore = create<MarketSkillsStore>((set, get) => ({
     const pageSize = opts?.pageSize ?? get().pageSize;
     const keyword = opts?.keyword ?? get().keyword;
     const source = opts?.source ?? get().source;
-    set({ loading: true });
+    set({ loading: true, loadError: null });
     try {
       const resp = await agentClient.listMarketSkills({
         page,
@@ -60,7 +70,10 @@ export const useMarketSkillsStore = create<MarketSkillsStore>((set, get) => ({
         keyword,
         source,
         loaded: true,
+        loadError: null,
       });
+    } catch (e) {
+      set({ loadError: formatRpcError(e), items: [], total: 0, loaded: false });
     } finally {
       set({ loading: false });
     }

@@ -2,6 +2,13 @@ import { create } from "zustand";
 import { agentClient } from "@/grpc/client";
 import type { SkillInfo } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
 
+function formatRpcError(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message.replace(/^\[\w+\]\s*/, "");
+  }
+  return String(err);
+}
+
 export interface CreateSkillFile {
   path: string;
   content: string;
@@ -18,6 +25,7 @@ interface MySkillsStore {
   quotaLimit: number;
   loading: boolean;
   loaded: boolean;
+  loadError: string | null;
   removingId: string | null;
   creating: boolean;
 
@@ -57,6 +65,7 @@ export const useMySkillsStore = create<MySkillsStore>((set, get) => ({
   quotaLimit: 30,
   loading: false,
   loaded: false,
+  loadError: null,
   removingId: null,
   creating: false,
 
@@ -66,7 +75,7 @@ export const useMySkillsStore = create<MySkillsStore>((set, get) => ({
     const pageSize = opts?.pageSize ?? get().pageSize;
     const keyword = opts?.keyword ?? get().keyword;
     const relation = opts?.relation ?? get().relation;
-    set({ loading: true });
+    set({ loading: true, loadError: null });
     try {
       const resp = await agentClient.listMySkills({
         page,
@@ -84,7 +93,10 @@ export const useMySkillsStore = create<MySkillsStore>((set, get) => ({
         quotaUsed: resp.quotaUsed,
         quotaLimit: resp.quotaLimit,
         loaded: true,
+        loadError: null,
       });
+    } catch (e) {
+      set({ loadError: formatRpcError(e), items: [], total: 0, loaded: false });
     } finally {
       set({ loading: false });
     }

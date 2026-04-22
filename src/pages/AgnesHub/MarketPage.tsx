@@ -124,6 +124,7 @@ export function MarketPage() {
     keyword,
     source,
     addingId,
+    loadError,
     load,
     addToMine,
   } = useMarketSkillsStore(
@@ -136,6 +137,7 @@ export function MarketPage() {
       keyword: s.keyword,
       source: s.source,
       addingId: s.addingId,
+      loadError: s.loadError,
       load: s.load,
       addToMine: s.addToMine,
     })),
@@ -214,6 +216,23 @@ export function MarketPage() {
   return (
     <AgnesHubLayout rightSlot={rightSlot}>
       <div className="p-8 max-w-7xl mx-auto">
+        {loadError && (
+          <div
+            className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800
+                       dark:border-red-800/50 dark:bg-red-950/40 dark:text-red-200"
+            role="alert"
+          >
+            <span className="font-medium">Failed to load market: </span>
+            {loadError}
+            <p className="mt-1 text-xs opacity-90">
+              Check gRPC target (<code className="rounded bg-red-100/80 px-1 dark:bg-red-900/50">VITE_API_BASE_URL</code>
+              , default Envoy <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/50">:8080</code>), that kw-agent is on
+              <code className="ml-1 rounded bg-red-100/80 px-1 dark:bg-red-900/50">:9200</code>, and{" "}
+              <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/50">VITE_APP_ID</code> matches your tenant (
+              e.g. <code className="rounded bg-red-100/80 px-1 dark:bg-red-900/50">agnes</code>).
+            </p>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <div className="flex items-center gap-1.5">
             {SOURCE_FILTERS.map((f) => {

@@ -248,6 +248,7 @@ export function MySkillsPage() {
     keyword,
     relation,
     removingId,
+    loadError,
     load,
     remove,
     publish,
@@ -261,6 +262,7 @@ export function MySkillsPage() {
       keyword: s.keyword,
       relation: s.relation,
       removingId: s.removingId,
+      loadError: s.loadError,
       load: s.load,
       remove: s.remove,
       publish: s.publish,
@@ -377,6 +379,16 @@ export function MySkillsPage() {
   return (
     <AgnesHubLayout rightSlot={rightSlot}>
       <div className="p-8 max-w-7xl mx-auto">
+        {loadError && (
+          <div
+            className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800
+                       dark:border-red-800/50 dark:bg-red-950/40 dark:text-red-200"
+            role="alert"
+          >
+            <span className="font-medium">Failed to load my skills: </span>
+            {loadError}
+          </div>
+        )}
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <div className="flex items-center gap-1.5">
             {RELATION_FILTERS.map((f) => {

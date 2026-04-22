@@ -9,7 +9,7 @@ import { enumDesc, fileDesc } from "@bufbuild/protobuf/codegenv2";
  * Describes the file kw_user_service/v1/enums.proto.
  */
 export const file_kw_user_service_v1_enums: GenFile = /*@__PURE__*/
-  fileDesc("Ch5rd191c2VyX3NlcnZpY2UvdjEvZW51bXMucHJvdG8SEmt3X3VzZXJfc2VydmljZS52MSqrAQoMQXV0aFByb3ZpZGVyEh0KGUFVVEhfUFJPVklERVJfVU5TUEVDSUZJRUQQABIXChNBVVRIX1BST1ZJREVSX0VNQUlMEAESFwoTQVVUSF9QUk9WSURFUl9QSE9ORRACEhgKFEFVVEhfUFJPVklERVJfR09PR0xFEAMSFwoTQVVUSF9QUk9WSURFUl9BUFBMRRAEEhcKE0FVVEhfUFJPVklERVJfQUdORVMQBSprCgdPdHBUeXBlEhgKFE9UUF9UWVBFX1VOU1BFQ0lGSUVEEAASFQoRT1RQX1RZUEVfUkVHSVNURVIQARISCg5PVFBfVFlQRV9MT0dJThACEhsKF09UUF9UWVBFX1JFU0VUX1BBU1NXT1JEEAMqtgEKDVByb3Zpc2lvbktpbmQSHgoaUFJPVklTSU9OX0tJTkRfVU5TUEVDSUZJRUQQABIhCh1QUk9WSVNJT05fS0lORF9FTUFJTF9QQVNTV09SRBABEiEKHVBST1ZJU0lPTl9LSU5EX1BIT05FX1BBU1NXT1JEEAISHwobUFJPVklTSU9OX0tJTkRfR09PR0xFX09BVVRIEAMSHgoaUFJPVklTSU9OX0tJTkRfQVBQTEVfT0FVVEgQBEIuWixhZ25lcy9wcm90by9nZW4vZ28va3dfdXNlcl9zZXJ2aWNlL3YxO3VzZXJ2MWIGcHJvdG8z");
+  fileDesc("Ch5rd191c2VyX3NlcnZpY2UvdjEvZW51bXMucHJvdG8SEmt3X3VzZXJfc2VydmljZS52MSqrAQoMQXV0aFByb3ZpZGVyEh0KGUFVVEhfUFJPVklERVJfVU5TUEVDSUZJRUQQABIXChNBVVRIX1BST1ZJREVSX0VNQUlMEAESFwoTQVVUSF9QUk9WSURFUl9QSE9ORRACEhgKFEFVVEhfUFJPVklERVJfR09PR0xFEAMSFwoTQVVUSF9QUk9WSURFUl9BUFBMRRAEEhcKE0FVVEhfUFJPVklERVJfQUdORVMQBSprCgdPdHBUeXBlEhgKFE9UUF9UWVBFX1VOU1BFQ0lGSUVEEAASFQoRT1RQX1RZUEVfUkVHSVNURVIQARISCg5PVFBfVFlQRV9MT0dJThACEhsKF09UUF9UWVBFX1JFU0VUX1BBU1NXT1JEEAMqtgEKDVByb3Zpc2lvbktpbmQSHgoaUFJPVklTSU9OX0tJTkRfVU5TUEVDSUZJRUQQABIhCh1QUk9WSVNJT05fS0lORF9FTUFJTF9QQVNTV09SRBABEiEKHVBST1ZJU0lPTl9LSU5EX1BIT05FX1BBU1NXT1JEEAISHwobUFJPVklTSU9OX0tJTkRfR09PR0xFX09BVVRIEAMSHgoaUFJPVklTSU9OX0tJTkRfQVBQTEVfT0FVVEgQBCpoChZUcnVzdGVkTGlmZWN5Y2xlU3RhdHVzEigKJFRSVVNURURfTElGRUNZQ0xFX1NUQVRVU19VTlNQRUNJRklFRBAAEiQKIFRSVVNURURfTElGRUNZQ0xFX1NUQVRVU19ERUxFVEVEEAEqnAEKF1RydXN0ZWRDcmVkZW50aWFsQWN0aW9uEikKJVRSVVNURURfQ1JFREVOVElBTF9BQ1RJT05fVU5TUEVDSUZJRUQQABIqCiZUUlVTVEVEX0NSRURFTlRJQUxfQUNUSU9OX1JFQklORF9FTUFJTBABEioKJlRSVVNURURfQ1JFREVOVElBTF9BQ1RJT05fUkVCSU5EX1BIT05FEAJCLlosYWduZXMvcHJvdG8vZ2VuL2dvL2t3X3VzZXJfc2VydmljZS92MTt1c2VydjFiBnByb3RvMw");
 
 /**
  * AuthProvider 登录/注册来源，与文档 auth_provider 一致
@@ -132,4 +132,57 @@ export enum ProvisionKind {
  */
 export const ProvisionKindSchema: GenEnum<ProvisionKind> = /*@__PURE__*/
   enumDesc(file_kw_user_service_v1_enums, 2);
+
+/**
+ * TrustedLifecycleStatus 可信上游同步的账号状态（BFF internal）
+ *
+ * @generated from enum kw_user_service.v1.TrustedLifecycleStatus
+ */
+export enum TrustedLifecycleStatus {
+  /**
+   * @generated from enum value: TRUSTED_LIFECYCLE_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * 注销（软删除），与 DeactivateAccount 语义一致
+   *
+   * @generated from enum value: TRUSTED_LIFECYCLE_STATUS_DELETED = 1;
+   */
+  DELETED = 1,
+}
+
+/**
+ * Describes the enum kw_user_service.v1.TrustedLifecycleStatus.
+ */
+export const TrustedLifecycleStatusSchema: GenEnum<TrustedLifecycleStatus> = /*@__PURE__*/
+  enumDesc(file_kw_user_service_v1_enums, 3);
+
+/**
+ * TrustedCredentialAction 可信上游换绑动作
+ *
+ * @generated from enum kw_user_service.v1.TrustedCredentialAction
+ */
+export enum TrustedCredentialAction {
+  /**
+   * @generated from enum value: TRUSTED_CREDENTIAL_ACTION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: TRUSTED_CREDENTIAL_ACTION_REBIND_EMAIL = 1;
+   */
+  REBIND_EMAIL = 1,
+
+  /**
+   * @generated from enum value: TRUSTED_CREDENTIAL_ACTION_REBIND_PHONE = 2;
+   */
+  REBIND_PHONE = 2,
+}
+
+/**
+ * Describes the enum kw_user_service.v1.TrustedCredentialAction.
+ */
+export const TrustedCredentialActionSchema: GenEnum<TrustedCredentialAction> = /*@__PURE__*/
+  enumDesc(file_kw_user_service_v1_enums, 4);
 

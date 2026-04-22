@@ -4,7 +4,12 @@ import { KwAgentServiceService } from "@/gen/kw_agent_service/v1/kw_agent_servic
 
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
-const APP_ID = import.meta.env.VITE_APP_ID ?? "";
+/** 与 `agnesConversation.ts` 一致；未传时后端会拒掉 Skill Hub 等 RPC（需 x-app-id）。 */
+const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
+
+const API_BASE_URL =
+  (typeof import.meta.env.VITE_API_BASE_URL === "string" && import.meta.env.VITE_API_BASE_URL.trim()) ||
+  "https://agnesx-dev-sg.kiwiar.com";
 
 function generateTraceId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -41,7 +46,7 @@ const injectHeadersInterceptor: Interceptor = (next) => (req) => {
 };
 
 const transport = createGrpcWebTransport({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || "https://agnesx-dev-sg.kiwiar.com",
+  baseUrl: API_BASE_URL,
   interceptors: [injectHeadersInterceptor],
 });
 
