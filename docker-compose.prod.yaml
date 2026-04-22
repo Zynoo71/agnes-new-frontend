@@ -2,7 +2,7 @@ services:
   frontend:
     build: .
     ports:
-      - "80:80"
+      - "4173:80"
     depends_on:
       - envoy
 
