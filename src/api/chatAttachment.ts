@@ -1,7 +1,7 @@
 import type { ChatAttachment } from "@/types/chatAttachment";
+import { getBffToken } from "@/api/bffAuth";
 
 const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
-const BFF_TOKEN = import.meta.env.VITE_BFF_TOKEN ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
@@ -16,13 +16,6 @@ interface PresignedUrlResponse {
     public_url: string;
     required_headers?: Record<string, string>;
   };
-}
-
-function requireUploadToken(): string {
-  if (!BFF_TOKEN) {
-    throw new Error("VITE_BFF_TOKEN is required for chat attachment uploads");
-  }
-  return BFF_TOKEN;
 }
 
 function isLocalDev(): boolean {
@@ -70,7 +63,7 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
     : await fetch(`${resolveBffBaseUrl()}/api/v1/file/presigned-url`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${requireUploadToken()}`,
+          Authorization: `Bearer ${await getBffToken()}`,
           "Content-Type": "application/json",
           Accept: "application/json",
           "X-App": APP_ID,

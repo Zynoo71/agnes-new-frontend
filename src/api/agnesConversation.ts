@@ -1,7 +1,7 @@
 import { agentClient } from "@/grpc/client";
+import { getBffToken } from "@/api/bffAuth";
 
 const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
-const BFF_TOKEN = import.meta.env.VITE_BFF_TOKEN ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
 const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
@@ -13,13 +13,6 @@ interface CreateConversationResponse {
   data?: {
     conversation_id?: string | number;
   };
-}
-
-function requireBffToken(): string {
-  if (!BFF_TOKEN) {
-    throw new Error("VITE_BFF_TOKEN is required for Agnes BFF requests");
-  }
-  return BFF_TOKEN;
 }
 
 function isLocalDev(): boolean {
@@ -53,7 +46,7 @@ export async function createAgnesConversation(): Promise<string> {
   const response = await fetch(`${resolveBffBaseUrl()}/api/v1/agnes/conversation`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${requireBffToken()}`,
+      Authorization: `Bearer ${await getBffToken()}`,
       "Content-Type": "application/json",
       Accept: "application/json",
       "X-App": APP_ID,
