@@ -347,16 +347,6 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
-      "/kw_agent_service": {
-        target: process.env.VITE_API_BASE_URL || "https://agnesx-dev-sg.kiwiar.com",
-        changeOrigin: true,
-        secure: true,
-      },
     },
-  },
-  preview: {
-    host: "0.0.0.0",
-    port: 4173,
-    allowedHosts: true,
   },
 });

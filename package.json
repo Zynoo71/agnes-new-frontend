@@ -4,14 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "docker compose up envoy -d && VITE_API_BASE_URL=http://localhost:8080 vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
     "preview": "vite preview",
-    "serve": "vite build && vite preview",
+    "lint": "eslint .",
     "proto:gen": "NODE_NO_WARNINGS=1 buf generate ../agnes_core/proto",
-    "proxy": "docker compose up envoy",
-    "start": "docker compose up envoy -d && VITE_API_BASE_URL=http://localhost:8080 vite"
+    "deploy": "docker compose -f docker-compose.prod.yaml up --build -d"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",

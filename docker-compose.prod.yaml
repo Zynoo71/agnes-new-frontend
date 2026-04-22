@@ -1,0 +1,13 @@
+services:
+  frontend:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - envoy
+
+  envoy:
+    image: envoyproxy/envoy:v1.31-latest
+    volumes:
+      - ./envoy.prod.yaml:/etc/envoy/envoy.yaml:ro
+    command: envoy -c /etc/envoy/envoy.yaml
