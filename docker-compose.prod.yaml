@@ -1,3 +1,5 @@
+name: agnes-prod
+
 services:
   frontend:
     build: .
