@@ -921,13 +921,21 @@ function PromptEnhancementRenderer(data: Record<string, unknown>) {
 interface MaterialCandidate {
   url: string;
   source: string;
+  type?: string;
   desc?: string;
 }
 
+interface MaterialSlot {
+  role: string;
+  desc: string;
+  required: boolean;
+  candidates: MaterialCandidate[];
+  selected_index: number | null;
+}
+
 function MaterialSupplementRenderer(data: Record<string, unknown>) {
-  const missing = (data.missing_materials as string[]) ?? [];
-  const candidates = (data.candidates as MaterialCandidate[]) ?? [];
-  const actions = (data.suggested_actions as string[]) ?? [];
+  const slots = (data.slots as MaterialSlot[]) ?? [];
+  const contextSummary = (data.context_summary as string) ?? "";
   const message = (data.message as string) ?? "";
 
   return (
@@ -935,49 +943,79 @@ function MaterialSupplementRenderer(data: Record<string, unknown>) {
       {message && (
         <p className="text-xs text-text-secondary leading-relaxed">{message}</p>
       )}
-      {missing.length > 0 && (
-        <div>
-          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Missing materials</div>
-          <div className="flex flex-wrap gap-1.5">
-            {missing.map((m, i) => (
-              <span key={i} className="text-[11px] text-warning bg-warning/10 px-2 py-0.5 rounded-full">{m}</span>
-            ))}
-          </div>
-        </div>
-      )}
-      {candidates.length > 0 && (
-        <div>
-          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Candidates</div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {candidates.map((c, i) => (
-              <div key={i} className="rounded-lg border border-border-light overflow-hidden bg-surface">
-                <img src={c.url} alt={c.desc ?? ""} className="w-full h-24 object-cover" loading="lazy" />
-                <div className="px-2 py-1.5">
-                  {c.desc && <p className="text-[11px] text-text-secondary truncate">{c.desc}</p>}
-                  <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1 py-0.5 rounded">
-                    {c.source}
+      {slots.length > 0 && (
+        <div className="space-y-3">
+          {slots.map((slot, si) => (
+            <div key={si} className="rounded-lg border border-border-light bg-surface p-3">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-sm font-medium text-text-primary">{slot.role}</span>
+                {!slot.required && (
+                  <span className="text-[10px] text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+                    optional
                   </span>
-                </div>
+                )}
               </div>
-            ))}
-          </div>
+              {slot.desc && (
+                <p className="text-[11px] text-text-tertiary mb-2">{slot.desc}</p>
+              )}
+              {slot.candidates.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {slot.candidates.map((c, ci) => {
+                    const isSelected = slot.selected_index === ci;
+                    return (
+                      <div
+                        key={ci}
+                        className={`rounded-lg border overflow-hidden ${
+                          isSelected
+                            ? "border-accent ring-2 ring-accent/30"
+                            : "border-border-light"
+                        }`}
+                      >
+                        {c.type === "video" ? (
+                          <div className="w-full h-24 bg-surface-hover flex items-center justify-center">
+                            <span className="text-[10px] text-text-tertiary">VIDEO</span>
+                          </div>
+                        ) : (
+                          <img src={c.url} alt={c.desc ?? ""} className="w-full h-24 object-cover" loading="lazy" />
+                        )}
+                        <div className="px-2 py-1.5">
+                          {c.desc && <p className="text-[11px] text-text-secondary truncate">{c.desc}</p>}
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1 py-0.5 rounded">
+                              {c.source}
+                            </span>
+                            {isSelected && (
+                              <span className="text-[10px] font-medium text-accent bg-accent/10 px-1 py-0.5 rounded">
+                                selected
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : slot.required ? (
+                <div className="rounded-lg border border-dashed border-warning/40 bg-warning/5 p-3 text-center">
+                  <p className="text-[11px] text-warning">No candidates — upload or search to fill this slot</p>
+                </div>
+              ) : null}
+            </div>
+          ))}
         </div>
       )}
-      {actions.length > 0 && (
-        <div>
-          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Suggestions</div>
-          <ul className="space-y-1">
-            {actions.map((a, i) => (
-              <li key={i} className="text-xs text-text-secondary flex items-start gap-1.5">
-                <span className="text-text-tertiary mt-0.5 shrink-0">&#x2022;</span>
-                {a}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {contextSummary && (
+        <p className="text-[11px] text-text-tertiary leading-relaxed">{contextSummary}</p>
       )}
     </div>
   );
+}
+
+interface BatchPlanMaterial {
+  url: string;
+  source?: string;
+  type?: string;
+  desc?: string;
 }
 
 interface BatchPlanItem {
@@ -987,7 +1025,7 @@ interface BatchPlanItem {
   style?: string;
   model_code?: string | null;
   num_images?: number;
-  images?: string[];
+  materials?: BatchPlanMaterial[];
 }
 
 function BatchGenerationPlanRenderer(data: Record<string, unknown>) {
@@ -1025,10 +1063,17 @@ function BatchGenerationPlanRenderer(data: Record<string, unknown>) {
               )}
             </div>
             <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{item.prompt}</p>
-            {item.images && item.images.length > 0 && (
-              <div className="flex gap-1.5 mt-2">
-                {item.images.map((url, j) => (
-                  <img key={j} src={url} alt="" className="w-12 h-12 rounded object-cover border border-border-light" loading="lazy" />
+            {item.materials && item.materials.length > 0 && (
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {item.materials.map((m, j) => (
+                  <div key={j} className="flex flex-col items-center gap-0.5">
+                    <img src={m.url} alt={m.desc ?? ""} className="w-12 h-12 rounded object-cover border border-border-light" loading="lazy" />
+                    {m.desc && (
+                      <span className="text-[10px] text-text-tertiary max-w-[56px] truncate text-center" title={m.desc}>
+                        {m.desc}
+                      </span>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
