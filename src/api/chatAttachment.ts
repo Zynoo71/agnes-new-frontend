@@ -26,13 +26,8 @@ function isLocalDev(): boolean {
 }
 
 function resolveBffBaseUrl(): string {
-  if (BFF_BASE_URL) {
-    return BFF_BASE_URL;
-  }
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
-  return "http://127.0.0.1:8201";
+  if (BFF_BASE_URL) return BFF_BASE_URL;
+  return "https://api-agnes-dev.kiwiar.com";
 }
 
 export async function uploadChatAttachment(file: File, conversationId?: string | null): Promise<ChatAttachment> {
@@ -66,8 +61,7 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
           Authorization: `Bearer ${await getBffToken()}`,
           "Content-Type": "application/json",
           Accept: "application/json",
-          "X-App": APP_ID,
-          "x-user-id": DEV_USER_ID,
+          "x-app-id": APP_ID,
           ...devLaneHeader,
         },
         body: presignedBody,
