@@ -10,11 +10,12 @@ function nextMessageId(): string {
   return `msg-${Date.now()}-${++messageIdCounter}`;
 }
 
-function tryDecodeJson(bytes: Uint8Array): unknown {
+function tryDecodeJson(bytes: Uint8Array | string): unknown {
   try {
-    return JSON.parse(new TextDecoder().decode(bytes));
+    const text = typeof bytes === "string" ? bytes : new TextDecoder().decode(bytes);
+    return JSON.parse(text);
   } catch {
-    return new TextDecoder().decode(bytes);
+    return typeof bytes === "string" ? bytes : new TextDecoder().decode(bytes);
   }
 }
 
@@ -57,6 +58,8 @@ export interface ToolCallData {
   toolName: string;
   toolInput: Record<string, unknown>;
   toolResult?: Record<string, unknown>;
+  streamStdout?: string;
+  streamStderr?: string;
 }
 
 export interface NodeData {
@@ -399,6 +402,64 @@ function removeAgentThinking(blocks: ContentBlock[]): ContentBlock[] {
   return next;
 }
 
+function appendExecuteStreamDelta(
+  blocks: ContentBlock[],
+  payload: Record<string, unknown>,
+): ContentBlock[] {
+  const content = typeof payload.content === "string" ? payload.content : "";
+  if (!content) return blocks;
+
+  const streamKey = payload.stream === "stderr" ? "streamStderr" : "streamStdout";
+  const toolCallId = typeof payload.tool_call_id === "string" ? payload.tool_call_id : "";
+  const nextBlocks = [...blocks];
+
+  let matchIndex = -1;
+  if (toolCallId) {
+    matchIndex = nextBlocks.findIndex(
+      (block) => block.type === "ToolCallStart" && block.data.toolCallId === toolCallId,
+    );
+  }
+  if (matchIndex < 0) {
+    for (let i = nextBlocks.length - 1; i >= 0; i--) {
+      const block = nextBlocks[i];
+      if (
+        block.type === "ToolCallStart"
+        && block.data.toolName === "execute"
+        && !block.data.toolResult
+      ) {
+        matchIndex = i;
+        break;
+      }
+    }
+  }
+  if (matchIndex < 0) return blocks;
+
+  const block = nextBlocks[matchIndex];
+  if (block.type !== "ToolCallStart") return blocks;
+  const timedOut = block.data.toolResult?.timed_out === true;
+  const prevStdout = block.data.streamStdout ?? (timedOut && typeof block.data.toolResult?.stdout === "string"
+    ? block.data.toolResult.stdout
+    : "");
+  const prevStderr = block.data.streamStderr ?? (timedOut && typeof block.data.toolResult?.stderr === "string"
+    ? block.data.toolResult.stderr
+    : "");
+  const prev = streamKey === "streamStderr" ? prevStderr : prevStdout;
+  const nextData: ToolCallData = {
+    ...block.data,
+    streamStdout: prevStdout,
+    streamStderr: prevStderr,
+    [streamKey]: prev + content,
+  };
+  if (timedOut) {
+    nextData.toolResult = undefined;
+  }
+  nextBlocks[matchIndex] = {
+    type: "ToolCallStart",
+    data: nextData,
+  };
+  return nextBlocks;
+}
+
 function ensureAgentThinking(blocks: ContentBlock[], phase?: string, hint?: string): ContentBlock[] {
   // 如果已经有 AgentThinking，原地更新 phase / hint（保留 items 行为日志）
   const idx = blocks.findIndex((b) => b.type === "AgentThinking");
@@ -678,6 +739,11 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
           type: "human_review",
           data: { payload, resolved: false },
         });
+        break;
+      }
+
+      if (custom.type === "ExecuteStreamDelta") {
+        updated.blocks = appendExecuteStreamDelta(updated.blocks, payload);
         break;
       }
 

@@ -17,6 +17,8 @@ export interface ToolRenderProps {
   toolInput: Record<string, unknown>;
   toolResult?: Record<string, unknown>;
   toolCallId: string;
+  streamStdout?: string;
+  streamStderr?: string;
   /** True when subsequent content (text/tool_call) has arrived after this block. */
   autoCollapse?: boolean;
 }

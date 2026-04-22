@@ -8,6 +8,7 @@ import { MessageBubble } from "@/components/MessageBubble";
 import { EventStream } from "@/components/EventStream";
 import { SystemPromptSelector } from "@/components/SystemPromptSelector";
 import type { ChatAttachment } from "@/types/chatAttachment";
+import type { AgentTask, ContentBlock, Message, SourceCitation, WorkerState } from "@/stores/conversationStore";
 
 const AGENT_TYPES = ["super", "search", "research", "slide", "sheet", "pixa"] as const;
 
@@ -37,6 +38,471 @@ const HEALTH_CONFIG = {
   error: { dot: "bg-red-500", color: "#ef4444", label: "Disconnected" },
   checking: { dot: "bg-yellow-500", color: "#eab308", label: "Connecting" },
 } as const;
+
+type QueuedMessage = {
+  id: string;
+  text: string;
+  files: ChatAttachment[];
+};
+
+let queuedMessageCounter = 0;
+
+function nextQueuedMessageId() {
+  queuedMessageCounter += 1;
+  return `queued-${Date.now()}-${queuedMessageCounter}`;
+}
+
+function stringifyForExport(value: unknown): string {
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderHtmlDataList(items: Array<{ label: string; value: string }>): string {
+  return items
+    .map(({ label, value }) => `<div class="meta-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`)
+    .join("");
+}
+
+function renderHtmlCodeBlock(content: string, lang = "text"): string {
+  if (!content.trim()) return "";
+  return `<div class="code-block"><div class="code-label">${escapeHtml(lang)}</div><pre><code>${escapeHtml(content)}</code></pre></div>`;
+}
+
+function renderHtmlAttachmentList(files: ChatAttachment[]): string {
+  if (files.length === 0) return "";
+  return `
+    <section class="section-block">
+      <h4>Attachments</h4>
+      <ul class="bullet-list">
+        ${files.map((file) => `
+          <li>
+            <span class="strong">${escapeHtml(file.filename || "Unnamed file")}</span>
+            <span class="muted">${escapeHtml(file.mimeType)}</span>
+            ${file.url ? `<a href="${escapeHtml(file.url)}" target="_blank" rel="noreferrer">Open</a>` : ""}
+          </li>
+        `).join("")}
+      </ul>
+    </section>
+  `;
+}
+
+function renderHtmlSources(sources: SourceCitation[]): string {
+  if (sources.length === 0) return "";
+  return `
+    <section class="section-block">
+      <h4>Sources</h4>
+      <ul class="bullet-list sources-list">
+        ${sources.map((source) => `
+          <li>
+            <div class="strong">[${escapeHtml(String(source.ref))}] ${escapeHtml(source.title)}</div>
+            <a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(source.url)}</a>
+            ${source.snippet ? `<p class="muted">${escapeHtml(source.snippet)}</p>` : ""}
+          </li>
+        `).join("")}
+      </ul>
+    </section>
+  `;
+}
+
+function renderHtmlTasks(tasks: AgentTask[]): string {
+  if (tasks.length === 0) {
+    return `
+      <section class="section-block">
+        <h4>Tasks</h4>
+        <p class="muted">No tasks captured.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="section-block">
+      <h4>Tasks</h4>
+      <div class="task-grid">
+        ${tasks.map((task) => `
+          <article class="task-card">
+            <div class="task-head">
+              <span class="badge">#${task.id}</span>
+              <span class="status-pill">${escapeHtml(task.status)}</span>
+            </div>
+            <div class="strong">${escapeHtml(task.title)}</div>
+            ${task.description ? `<p>${escapeHtml(task.description)}</p>` : ""}
+            ${task.depends_on.length > 0 ? `<p class="muted">depends_on: ${escapeHtml(task.depends_on.join(", "))}</p>` : ""}
+            ${task.result ? `<div class="mini-block"><div class="mini-label">Result</div><pre>${escapeHtml(task.result)}</pre></div>` : ""}
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderHtmlToolSection(title: string, toolName: string, toolInput: Record<string, unknown>, toolResult?: Record<string, unknown>, streamStdout?: string, streamStderr?: string): string {
+  return `
+    <section class="section-block tool-block">
+      <h4>${escapeHtml(title)}: ${escapeHtml(toolName || "unknown")}</h4>
+      <div class="mini-block"><div class="mini-label">Input</div>${renderHtmlCodeBlock(stringifyForExport(toolInput), "json")}</div>
+      ${streamStdout?.trim() ? `<div class="mini-block"><div class="mini-label">Stdout</div>${renderHtmlCodeBlock(streamStdout, "text")}</div>` : ""}
+      ${streamStderr?.trim() ? `<div class="mini-block"><div class="mini-label">Stderr</div>${renderHtmlCodeBlock(streamStderr, "text")}</div>` : ""}
+      <div class="mini-block"><div class="mini-label">Result</div>${toolResult ? renderHtmlCodeBlock(stringifyForExport(toolResult), "json") : '<p class="muted">Pending or streamed without final payload.</p>'}</div>
+    </section>
+  `;
+}
+
+function renderHtmlWorker(worker: WorkerState): string {
+  return `
+    <section class="section-block worker-block">
+      <h4>Worker: ${escapeHtml(worker.description || worker.workerId)}</h4>
+      <div class="meta-grid">
+        ${renderHtmlDataList([
+          { label: "id", value: worker.workerId },
+          { label: "status", value: worker.status },
+        ])}
+      </div>
+      ${worker.items.map((item, index) => item.kind === "text"
+        ? `<div class="mini-block"><div class="mini-label">Worker Text ${index + 1}</div><div class="rich-text">${escapeHtml(item.content).replaceAll("\n", "<br />")}</div></div>`
+        : renderHtmlToolSection(`Worker Tool ${index + 1}`, item.toolName, item.toolInput, item.toolResult)
+      ).join("")}
+      ${worker.summary ? `<div class="mini-block"><div class="mini-label">Summary</div><div class="rich-text">${escapeHtml(worker.summary).replaceAll("\n", "<br />")}</div></div>` : ""}
+      ${worker.error ? `<div class="mini-block"><div class="mini-label">Error</div><pre>${escapeHtml(worker.error)}</pre></div>` : ""}
+    </section>
+  `;
+}
+
+function renderHtmlBlock(block: ContentBlock, tasks: AgentTask[]): string {
+  switch (block.type) {
+    case "Message":
+      return block.content.trim() ? `<section class="section-block"><div class="rich-text">${escapeHtml(block.content).replaceAll("\n", "<br />")}</div></section>` : "";
+    case "File":
+      return renderHtmlAttachmentList([block.data]);
+    case "Reasoning":
+      return `<section class="section-block"><h4>Reasoning</h4><div class="rich-text">${escapeHtml(block.content).replaceAll("\n", "<br />")}</div></section>`;
+    case "ToolCallStart":
+      return renderHtmlToolSection("Tool", block.data.toolName, block.data.toolInput, block.data.toolResult, block.data.streamStdout, block.data.streamStderr);
+    case "human_review":
+      return `
+        <section class="section-block">
+          <h4>Human Review</h4>
+          <div class="meta-grid">${renderHtmlDataList([{ label: "resolved", value: block.data.resolved ? "yes" : "no" }])}</div>
+          <div class="mini-block"><div class="mini-label">Payload</div>${renderHtmlCodeBlock(stringifyForExport(block.data.payload), "json")}</div>
+        </section>
+      `;
+    case "TaskList":
+      return renderHtmlTasks(tasks);
+    case "ContextCompacting":
+      return `<section class="section-block"><h4>Context Compacting</h4><div class="meta-grid">${renderHtmlDataList([{ label: "done", value: block.done ? "yes" : "no" }])}</div></section>`;
+    case "SlideOutline":
+      return `<section class="section-block"><h4>Slide Outline</h4>${renderHtmlCodeBlock(stringifyForExport(block.data.outline), "json")}</section>`;
+    case "SlideDesignSystem":
+      return `<section class="section-block"><h4>Slide Design System</h4><div class="rich-text">${escapeHtml(block.data.summary).replaceAll("\n", "<br />")}</div></section>`;
+    case "MemoryUpdate":
+      return `
+        <section class="section-block">
+          <h4>Memory Update</h4>
+          <div class="meta-grid">${renderHtmlDataList([{ label: "field", value: block.data.field }])}</div>
+          <div class="rich-text">${escapeHtml(block.data.content).replaceAll("\n", "<br />")}</div>
+        </section>
+      `;
+    case "SheetArtifact":
+      return `
+        <section class="section-block">
+          <h4>Sheet Artifact: ${escapeHtml(block.data.name)}</h4>
+          <div class="meta-grid">
+            ${renderHtmlDataList([
+              { label: "artifact_id", value: block.data.artifactId },
+              { label: "type", value: block.data.artifactType },
+              { label: "producer_node_id", value: block.data.producerNodeId || "n/a" },
+              { label: "invalidated", value: block.data.invalidated ? "yes" : "no" },
+              ...(block.data.invalidatedReason ? [{ label: "invalidated_reason", value: block.data.invalidatedReason }] : []),
+            ])}
+          </div>
+          <div class="mini-block"><div class="mini-label">Content</div>${renderHtmlCodeBlock(stringifyForExport(block.data.content), "json")}</div>
+        </section>
+      `;
+    case "SheetPlan":
+      return `
+        <section class="section-block">
+          <h4>Sheet Plan</h4>
+          <ul class="bullet-list">
+            ${block.data.dimensions.map((dimension) => `<li>[${escapeHtml(dimension.status)}] ${escapeHtml(dimension.title || dimension.id)}${dimension.role ? ` | role: ${escapeHtml(dimension.role)}` : ""}${dimension.error ? ` | error: ${escapeHtml(dimension.error)}` : ""}</li>`).join("")}
+          </ul>
+        </section>
+      `;
+    case "AgentThinking":
+      return `
+        <section class="section-block">
+          <h4>Agent Thinking</h4>
+          <ul class="bullet-list">
+            ${block.phase ? `<li>phase: ${escapeHtml(block.phase)}</li>` : ""}
+            ${block.hint ? `<li>hint: ${escapeHtml(block.hint)}</li>` : ""}
+            ${(block.items ?? []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+          </ul>
+        </section>
+      `;
+    default:
+      return "";
+  }
+}
+
+function buildConversationHtmlDocument(params: {
+  conversationId: string | null;
+  agentType: string;
+  systemPromptId: string | null;
+  extraContext: Record<string, string>;
+  messages: Message[];
+  tasks: AgentTask[];
+}): string {
+  const { conversationId, agentType, systemPromptId, extraContext, messages, tasks } = params;
+  const exportedAt = new Date().toISOString();
+  const renderedMessages = messages.map((message, index) => {
+    const meta = [
+      { label: "message_id", value: message.id },
+      ...(message.requestStartedAt ? [{ label: "request_started_at", value: new Date(message.requestStartedAt).toISOString() }] : []),
+      ...(message.ttftMs != null ? [{ label: "ttft_ms", value: String(message.ttftMs) }] : []),
+      ...(message.agentStartedAt ? [{ label: "agent_started_at", value: new Date(message.agentStartedAt).toISOString() }] : []),
+      ...(message.agentDurationMs != null ? [{ label: "agent_duration_ms", value: String(message.agentDurationMs) }] : []),
+      ...(message.error ? [
+        { label: "error_type", value: message.error.errorType },
+        { label: "error_message", value: message.error.message },
+        { label: "error_recoverable", value: message.error.recoverable ? "yes" : "no" },
+      ] : []),
+    ];
+
+    return `
+      <article class="message-card message-${escapeHtml(message.role)}">
+        <header class="message-header">
+          <div>
+            <div class="message-kicker">${index + 1}. ${escapeHtml(message.role === "user" ? "User" : "Assistant")}</div>
+            <h3>${escapeHtml(message.role === "user" ? "User Input" : "Assistant Output")}</h3>
+          </div>
+        </header>
+        <div class="meta-grid">${renderHtmlDataList(meta)}</div>
+        <div class="section-stack">
+          ${message.blocks.length === 0 ? '<section class="section-block"><p class="muted">No content blocks captured.</p></section>' : message.blocks.map((block) => renderHtmlBlock(block, tasks)).join("")}
+          ${Object.values(message.workers).length > 0 ? `<section class="section-block"><h4>Workers</h4><div class="section-stack">${Object.values(message.workers).map((worker) => renderHtmlWorker(worker)).join("")}</div></section>` : ""}
+          ${renderHtmlSources(message.sources)}
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agnes Conversation Export</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --canvas: #ffffff;
+      --border: #d7deea;
+      --text: #142033;
+      --sub: #5b6980;
+      --accent: #1f4fd1;
+      --user: #edf4ff;
+      --assistant: #f8fbff;
+      --chip: #eef2f8;
+      --code: #0f172a;
+      --code-bg: #f3f6fb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page {
+      width: min(1200px, calc(100vw - 48px));
+      margin: 24px auto 48px;
+    }
+    .hero, .message-card {
+      background: var(--canvas);
+      border: 1px solid var(--border);
+    }
+    .hero {
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+    }
+    .hero p {
+      margin: 8px 0 0;
+      color: var(--sub);
+      max-width: 820px;
+    }
+    .summary-grid, .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px 16px;
+      margin-top: 18px;
+    }
+    .meta-row {
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+    .meta-row dt {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--sub);
+      margin-bottom: 4px;
+    }
+    .meta-row dd {
+      margin: 0;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .message-list {
+      display: grid;
+      gap: 20px;
+    }
+    .message-card {
+      padding: 20px;
+    }
+    .message-user { background: linear-gradient(0deg, var(--canvas), var(--user)); }
+    .message-assistant { background: linear-gradient(0deg, var(--canvas), var(--assistant)); }
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .message-kicker {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--sub);
+      margin-bottom: 4px;
+    }
+    .message-header h3, .section-block h4 {
+      margin: 0;
+    }
+    .section-stack {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .section-block {
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.9);
+    }
+    .bullet-list {
+      margin: 10px 0 0;
+      padding-left: 20px;
+    }
+    .bullet-list li + li { margin-top: 8px; }
+    .rich-text { white-space: pre-wrap; word-break: break-word; }
+    .muted { color: var(--sub); }
+    .strong { font-weight: 600; }
+    .mini-block {
+      margin-top: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .mini-label, .code-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--sub);
+      margin-bottom: 6px;
+    }
+    .code-block pre, .mini-block pre {
+      margin: 0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 12px;
+      color: var(--code);
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+    }
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .task-card {
+      border: 1px solid var(--border);
+      padding: 12px;
+      background: #fbfcfe;
+    }
+    .task-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .badge, .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      background: var(--chip);
+      font-size: 11px;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    }
+    .sources-list p { margin: 4px 0 0; }
+    @media (max-width: 720px) {
+      .page { width: min(100vw - 24px, 1200px); }
+      .hero, .message-card { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="message-kicker">Agnes Export / XHTML</div>
+      <h1>Conversation Archive</h1>
+      <p>Self-contained XHTML export of the conversation timeline, tool traces, sources, worker activity, and captured task state.</p>
+      <div class="summary-grid">
+        ${renderHtmlDataList([
+          { label: "exported_at", value: exportedAt },
+          { label: "conversation_id", value: conversationId ?? "not-created" },
+          { label: "agent_type", value: agentType },
+          { label: "system_prompt_id", value: systemPromptId ?? "default" },
+          { label: "extra_context", value: Object.keys(extraContext).length > 0 ? stringifyForExport(extraContext) : "{}" },
+          { label: "message_count", value: String(messages.length) },
+        ])}
+      </div>
+      ${renderHtmlTasks(tasks)}
+    </section>
+    <section class="message-list">
+      ${renderedMessages}
+    </section>
+  </main>
+</body>
+</html>`;
+}
+
+function sanitizeFilenamePart(value: string): string {
+  return value.replace(/[^a-zA-Z0-9-_]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "conversation";
+}
 
 function HealthBadge({ info }: { info: HealthInfo }) {
   const c = HEALTH_CONFIG[info.status];
@@ -178,7 +644,7 @@ function LocationPopover({ city, country, onChange, onClose }: {
 }
 
 export function ChatPanel() {
-  const { conversationId, agentType, messages, isStreaming, isLoadingHistory, error, setAgentType, systemPromptId, setSystemPromptId, setError, extraContext, setExtraContext } =
+  const { conversationId, agentType, messages, tasks, isStreaming, isLoadingHistory, error, setAgentType, systemPromptId, setSystemPromptId, setError, extraContext, setExtraContext } =
     useConversationStore();
   const rawEventsCount = useConversationStore(s => s.rawEvents.length);
   const rawEvents = useConversationStore(s => s.rawEvents);
@@ -194,10 +660,15 @@ export function ChatPanel() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<ChatAttachment[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const [queuedMessages, setQueuedMessages] = useState<QueuedMessage[]>([]);
+  const [isExportingHtml, setIsExportingHtml] = useState(false);
+  const [exportedHtmlUrl, setExportedHtmlUrl] = useState<string | null>(null);
+  const [copiedExportUrl, setCopiedExportUrl] = useState(false);
   const isNearBottomRef = useRef(true);
   const pendingScrollRef = useRef(false);
   const lastAutoScrollRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isDrainingQueueRef = useRef(false);
 
   const health = useHealthCheck();
 
@@ -256,27 +727,66 @@ export function ChatPanel() {
 
   const isComposingRef = useRef(false);
 
-  const handleSend = async (text?: string) => {
-    const trimmed = (text ?? input).trim();
-    if ((!trimmed && pendingFiles.length === 0) || isStreaming || isUploadingFiles) return;
-    if (hasPendingReview && pendingFiles.length > 0) {
+  const enqueueMessage = useCallback((text: string, files: ChatAttachment[]) => {
+    setQueuedMessages((prev) => [...prev, { id: nextQueuedMessageId(), text, files }]);
+  }, []);
+
+  const sendNow = useCallback(async (text: string, files: ChatAttachment[]) => {
+    const trimmed = text.trim();
+    if (!trimmed && files.length === 0) return;
+    if (hasPendingReview && files.length > 0) {
       setError("Attachments are not supported while replying to a human review step.");
       return;
     }
-    const filesToSend = pendingFiles;
-    setInput("");
-    setPendingFiles([]);
+
     isNearBottomRef.current = true;
+
     if (!conversationId) {
       await createConversation();
     }
+
     if (hasPendingReview) {
-      hitlResume("modify", trimmed);
-    } else {
-      sendMessage(trimmed, filesToSend);
+      await hitlResume("modify", trimmed);
+      return;
     }
+
+    await sendMessage(trimmed, files);
+  }, [conversationId, createConversation, hasPendingReview, hitlResume, sendMessage, setError]);
+
+  const handleSend = async (text?: string) => {
+    const trimmed = (text ?? input).trim();
+    if ((!trimmed && pendingFiles.length === 0) || isUploadingFiles) return;
+    const filesToSend = pendingFiles;
+    setInput("");
+    setPendingFiles([]);
+    if (isStreaming) {
+      enqueueMessage(trimmed, filesToSend);
+      return;
+    }
+
+    await sendNow(trimmed, filesToSend);
     // ResizeObserver handles the scroll when content appears.
   };
+
+  useEffect(() => {
+    if (isStreaming || isUploadingFiles || queuedMessages.length === 0 || isDrainingQueueRef.current) {
+      return;
+    }
+
+    const [nextQueued] = queuedMessages;
+    if (!nextQueued) return;
+
+    isDrainingQueueRef.current = true;
+    setQueuedMessages((prev) => prev.slice(1));
+
+    void (async () => {
+      try {
+        await sendNow(nextQueued.text, nextQueued.files);
+      } finally {
+        isDrainingQueueRef.current = false;
+      }
+    })();
+  }, [isStreaming, isUploadingFiles, queuedMessages, sendNow]);
 
   const handleSelectFiles = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -307,6 +817,38 @@ export function ChatPanel() {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleRemoveQueuedMessage = useCallback((id: string) => {
+    setQueuedMessages((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const handleEditQueuedMessage = useCallback((id: string) => {
+    setQueuedMessages((prev) => {
+      const index = prev.findIndex((item) => item.id === id);
+      if (index < 0) return prev;
+
+      const queued = prev[index];
+      const currentDraft = { text: input, files: pendingFiles };
+      const hasCurrentDraft = currentDraft.text.trim().length > 0 || currentDraft.files.length > 0;
+
+      setInput(queued.text);
+      setPendingFiles(queued.files);
+      requestAnimationFrame(() => textareaRef.current?.focus());
+
+      if (!hasCurrentDraft) {
+        return prev.filter((item) => item.id !== id);
+      }
+
+      return prev.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+        return {
+          id: nextQueuedMessageId(),
+          text: currentDraft.text,
+          files: currentDraft.files,
+        };
+      });
+    });
+  }, [input, pendingFiles]);
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Check both standard isComposing and our ref for broader compatibility
     const isComposing = e.nativeEvent.isComposing || isComposingRef.current;
@@ -318,6 +860,43 @@ export function ChatPanel() {
 
   const hasInput = input.trim().length > 0;
   const canSend = (hasInput || pendingFiles.length > 0) && !isUploadingFiles;
+
+  const handleExportHtml = useCallback(async () => {
+    if (messages.length === 0 || isExportingHtml) return;
+
+    setIsExportingHtml(true);
+    setCopiedExportUrl(false);
+    setError(null);
+
+    try {
+      const content = buildConversationHtmlDocument({
+        conversationId,
+        agentType,
+        systemPromptId,
+        extraContext,
+        messages,
+        tasks,
+      });
+      const filename = `${sanitizeFilenamePart(agentType)}-${sanitizeFilenamePart(conversationId ?? "draft")}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.html`;
+      const file = new File([content], filename, { type: "application/xml" });
+      const uploaded = await uploadChatAttachment(file);
+      setExportedHtmlUrl(uploaded.url);
+      window.open(uploaded.url, "_blank", "noopener,noreferrer");
+    } catch (exportError) {
+      const message = exportError instanceof Error ? exportError.message : String(exportError);
+      setError(`HTML export failed: ${message}`);
+    } finally {
+      setIsExportingHtml(false);
+    }
+  }, [agentType, conversationId, extraContext, isExportingHtml, messages, setError, systemPromptId, tasks]);
+
+  const handleCopyExportUrl = useCallback(() => {
+    if (!exportedHtmlUrl) return;
+    navigator.clipboard.writeText(exportedHtmlUrl).then(() => {
+      setCopiedExportUrl(true);
+      window.setTimeout(() => setCopiedExportUrl(false), 1500);
+    });
+  }, [exportedHtmlUrl]);
 
   const inputArea = (
     <div className={`rounded-[20px] border border-border bg-surface shadow-sm
@@ -354,6 +933,58 @@ export function ChatPanel() {
           disabled={hasUserMessages}
         />
       </div>
+      {queuedMessages.length > 0 && (
+        <div className="px-3 pt-2">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-2.5">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-amber-800/80">
+                Queue {queuedMessages.length}
+              </div>
+              <div className="text-[11px] text-amber-700/80">
+                Auto-send after current response finishes
+              </div>
+            </div>
+            <div className="space-y-2">
+              {queuedMessages.map((item, index) => (
+                <div
+                  key={item.id}
+                  className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-white/70 px-3 py-2"
+                >
+                  <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-100 text-[10px] font-semibold text-amber-900">
+                    {index + 1}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm text-text-primary">
+                      {item.text || "(attachments only)"}
+                    </div>
+                    {item.files.length > 0 && (
+                      <div className="mt-1 truncate text-[11px] text-amber-800/80">
+                        {item.files.map((file) => file.filename).join(", ")}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleEditQueuedMessage(item.id)}
+                      className="rounded-full px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveQueuedMessage(item.id)}
+                      className="rounded-full px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {pendingFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 px-3 pt-2">
           {pendingFiles.map((file, index) => (
@@ -397,32 +1028,33 @@ export function ChatPanel() {
           className="flex-1 resize-none bg-transparent py-2.5 px-4 text-sm
                      focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
         />
-        {isStreaming ? (
-          <button
-            onClick={cancelStream}
-            className="mb-2.5 mr-3 ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-error text-white
-                       hover:bg-error/80 active:scale-95 transition-all"
-            title="Stop generating"
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="6" y="6" width="12" height="12" rx="2" />
-            </svg>
-          </button>
-        ) : (
+        <div className="mb-2.5 mr-3 ml-1 flex shrink-0 items-center gap-2">
           <button
             onClick={() => handleSend()}
             disabled={!canSend}
-            className={`mb-2.5 mr-3 ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl active:scale-95 transition-all
+            className={`flex h-9 w-9 items-center justify-center rounded-xl active:scale-95 transition-all
               ${canSend
                 ? "bg-accent text-white hover:bg-accent-hover"
                 : "bg-text-tertiary/20 text-text-tertiary/50"
               }`}
+            title={isStreaming ? "Queue message" : "Send message"}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
             </svg>
           </button>
-        )}
+          {isStreaming && (
+            <button
+              onClick={cancelStream}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-error text-white hover:bg-error/80 active:scale-95 transition-all"
+              title="Stop generating"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
       {/* Bottom toolbar */}
       <div className="flex items-center gap-0.5 px-3 pb-2 pt-0 relative">
@@ -498,6 +1130,35 @@ export function ChatPanel() {
           )}
 
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => void handleExportHtml()}
+              disabled={isEmpty || isExportingHtml}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                isEmpty || isExportingHtml
+                  ? "cursor-not-allowed text-text-tertiary/50 bg-surface-hover/50"
+                  : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
+              }`}
+            >
+              {isExportingHtml ? "Exporting HTML..." : "Export HTML"}
+            </button>
+            {exportedHtmlUrl && (
+              <>
+                <a
+                  href={exportedHtmlUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-accent hover:bg-surface-hover transition-all"
+                >
+                  Open Export
+                </a>
+                <button
+                  onClick={handleCopyExportUrl}
+                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-text-tertiary hover:text-text-secondary hover:bg-surface-hover transition-all"
+                >
+                  {copiedExportUrl ? "Copied" : "Copy Link"}
+                </button>
+              </>
+            )}
             <button
               onClick={() => setShowEvents(!showEvents)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
