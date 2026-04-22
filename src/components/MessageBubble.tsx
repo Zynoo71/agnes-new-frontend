@@ -48,7 +48,7 @@ function formatTtft(durationMs: number): string {
 }
 
 function localDeckOutlineUrl(conversationId: string): string {
-  return `/__local_slide_workspace/${encodeURIComponent(conversationId)}/deck/deck_outline.json`;
+  return `/api/v1/agnes/conversation/slide-file/${encodeURIComponent(conversationId)}/deck/deck_outline.json`;
 }
 
 function useLocalDeckAvailable(conversationId: string | null, enabled: boolean, isStreaming?: boolean) {
@@ -171,9 +171,12 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         .reverse()
         .find((block): block is { type: "SlideOutline"; data: SlideOutlineData } => block.type === "SlideOutline")
     : undefined;
-  const shouldCheckLocalPreview = !isUser && !!isLast && !!conversationId;
+  const shouldCheckLocalPreview = !isUser && !!conversationId && (!!isLast || !!slideOutlineBlock);
   const hasLocalDeck = useLocalDeckAvailable(conversationId, shouldCheckLocalPreview, isStreaming);
-  const shouldShowLocalPreview = shouldCheckLocalPreview && (agentType === "slide" || hasLocalDeck);
+  const shouldShowLocalPreview =
+    !isUser &&
+    !!conversationId &&
+    (agentType === "slide" || !!slideOutlineBlock || hasLocalDeck);
   const canOpenLocalPreview = shouldShowLocalPreview && !isStreaming && !!conversationId;
 
   const handleCopy = useCallback(() => {
