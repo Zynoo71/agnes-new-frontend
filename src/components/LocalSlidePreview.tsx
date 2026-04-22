@@ -70,7 +70,7 @@ function normalizeOutline(outline: Record<string, unknown> | null): LocalDeckOut
 }
 
 function slideFileUrl(conversationId: string, filePath: string): string {
-  return `/__local_slide_workspace/${encodeURIComponent(conversationId)}/${filePath
+  return `/api/v1/agnes/conversation/slide-file/${encodeURIComponent(conversationId)}/${filePath
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/")}`;
