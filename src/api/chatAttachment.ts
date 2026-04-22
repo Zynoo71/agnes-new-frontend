@@ -3,7 +3,6 @@ import { getBffToken } from "@/api/bffAuth";
 
 const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
-const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
 const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
@@ -50,7 +49,7 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          "x-user-id": DEV_USER_ID,
+          //"x-user-id": DEV_USER_ID,
           ...devLaneHeader,
         },
         body: presignedBody,

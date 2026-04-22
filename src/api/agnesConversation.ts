@@ -3,7 +3,6 @@ import { getBffToken } from "@/api/bffAuth";
 
 const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
-const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
 export const DEV_CREATE_CONVERSATION_PROXY_PATH = "/__dev_agnes_conversation";
 

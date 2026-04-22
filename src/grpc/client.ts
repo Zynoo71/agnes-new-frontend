@@ -26,7 +26,7 @@ const injectHeadersInterceptor: Interceptor = (next) => (req) => {
 };
 
 const transport = createGrpcWebTransport({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || "https://agnesx-dev-sg.kiwiar.com",
+  baseUrl: import.meta.env.VITE_API_BASE_URL || "",
   interceptors: [injectHeadersInterceptor],
 });
 
