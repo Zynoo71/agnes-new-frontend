@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore, isValidUserId } from "@/stores/userStore";
 import { useShallow } from "zustand/shallow";
 import type { ConvMeta } from "@/db";
 
@@ -87,9 +87,12 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
 
   const commitUserId = () => {
     const trimmed = draftUserId.trim();
-    if (!trimmed || trimmed === userId) return;
+    if (!isValidUserId(trimmed) || trimmed === userId) return;
     setUserId(trimmed);
   };
+
+  const draftTrimmed = draftUserId.trim();
+  const draftInvalid = draftTrimmed.length > 0 && !isValidUserId(draftTrimmed);
 
   return (
     <aside
@@ -155,7 +158,10 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
       </div>
 
       {/* Conversation list */}
-      <div className="flex-1 overflow-y-auto px-2 pb-3">
+      {/* min-h-0 is required so that the flex item honours flex-1 instead of expanding
+          to its intrinsic content height — without it the list grows past the viewport
+          and pushes the footer offscreen when there are many conversations. */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-3">
         {!collapsed && groups.length === 0 && (
           <p className="text-xs text-text-tertiary text-center mt-8">No conversations yet</p>
         )}
@@ -262,7 +268,7 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
       {/* Footer: user pill + popover (user id + Profile link) */}
       <div
         ref={userMenuRef}
-        className={`relative border-t border-border-light ${collapsed ? "px-1.5 py-2" : "px-2 py-2"}`}
+        className={`relative shrink-0 border-t border-border-light ${collapsed ? "px-1.5 py-2" : "px-2 py-2"}`}
       >
         <button
           onClick={toggleUserMenu}
@@ -307,6 +313,7 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
               onBlur={commitUserId}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                  if (draftInvalid) return;
                   commitUserId();
                   setUserMenuOpen(false);
                 } else if (e.key === "Escape") {
@@ -314,8 +321,13 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
                 }
               }}
               placeholder="e.g. agnes"
-              className="w-full rounded-lg border border-border bg-surface-alt px-2.5 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+              className={`w-full rounded-lg border bg-surface-alt px-2.5 py-1.5 text-sm text-text-primary focus:outline-none ${
+                draftInvalid ? "border-error focus:border-error" : "border-border focus:border-accent"
+              }`}
             />
+            {draftInvalid && (
+              <p className="mt-1 text-[10px] text-error">Letters, digits, <code>. _ -</code> only.</p>
+            )}
             <div className="h-px bg-border-light my-2.5" />
             <button
               onClick={() => {
