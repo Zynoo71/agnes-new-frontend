@@ -158,7 +158,10 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
       </div>
 
       {/* Conversation list */}
-      <div className="flex-1 overflow-y-auto px-2 pb-3">
+      {/* min-h-0 is required so that the flex item honours flex-1 instead of expanding
+          to its intrinsic content height — without it the list grows past the viewport
+          and pushes the footer offscreen when there are many conversations. */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-3">
         {!collapsed && groups.length === 0 && (
           <p className="text-xs text-text-tertiary text-center mt-8">No conversations yet</p>
         )}
@@ -265,7 +268,7 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
       {/* Footer: user pill + popover (user id + Profile link) */}
       <div
         ref={userMenuRef}
-        className={`relative border-t border-border-light ${collapsed ? "px-1.5 py-2" : "px-2 py-2"}`}
+        className={`relative shrink-0 border-t border-border-light ${collapsed ? "px-1.5 py-2" : "px-2 py-2"}`}
       >
         <button
           onClick={toggleUserMenu}
