@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocalSlidePreviewStore } from "@/stores/localSlidePreviewStore";
+import { buildSandboxPreviewFileUrl } from "@/api/sandboxPreview";
 
 interface LocalSlideEntry {
   slideId: string;
@@ -69,13 +70,6 @@ function normalizeOutline(outline: Record<string, unknown> | null): LocalDeckOut
   };
 }
 
-function slideFileUrl(conversationId: string, filePath: string): string {
-  return `/api/v1/agnes/conversation/slide-file/${encodeURIComponent(conversationId)}/${filePath
-    .split("/")
-    .map((part) => encodeURIComponent(part))
-    .join("/")}`;
-}
-
 function LocalSlidePreviewDialog({
   conversationId,
   fallbackOutline,
@@ -101,7 +95,7 @@ function LocalSlidePreviewDialog({
   const outline = fetchedOutline ?? fallbackDeckOutline;
   const outlineUrl = useMemo(() => {
     if (!conversationId) return "";
-    return slideFileUrl(conversationId, "deck/deck_outline.json");
+    return buildSandboxPreviewFileUrl(conversationId, "deck/deck_outline.json");
   }, [conversationId]);
 
   const selectedSlide = useMemo(
@@ -115,7 +109,7 @@ function LocalSlidePreviewDialog({
 
   const iframeUrl = useMemo(() => {
     if (!conversationId || !selectedSlide) return "";
-    return slideFileUrl(conversationId, `deck/slides/${selectedSlide.slideId}/index.html`);
+    return buildSandboxPreviewFileUrl(conversationId, `deck/slides/${selectedSlide.slideId}/index.html`);
   }, [conversationId, selectedSlide]);
   const activePreviewState = previewState.iframeUrl === iframeUrl ? previewState : createSlidePreviewState(iframeUrl);
   const { frameSize, frameScale, slideLoadError, slideLoadState } = activePreviewState;
@@ -150,6 +144,19 @@ function LocalSlidePreviewDialog({
       document.body.style.overflow = "";
     };
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+
+    setLoading(true);
+    setNotice("");
+    setFetchedOutline(null);
+    setSelectedSlideId("");
+
+    if (fallbackOutline) {
+      setSelectedSlideId((current) => current || selectDefaultSlide(fallbackDeckOutline, initialSlideId));
+    }
+  }, [conversationId, fallbackDeckOutline, fallbackOutline, initialSlideId, selectDefaultSlide]);
 
   useEffect(() => {
     if (!outlineUrl) {

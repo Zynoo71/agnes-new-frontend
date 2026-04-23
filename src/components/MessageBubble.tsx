@@ -47,41 +47,6 @@ function formatTtft(durationMs: number): string {
   return `${(Math.max(0, durationMs) / 1000).toFixed(2)}s`;
 }
 
-function localDeckOutlineUrl(conversationId: string): string {
-  return `/api/v1/agnes/conversation/slide-file/${encodeURIComponent(conversationId)}/deck/deck_outline.json`;
-}
-
-function useLocalDeckAvailable(conversationId: string | null, enabled: boolean, isStreaming?: boolean) {
-  const [availability, setAvailability] = useState<{ conversationId: string | null; available: boolean }>({
-    conversationId: null,
-    available: false,
-  });
-
-  const streamingDone = enabled && isStreaming === false;
-
-  useEffect(() => {
-    if (!enabled || !conversationId) return;
-
-    const controller = new AbortController();
-
-    void fetch(localDeckOutlineUrl(conversationId), {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then((response) => {
-        setAvailability({ conversationId, available: response.ok });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string })?.name === "AbortError") return;
-        setAvailability({ conversationId, available: false });
-      });
-
-    return () => controller.abort();
-  }, [conversationId, enabled, streamingDone]);
-
-  return Boolean(enabled && conversationId && availability.conversationId === conversationId && availability.available);
-}
-
 function MarkdownImage({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
   const openPreview = useImagePreviewStore((s) => s.open);
   return (
@@ -171,12 +136,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         .reverse()
         .find((block): block is { type: "SlideOutline"; data: SlideOutlineData } => block.type === "SlideOutline")
     : undefined;
-  const shouldCheckLocalPreview = !isUser && !!conversationId && (!!isLast || !!slideOutlineBlock);
-  const hasLocalDeck = useLocalDeckAvailable(conversationId, shouldCheckLocalPreview, isStreaming);
-  const shouldShowLocalPreview =
-    !isUser &&
-    !!conversationId &&
-    (agentType === "slide" || !!slideOutlineBlock || hasLocalDeck);
+  const shouldShowLocalPreview = !isUser && !!isLast && !!conversationId && (agentType === "slide" || !!slideOutlineBlock);
   const canOpenLocalPreview = shouldShowLocalPreview && !isStreaming && !!conversationId;
 
   const handleCopy = useCallback(() => {
@@ -415,12 +375,10 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
                 <p className="text-sm font-semibold text-text-primary">本地预览</p>
                 <p className="truncate text-xs text-text-secondary">
                   {canOpenLocalPreview
-                    ? "流式输出结束后可直接查看本地生成的整套 slides"
+                    ? "会直接加载 sandbox 里生成的整套 slides，并持续读取最新文件"
                     : isStreaming
-                      ? "正在等待本地 slides 生成完成"
-                      : hasLocalDeck
-                        ? "本地 slides 已就绪，点击打开预览"
-                        : "当前会话还没有落出本地 slides，点开后可继续检查生成结果"}
+                      ? "正在等待 slides 生成完成"
+                      : "当前会话还没有可预览的 slides，点开后也可以检查最新生成结果"}
                 </p>
               </div>
             </div>
