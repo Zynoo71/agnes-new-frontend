@@ -509,39 +509,90 @@ function setTtftIfNeeded(message: Message, eventTimestamp: number): Message {
   };
 }
 
+// Extract the LangChain message_id shared by all blocks of a single HumanInput /
+// ConversationHistory user turn. Accepts both snake_case (JSON payload from
+// backend) and camelCase (protobuf-ts field mapping) keys.
+export function extractUserBlockMessageId(blocks: Array<Record<string, unknown>>): string | undefined {
+  for (const b of blocks) {
+    const mid =
+      (b.message_id as string | undefined) ??
+      (b.messageId as string | undefined);
+    if (typeof mid === "string" && mid.length > 0) return mid;
+  }
+  return undefined;
+}
+
+// Stable id for user messages derived from backend message_id so that
+// HumanInput replays can be matched against already-rendered history.
+export function userMessageIdFromBackend(backendMessageId: string): string {
+  return `user-${backendMessageId}`;
+}
+
 export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, eventTimestamp = Date.now()): Message[] {
   const msgs = [...messages];
 
-  // HumanInput: insert user message before the trailing assistant message (ResumeStream replay)
+  // HumanInput: inserted as the first frame of every Resume (spec §6.5). Duplicates
+  // are expected on mid-stream reconnects and on refreshes where the turn was
+  // already DB-persisted, so the handler is idempotent by backend message_id.
   if (event.event.case === "custom") {
     const custom = event.event.value;
     if (custom.type === "HumanInput") {
       const payload = asRecord(tryDecodeJson(custom.payload));
-      const blocks = (payload.blocks as { type: string; data: unknown }[]) ?? [];
-      const userText = blocks
+      const rawBlocks = (payload.blocks as Array<Record<string, unknown>>) ?? [];
+      const backendMsgId = extractUserBlockMessageId(rawBlocks);
+      const userMsgId = backendMsgId ? userMessageIdFromBackend(backendMsgId) : nextMessageId();
+
+      // Case 1 — message already in the list under the backend-derived id
+      // (came from parseHistoryTurns after a refresh, or from an earlier
+      // Resume retry). Replay is equivalent; skip the duplicate.
+      if (backendMsgId && msgs.some((m) => m.role === "user" && m.id === userMsgId)) {
+        return msgs;
+      }
+
+      const userText = rawBlocks
         .filter((b) => b.type === "Message")
-        .map((b) => ((b.data as Record<string, unknown>)?.content as string) ?? "")
+        .map((b) => ((asRecord(b.data).content as string) ?? ""))
         .join("\n");
-      const fileBlocks = blocks
+      const fileBlocks = rawBlocks
         .filter((b) => b.type === "File")
         .map((b) => asFileData(b.data))
         .filter((b): b is FileData => b !== null)
         .map((data) => ({ type: "File", data }) as ContentBlock);
-      if (userText || fileBlocks.length > 0) {
-        const userMsg: Message = {
-          id: nextMessageId(), role: "user",
-          blocks: [
-            ...(userText ? [{ type: "Message", content: userText } as ContentBlock] : []),
-            ...fileBlocks,
-          ],
-          nodes: [], workers: {}, sources: [],
-        };
-        const lastIdx = msgs.length - 1;
-        if (msgs[lastIdx]?.role === "assistant") {
-          msgs.splice(lastIdx, 0, userMsg);
-        } else {
-          msgs.push(userMsg);
-        }
+      if (!userText && fileBlocks.length === 0) return msgs;
+
+      const lastIdx = msgs.length - 1;
+      const trailingAssistantIdx = msgs[lastIdx]?.role === "assistant" ? lastIdx : -1;
+      const candidateIdx = trailingAssistantIdx >= 0 ? trailingAssistantIdx - 1 : lastIdx;
+      const candidate = msgs[candidateIdx];
+
+      // Case 2 — mid-stream reconnect: addUserMessage pushed a user bubble with
+      // a local id (e.g. "msg-…") before the disconnect, and that message is
+      // still the one immediately before the trailing assistant. Adopt the
+      // backend id so future replays hit Case 1 instead of duplicating.
+      if (
+        backendMsgId &&
+        candidate &&
+        candidate.role === "user" &&
+        !candidate.id.startsWith("user-")
+      ) {
+        msgs[candidateIdx] = { ...candidate, id: userMsgId };
+        return msgs;
+      }
+
+      // Case 3 — genuinely new; insert before the trailing assistant or at the end.
+      const userMsg: Message = {
+        id: userMsgId,
+        role: "user",
+        blocks: [
+          ...(userText ? [{ type: "Message", content: userText } as ContentBlock] : []),
+          ...fileBlocks,
+        ],
+        nodes: [], workers: {}, sources: [],
+      };
+      if (trailingAssistantIdx >= 0) {
+        msgs.splice(trailingAssistantIdx, 0, userMsg);
+      } else {
+        msgs.push(userMsg);
       }
       return msgs;
     }

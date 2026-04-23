@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { agentClient } from "@/grpc/client";
 import { createAgnesConversation } from "@/api/agnesConversation";
-import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType } from "@/stores/conversationStore";
+import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend } from "@/stores/conversationStore";
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
@@ -175,7 +175,7 @@ function rebuildTasksFromTurns(turns: { user: unknown[]; assistant: unknown[] }[
 function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): Message[] {
   const messages: Message[] = [];
   for (const turn of turns) {
-    const userBlocks = turn.user as { type: string; data: unknown }[];
+    const userBlocks = turn.user as Array<Record<string, unknown> & { type: string; data: unknown }>;
     const userTextBlocks = userBlocks
       .filter((b) => b.type === "Message")
       .map((b) => ({ type: "Message", content: ((b.data as Record<string, unknown>)?.content as string) ?? JSON.stringify(b.data) }) as ContentBlock);
@@ -191,7 +191,11 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       })
       .filter((b): b is ContentBlock => b !== null);
     if (userTextBlocks.length > 0 || fileBlocks.length > 0) {
-      messages.push({ id: nextHistoryId(), role: "user", blocks: [...userTextBlocks, ...fileBlocks], nodes: [], workers: {}, sources: [] });
+      // Derive the user message id from the backend message_id so a later Resume
+      // HumanInput replay can be deduplicated against this bubble.
+      const backendMsgId = extractUserBlockMessageId(userBlocks);
+      const userId = backendMsgId ? userMessageIdFromBackend(backendMsgId) : nextHistoryId();
+      messages.push({ id: userId, role: "user", blocks: [...userTextBlocks, ...fileBlocks], nodes: [], workers: {}, sources: [] });
     }
     const assistantBlocks: ContentBlock[] = [];
     const turnSources: SourceCitation[] = [];
