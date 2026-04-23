@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { agentClient } from "@/grpc/client";
 import { createAgnesConversation } from "@/api/agnesConversation";
 import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType } from "@/stores/conversationStore";
@@ -31,15 +32,54 @@ function beginNewTurn(convId: string): AbortSignal {
   return beginStream(convId);
 }
 
-function isAlreadyExists(err: unknown): boolean {
+// §6.6 AGENT_STREAM_BUSY envelope code — 同会话已有活跃流，前端必须改走 ResumeStream。
+const AGENT_STREAM_BUSY_CODE = "070301";
+
+// Pull business error_code out of ConnectError.details without importing the generated
+// schema (src/gen/common/v1/error_pb.ts contains a plain `enum` incompatible with
+// erasableSyntaxOnly). Fall back to JSON debug; both snake_case and camelCase observed.
+function getEnvelopeCode(err: unknown): string | null {
+  if (!(err instanceof ConnectError)) return null;
+  for (const d of err.details) {
+    if (!("type" in d) || d.type !== "common.v1.ErrorDetail") continue;
+    const debug = (d as { debug?: unknown }).debug;
+    if (!debug || typeof debug !== "object") continue;
+    const code =
+      (debug as { error_code?: unknown }).error_code ??
+      (debug as { errorCode?: unknown }).errorCode;
+    if (typeof code === "string") return code;
+  }
+  return null;
+}
+
+// "服务端已有活跃流"信号：gRPC code = AlreadyExists 或业务 envelope code = 070301。
+// 保留字符串兜底以防网关透传失真。
+function isStreamBusy(err: unknown): boolean {
+  if (err instanceof ConnectError) {
+    if (err.code === Code.AlreadyExists) return true;
+    if (getEnvelopeCode(err) === AGENT_STREAM_BUSY_CODE) return true;
+  }
   const msg = err instanceof Error ? err.message : String(err);
-  return msg.includes("already_exists") || msg.includes("ALREADY_EXISTS");
+  return msg.includes("ALREADY_EXISTS") || msg.includes("already_exists");
+}
+
+// 网络/传输层断线，适合用 from_seq=latestSeq 重连续播（spec §6.5）。
+// 不含 Canceled（通常是自己 abort 的），不含业务错（AgentError 走事件帧，不进 catch）。
+function isRetriableDisconnect(err: unknown): boolean {
+  if (!(err instanceof ConnectError)) return false;
+  return err.code === Code.Unavailable || err.code === Code.Unknown;
+}
+
+function describeErr(err: unknown): string {
+  if (err instanceof ConnectError) return `code=${Code[err.code]}`;
+  return err instanceof Error ? err.message : String(err);
 }
 
 async function runStream(
   iter: AsyncIterable<AgentStreamEvent>,
   signal: AbortSignal,
   convId: string,
+  isResumeRetry = false,
 ) {
   try {
     for await (const event of iter) {
@@ -48,23 +88,33 @@ async function runStream(
     }
   } catch (err) {
     if (signal.aborted) return;
-    // Backend has an active stream for this conversation (spec §6.6) —
-    // don't retry ChatStream, fall back to ResumeStream(from_seq=0) to
-    // pick up the existing stream from the beginning.
-    if (isAlreadyExists(err)) {
-      console.warn(`Active stream exists for conv ${convId}, falling back to resumeStream(from_seq=0)`);
+
+    // §6.6 冲突路径：from_seq=0 从头回放 Redis buffer + 续实时。
+    if (isStreamBusy(err)) {
+      console.warn(`[useChat] stream busy for conv ${convId}, pivoting to resumeStream(from_seq=0)`);
       const resumeIter = agentClient.resumeStream(
         { conversationId: BigInt(convId), fromSeq: 0n },
         { signal },
       );
-      // Tail-call: delegate cleanup to the resumed runStream invocation.
-      await runStream(resumeIter, signal, convId);
+      await runStream(resumeIter, signal, convId, true);
       return;
     }
-    const msg = err instanceof Error ? err.message : String(err);
+
+    // §6.5 中途断线：用 latestSeq 只拉增量；已是 resume 重试则不再嵌套避免死循环。
+    if (!isResumeRetry && isRetriableDisconnect(err)) {
+      const fromSeq = getLatestSeq(convId);
+      console.warn(`[useChat] stream dropped for conv ${convId} (${describeErr(err)}), resuming from seq=${fromSeq}`);
+      const resumeIter = agentClient.resumeStream(
+        { conversationId: BigInt(convId), fromSeq },
+        { signal },
+      );
+      await runStream(resumeIter, signal, convId, true);
+      return;
+    }
+
     console.error("Stream error:", err);
     if (getState().conversationId === convId) {
-      getState().setError(msg);
+      getState().setError(describeErr(err));
     }
   } finally {
     // Only clean up if our controller is still the active one
@@ -527,12 +577,14 @@ export function useChat() {
 
     if (shouldResume) {
       getState().startAssistantMessage();
-      // Preserve seq across selectConversation so resume picks up where we left off.
-      // 0n means we never received an event with seq (or legacy server) → full replay.
-      const fromSeq = getLatestSeq(id);
+      // loadHistory already wiped per-conv UI state; the right thing is a full
+      // Redis replay of the current turn (from_seq=0), not picking up from a
+      // latestSeq that was tracked by a previous visit to this conv. Reset the
+      // counter so subsequent in-stream disconnects measure from this resume.
+      resetLatestSeq(id);
       const signal = beginStream(id);
       const stream = agentClient.resumeStream(
-        { conversationId: BigInt(id), fromSeq },
+        { conversationId: BigInt(id), fromSeq: 0n },
         { signal },
       );
       runStream(stream, signal, id);
