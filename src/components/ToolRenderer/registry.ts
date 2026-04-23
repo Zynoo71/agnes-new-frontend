@@ -11,6 +11,9 @@ import { GenerateImageRenderer } from "./renderers/GenerateImageRenderer";
 import { GenerateVideoRenderer } from "./renderers/GenerateVideoRenderer";
 import { WeatherRenderer } from "./renderers/WeatherRenderer";
 import { SheetToolRenderer } from "./renderers/SheetToolRenderer";
+import { SportsResultsRenderer } from "./renderers/SportsResultsRenderer";
+import { YoutubeVideosRenderer } from "./renderers/YoutubeVideosRenderer";
+import { StockQuoteRenderer } from "./renderers/StockQuoteRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
@@ -45,6 +48,9 @@ const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   generate_image: GenerateImageRenderer,
   generate_video: GenerateVideoRenderer,
   query_weather: WeatherRenderer,
+  search_sports_results: SportsResultsRenderer,
+  search_youtube_videos: YoutubeVideosRenderer,
+  search_stock_quote: StockQuoteRenderer,
   // Sheet Agent v3 (R21) tools
   plan_analysis: SheetToolRenderer,
   profile_data: SheetToolRenderer,
