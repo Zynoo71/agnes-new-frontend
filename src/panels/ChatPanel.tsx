@@ -10,7 +10,7 @@ import { SystemPromptSelector } from "@/components/SystemPromptSelector";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import type { AgentTask, ContentBlock, Message, SourceCitation, WorkerState } from "@/stores/conversationStore";
 
-const AGENT_TYPES = ["super", "search", "research", "slide", "design", "sheet", "pixa"] as const;
+const AGENT_TYPES = ["super", "search", "research", "slide", "design", "sheet"] as const;
 
 const SCROLL_HINTS_ROW1 = [
   "Search the latest AI news",

@@ -1,8 +1,8 @@
 import { createClient, type Interceptor } from "@connectrpc/connect";
 import { createGrpcWebTransport } from "@connectrpc/connect-web";
 import { KwAgentServiceService } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
+import { useUserStore } from "@/stores/userStore";
 
-const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "";
 
@@ -13,8 +13,9 @@ function generateTraceId(): string {
 
 const injectHeadersInterceptor: Interceptor = (next) => (req) => {
   req.header.set("x-trace-id", generateTraceId());
-  if (DEV_USER_ID) {
-    req.header.set("x-user-id", DEV_USER_ID);
+  const userId = useUserStore.getState().userId;
+  if (userId) {
+    req.header.set("x-user-id", userId);
   }
   if (DEV_LANE) {
     req.header.set("x-dev-lane", DEV_LANE);
