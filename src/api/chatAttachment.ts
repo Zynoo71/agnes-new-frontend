@@ -1,9 +1,8 @@
 import type { ChatAttachment } from "@/types/chatAttachment";
+import { getBffToken } from "@/api/bffAuth";
 
 const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
-const BFF_TOKEN = import.meta.env.VITE_BFF_TOKEN ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
-const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID ?? "d68d1d67-b721-4af5-ae35-4babdcc34735";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
 const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
@@ -18,13 +17,6 @@ interface PresignedUrlResponse {
   };
 }
 
-function requireUploadToken(): string {
-  if (!BFF_TOKEN) {
-    throw new Error("VITE_BFF_TOKEN is required for chat attachment uploads");
-  }
-  return BFF_TOKEN;
-}
-
 function isLocalDev(): boolean {
   if (typeof window === "undefined") {
     return false;
@@ -33,13 +25,8 @@ function isLocalDev(): boolean {
 }
 
 function resolveBffBaseUrl(): string {
-  if (BFF_BASE_URL) {
-    return BFF_BASE_URL;
-  }
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
-  return "http://127.0.0.1:8201";
+  if (BFF_BASE_URL) return BFF_BASE_URL;
+  return "https://api-agnes-dev.kiwiar.com";
 }
 
 export async function uploadChatAttachment(file: File, conversationId?: string | null): Promise<ChatAttachment> {
@@ -62,7 +49,7 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          "x-user-id": DEV_USER_ID,
+          //"x-user-id": DEV_USER_ID,
           ...devLaneHeader,
         },
         body: presignedBody,
@@ -70,11 +57,10 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
     : await fetch(`${resolveBffBaseUrl()}/api/v1/file/presigned-url`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${requireUploadToken()}`,
+          Authorization: `Bearer ${await getBffToken()}`,
           "Content-Type": "application/json",
           Accept: "application/json",
-          "X-App": APP_ID,
-          "x-user-id": DEV_USER_ID,
+          "x-app-id": APP_ID,
           ...devLaneHeader,
         },
         body: presignedBody,

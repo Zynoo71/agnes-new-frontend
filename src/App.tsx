@@ -7,8 +7,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ImagePreview } from "@/components/ImagePreview";
 import { LocalSlidePreview } from "@/components/LocalSlidePreview";
+import { UserIdSetupModal } from "@/components/UserIdSetupModal";
 import { ChatPanel } from "@/panels/ChatPanel";
-import { PixaPanel } from "@/panels/PixaPanel";
 import { PromptManagementPage } from "@/pages/PromptManagementPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 
@@ -74,7 +74,6 @@ function AppLayout() {
         <Routes>
           <Route path="/chat" element={<ErrorBoundary><ChatPanel /></ErrorBoundary>} />
           <Route path="/chat/:convId" element={<ChatRoute />} />
-          <Route path="/pixa" element={<ErrorBoundary><PixaPanel /></ErrorBoundary>} />
           <Route path="/prompts" element={<ErrorBoundary><PromptManagementPage /></ErrorBoundary>} />
           <Route path="/profile" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />
           <Route path="*" element={<Navigate to="/chat" replace />} />
@@ -82,6 +81,7 @@ function AppLayout() {
       </main>
       <ImagePreview />
       <LocalSlidePreview />
+      <UserIdSetupModal />
     </div>
   );
 }

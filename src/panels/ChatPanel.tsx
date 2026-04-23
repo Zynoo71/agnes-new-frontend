@@ -10,7 +10,7 @@ import { SystemPromptSelector } from "@/components/SystemPromptSelector";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import type { AgentTask, ContentBlock, Message, SourceCitation, WorkerState } from "@/stores/conversationStore";
 
-const AGENT_TYPES = ["super", "search", "research", "slide", "design", "sheet", "pixa"] as const;
+const AGENT_TYPES = ["super", "search", "research", "slide", "design", "sheet"] as const;
 
 const SCROLL_HINTS_ROW1 = [
   "Search the latest AI news",
@@ -38,19 +38,6 @@ const HEALTH_CONFIG = {
   error: { dot: "bg-red-500", color: "#ef4444", label: "Disconnected" },
   checking: { dot: "bg-yellow-500", color: "#eab308", label: "Connecting" },
 } as const;
-
-type QueuedMessage = {
-  id: string;
-  text: string;
-  files: ChatAttachment[];
-};
-
-let queuedMessageCounter = 0;
-
-function nextQueuedMessageId() {
-  queuedMessageCounter += 1;
-  return `queued-${Date.now()}-${queuedMessageCounter}`;
-}
 
 function stringifyForExport(value: unknown): string {
   if (typeof value === "string") return value;
@@ -660,7 +647,6 @@ export function ChatPanel() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<ChatAttachment[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
-  const [queuedMessages, setQueuedMessages] = useState<QueuedMessage[]>([]);
   const [isExportingHtml, setIsExportingHtml] = useState(false);
   const [exportedHtmlUrl, setExportedHtmlUrl] = useState<string | null>(null);
   const [copiedExportUrl, setCopiedExportUrl] = useState(false);
@@ -668,7 +654,6 @@ export function ChatPanel() {
   const pendingScrollRef = useRef(false);
   const lastAutoScrollRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isDrainingQueueRef = useRef(false);
 
   const health = useHealthCheck();
 
@@ -727,10 +712,6 @@ export function ChatPanel() {
 
   const isComposingRef = useRef(false);
 
-  const enqueueMessage = useCallback((text: string, files: ChatAttachment[]) => {
-    setQueuedMessages((prev) => [...prev, { id: nextQueuedMessageId(), text, files }]);
-  }, []);
-
   const sendNow = useCallback(async (text: string, files: ChatAttachment[]) => {
     const trimmed = text.trim();
     if (!trimmed && files.length === 0) return;
@@ -755,38 +736,13 @@ export function ChatPanel() {
 
   const handleSend = async (text?: string) => {
     const trimmed = (text ?? input).trim();
-    if ((!trimmed && pendingFiles.length === 0) || isUploadingFiles) return;
+    if ((!trimmed && pendingFiles.length === 0) || isUploadingFiles || isStreaming) return;
     const filesToSend = pendingFiles;
     setInput("");
     setPendingFiles([]);
-    if (isStreaming) {
-      enqueueMessage(trimmed, filesToSend);
-      return;
-    }
-
     await sendNow(trimmed, filesToSend);
     // ResizeObserver handles the scroll when content appears.
   };
-
-  useEffect(() => {
-    if (isStreaming || isUploadingFiles || queuedMessages.length === 0 || isDrainingQueueRef.current) {
-      return;
-    }
-
-    const [nextQueued] = queuedMessages;
-    if (!nextQueued) return;
-
-    isDrainingQueueRef.current = true;
-    setQueuedMessages((prev) => prev.slice(1));
-
-    void (async () => {
-      try {
-        await sendNow(nextQueued.text, nextQueued.files);
-      } finally {
-        isDrainingQueueRef.current = false;
-      }
-    })();
-  }, [isStreaming, isUploadingFiles, queuedMessages, sendNow]);
 
   const handleSelectFiles = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -817,38 +773,6 @@ export function ChatPanel() {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleRemoveQueuedMessage = useCallback((id: string) => {
-    setQueuedMessages((prev) => prev.filter((item) => item.id !== id));
-  }, []);
-
-  const handleEditQueuedMessage = useCallback((id: string) => {
-    setQueuedMessages((prev) => {
-      const index = prev.findIndex((item) => item.id === id);
-      if (index < 0) return prev;
-
-      const queued = prev[index];
-      const currentDraft = { text: input, files: pendingFiles };
-      const hasCurrentDraft = currentDraft.text.trim().length > 0 || currentDraft.files.length > 0;
-
-      setInput(queued.text);
-      setPendingFiles(queued.files);
-      requestAnimationFrame(() => textareaRef.current?.focus());
-
-      if (!hasCurrentDraft) {
-        return prev.filter((item) => item.id !== id);
-      }
-
-      return prev.map((item, itemIndex) => {
-        if (itemIndex !== index) return item;
-        return {
-          id: nextQueuedMessageId(),
-          text: currentDraft.text,
-          files: currentDraft.files,
-        };
-      });
-    });
-  }, [input, pendingFiles]);
-
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Check both standard isComposing and our ref for broader compatibility
     const isComposing = e.nativeEvent.isComposing || isComposingRef.current;
@@ -859,7 +783,7 @@ export function ChatPanel() {
   };
 
   const hasInput = input.trim().length > 0;
-  const canSend = (hasInput || pendingFiles.length > 0) && !isUploadingFiles;
+  const canSend = (hasInput || pendingFiles.length > 0) && !isUploadingFiles && !isStreaming;
 
   const handleExportHtml = useCallback(async () => {
     if (messages.length === 0 || isExportingHtml) return;
@@ -933,58 +857,6 @@ export function ChatPanel() {
           disabled={hasUserMessages}
         />
       </div>
-      {queuedMessages.length > 0 && (
-        <div className="px-3 pt-2">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-2.5">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-amber-800/80">
-                Queue {queuedMessages.length}
-              </div>
-              <div className="text-[11px] text-amber-700/80">
-                Auto-send after current response finishes
-              </div>
-            </div>
-            <div className="space-y-2">
-              {queuedMessages.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-white/70 px-3 py-2"
-                >
-                  <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-100 text-[10px] font-semibold text-amber-900">
-                    {index + 1}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm text-text-primary">
-                      {item.text || "(attachments only)"}
-                    </div>
-                    {item.files.length > 0 && (
-                      <div className="mt-1 truncate text-[11px] text-amber-800/80">
-                        {item.files.map((file) => file.filename).join(", ")}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleEditQueuedMessage(item.id)}
-                      className="rounded-full px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveQueuedMessage(item.id)}
-                      className="rounded-full px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
       {pendingFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 px-3 pt-2">
           {pendingFiles.map((file, index) => (
@@ -1037,7 +909,7 @@ export function ChatPanel() {
                 ? "bg-accent text-white hover:bg-accent-hover"
                 : "bg-text-tertiary/20 text-text-tertiary/50"
               }`}
-            title={isStreaming ? "Queue message" : "Send message"}
+            title="Send message"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
