@@ -577,12 +577,14 @@ export function useChat() {
 
     if (shouldResume) {
       getState().startAssistantMessage();
-      // Preserve seq across selectConversation so resume picks up where we left off.
-      // 0n means we never received an event with seq (or legacy server) → full replay.
-      const fromSeq = getLatestSeq(id);
+      // loadHistory already wiped per-conv UI state; the right thing is a full
+      // Redis replay of the current turn (from_seq=0), not picking up from a
+      // latestSeq that was tracked by a previous visit to this conv. Reset the
+      // counter so subsequent in-stream disconnects measure from this resume.
+      resetLatestSeq(id);
       const signal = beginStream(id);
       const stream = agentClient.resumeStream(
-        { conversationId: BigInt(id), fromSeq },
+        { conversationId: BigInt(id), fromSeq: 0n },
         { signal },
       );
       runStream(stream, signal, id);
