@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 const DEV_CREATE_CONVERSATION_PROXY_PATH = "/__dev_agnes_conversation";
 const DEV_SANDBOX_PREVIEW_PROXY_PATH = "/__dev_agnes_sandbox_file/";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
-const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
+const UPLOAD_PROXY_PATH = "/__upload_proxy";
 // Local browser upload debugging should not require agents to mint short-lived JWTs by hand.
 // When the page runs on localhost/127.0.0.1, the Vite dev server logs into the remote dev BFF
 // on demand and proxies /file/presigned-url plus the subsequent object PUT upload.
@@ -244,7 +244,7 @@ function devUploadProxyPlugin(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const rawUrl = req.url ? req.url.split("?")[0] : "";
-        if (rawUrl !== DEV_UPLOAD_PROXY_PATH) {
+        if (rawUrl !== UPLOAD_PROXY_PATH) {
           next();
           return;
         }
