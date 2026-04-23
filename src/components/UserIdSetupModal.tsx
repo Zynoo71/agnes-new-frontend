@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useUserStore } from "@/stores/userStore";
+import { isValidUserId, useUserStore } from "@/stores/userStore";
 
 export function UserIdSetupModal() {
   const userId = useUserStore((s) => s.userId);
@@ -9,10 +9,12 @@ export function UserIdSetupModal() {
   if (userId) return null;
 
   const trimmed = value.trim();
-  const canSave = trimmed.length > 0;
+  const isEmpty = trimmed.length === 0;
+  const isValid = isValidUserId(trimmed);
+  const showError = !isEmpty && !isValid;
 
   const handleSave = () => {
-    if (!canSave) return;
+    if (!isValid) return;
     setUserId(trimmed);
   };
 
@@ -22,7 +24,7 @@ export function UserIdSetupModal() {
         <h2 className="text-base font-semibold text-text-primary">Set your user ID</h2>
         <p className="mt-1 text-xs text-text-tertiary">
           Used as <code className="px-1 rounded bg-surface-hover">x-user-id</code> on every request. Stored in this
-          browser only — each person should pick their own.
+          browser only — each person should pick their own. Allowed characters: letters, digits, dot, underscore, hyphen.
         </p>
         <input
           autoFocus
@@ -32,12 +34,19 @@ export function UserIdSetupModal() {
             if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSave();
           }}
           placeholder="e.g. agnes"
-          className="mt-4 w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+          className={`mt-4 w-full rounded-lg border bg-surface-alt px-3 py-2 text-sm text-text-primary focus:outline-none ${
+            showError ? "border-error focus:border-error" : "border-border focus:border-accent"
+          }`}
         />
+        {showError && (
+          <p className="mt-1.5 text-[11px] text-error">
+            Only ASCII letters, digits, and <code>. _ -</code> are allowed.
+          </p>
+        )}
         <div className="mt-4 flex justify-end">
           <button
             onClick={handleSave}
-            disabled={!canSave}
+            disabled={!isValid}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Save

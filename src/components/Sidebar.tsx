@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore, isValidUserId } from "@/stores/userStore";
 import { useShallow } from "zustand/shallow";
 import type { ConvMeta } from "@/db";
 
@@ -87,9 +87,12 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
 
   const commitUserId = () => {
     const trimmed = draftUserId.trim();
-    if (!trimmed || trimmed === userId) return;
+    if (!isValidUserId(trimmed) || trimmed === userId) return;
     setUserId(trimmed);
   };
+
+  const draftTrimmed = draftUserId.trim();
+  const draftInvalid = draftTrimmed.length > 0 && !isValidUserId(draftTrimmed);
 
   return (
     <aside
@@ -307,6 +310,7 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
               onBlur={commitUserId}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                  if (draftInvalid) return;
                   commitUserId();
                   setUserMenuOpen(false);
                 } else if (e.key === "Escape") {
@@ -314,8 +318,13 @@ export function Sidebar({ onNewChat, onSelectConversation, onDeleteConversation 
                 }
               }}
               placeholder="e.g. agnes"
-              className="w-full rounded-lg border border-border bg-surface-alt px-2.5 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+              className={`w-full rounded-lg border bg-surface-alt px-2.5 py-1.5 text-sm text-text-primary focus:outline-none ${
+                draftInvalid ? "border-error focus:border-error" : "border-border focus:border-accent"
+              }`}
             />
+            {draftInvalid && (
+              <p className="mt-1 text-[10px] text-error">Letters, digits, <code>. _ -</code> only.</p>
+            )}
             <div className="h-px bg-border-light my-2.5" />
             <button
               onClick={() => {

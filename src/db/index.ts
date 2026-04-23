@@ -56,6 +56,12 @@ function schedulePersist() {
   }, 300);
 }
 
+function hasColumn(name: string): boolean {
+  if (!db) return false;
+  const cols = db.exec("PRAGMA table_info(conversations)");
+  return cols[0]?.values.some((row) => row[1] === name) ?? false;
+}
+
 // ── Public API ──
 
 export async function initDb(): Promise<void> {
@@ -66,6 +72,7 @@ export async function initDb(): Promise<void> {
   db.run(`
     CREATE TABLE IF NOT EXISTS conversations (
       id                TEXT PRIMARY KEY,
+      user_id           TEXT NOT NULL DEFAULT '',
       title             TEXT NOT NULL DEFAULT 'New Conversation',
       agent_type        TEXT NOT NULL,
       system_prompt_id  TEXT,
@@ -74,39 +81,57 @@ export async function initDb(): Promise<void> {
     )
   `);
 
-  // Migration: add system_prompt_id column for existing databases
-  const cols = db.exec("PRAGMA table_info(conversations)");
-  const hasCol = cols[0]?.values.some((row) => row[1] === "system_prompt_id");
-  if (!hasCol) {
+  // Migrations for existing databases. Each guarded by a column check so
+  // they're idempotent across reloads.
+  if (!hasColumn("system_prompt_id")) {
     db.run("ALTER TABLE conversations ADD COLUMN system_prompt_id TEXT");
+  }
+  if (!hasColumn("user_id")) {
+    // Pre-existing rows stay associated with '' (orphaned). Real users never
+    // see them because list() filters by exact match.
+    db.run("ALTER TABLE conversations ADD COLUMN user_id TEXT NOT NULL DEFAULT ''");
   }
 }
 
-export function addConversation(id: string, agentType: string, systemPromptId?: string): void {
+export function addConversation(userId: string, id: string, agentType: string, systemPromptId?: string): void {
   if (!db) return;
   const now = new Date().toISOString();
   db.run(
-    "INSERT OR IGNORE INTO conversations (id, title, agent_type, system_prompt_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-    [id, "New Conversation", agentType, systemPromptId ?? null, now, now],
+    "INSERT OR IGNORE INTO conversations (id, user_id, title, agent_type, system_prompt_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [id, userId, "New Conversation", agentType, systemPromptId ?? null, now, now],
   );
   schedulePersist();
 }
 
-export function updateConversation(id: string, fields: Partial<Pick<ConvMeta, "title" | "agentType" | "systemPromptId">>): void {
+export function updateConversation(
+  userId: string,
+  id: string,
+  fields: Partial<Pick<ConvMeta, "title" | "agentType" | "systemPromptId">>,
+): void {
   if (!db) return;
   const sets: string[] = ["updated_at = ?"];
   const vals: (string | number | null)[] = [new Date().toISOString()];
   if (fields.title !== undefined) { sets.push("title = ?"); vals.push(fields.title); }
   if (fields.agentType !== undefined) { sets.push("agent_type = ?"); vals.push(fields.agentType); }
   if (fields.systemPromptId !== undefined) { sets.push("system_prompt_id = ?"); vals.push(fields.systemPromptId); }
-  vals.push(id);
-  db.run(`UPDATE conversations SET ${sets.join(", ")} WHERE id = ?`, vals);
+  vals.push(id, userId);
+  db.run(`UPDATE conversations SET ${sets.join(", ")} WHERE id = ? AND user_id = ?`, vals);
   schedulePersist();
 }
 
-export function listConversations(): ConvMeta[] {
+// Must match userStore's USER_ID_PATTERN exactly — kept duplicated to avoid a
+// circular dependency between the store and the db layer.
+const SAFE_USER_ID = /^[A-Za-z0-9._-]+$/;
+
+export function listConversations(userId: string): ConvMeta[] {
   if (!db) return [];
-  const rows = db.exec("SELECT id, title, agent_type, system_prompt_id, created_at, updated_at FROM conversations ORDER BY updated_at DESC");
+  // sql.js exec() has no params overload in its type defs; inline userId
+  // after re-validating so this stays injection-proof even if an unvalidated
+  // caller slips through.
+  if (!SAFE_USER_ID.test(userId)) return [];
+  const rows = db.exec(
+    `SELECT id, title, agent_type, system_prompt_id, created_at, updated_at FROM conversations WHERE user_id = '${userId}' ORDER BY updated_at DESC`,
+  );
   if (!rows.length) return [];
   return rows[0].values.map((r) => ({
     id: String(r[0]),
@@ -118,8 +143,8 @@ export function listConversations(): ConvMeta[] {
   }));
 }
 
-export function deleteConversation(id: string): void {
+export function deleteConversation(userId: string, id: string): void {
   if (!db) return;
-  db.run("DELETE FROM conversations WHERE id = ?", [id]);
+  db.run("DELETE FROM conversations WHERE id = ? AND user_id = ?", [id, userId]);
   schedulePersist();
 }
