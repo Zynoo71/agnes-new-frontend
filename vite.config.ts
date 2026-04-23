@@ -9,6 +9,7 @@ const LOCAL_SLIDE_WORKSPACE_ROOT =
   path.resolve(__dirname, "../agnes_core/services/kw-agent-service/.super_agent/workspace");
 const LOCAL_SLIDE_PREFIX = "/__local_slide_workspace/";
 const DEV_CREATE_CONVERSATION_PROXY_PATH = "/__dev_agnes_conversation";
+const DEV_SANDBOX_PREVIEW_PROXY_PATH = "/__dev_agnes_sandbox_file/";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
 const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
 // Local browser upload debugging should not require agents to mint short-lived JWTs by hand.
@@ -260,6 +261,54 @@ function devCreateConversationProxyPlugin(): Plugin {
   };
 }
 
+function devSandboxPreviewProxyPlugin(): Plugin {
+  return {
+    name: "dev-sandbox-preview-proxy",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const rawUrl = req.url ? req.url.split("?")[0] : "";
+        if (!rawUrl.startsWith(DEV_SANDBOX_PREVIEW_PROXY_PATH)) {
+          next();
+          return;
+        }
+        if (req.method !== "GET") {
+          res.statusCode = 405;
+          res.end("Method Not Allowed");
+          return;
+        }
+
+        try {
+          const devLane = getDevLane(req);
+          const upstream = await fetch(
+            `${process.env.VITE_BFF_BASE_URL || "http://127.0.0.1:18080"}/api/v1/agnes/conversation/sandbox-file/${rawUrl.slice(DEV_SANDBOX_PREVIEW_PROXY_PATH.length)}`,
+            {
+              method: "GET",
+              headers: {
+                Accept: "*/*",
+                "X-App": process.env.VITE_APP_ID || DEV_BFF_APP_ID,
+                ...(devLane ? { "x-dev-lane": devLane } : {}),
+              },
+            },
+          );
+          const responseBody = Buffer.from(await upstream.arrayBuffer());
+          res.statusCode = upstream.status;
+          upstream.headers.forEach((value, key) => {
+            if (key.toLowerCase() === "content-length") {
+              return;
+            }
+            res.setHeader(key, value);
+          });
+          res.end(responseBody);
+        } catch (error) {
+          res.statusCode = 502;
+          res.setHeader("Content-Type", "text/plain; charset=utf-8");
+          res.end(error instanceof Error ? error.message : "Sandbox preview proxy failed");
+        }
+      });
+    },
+  };
+}
+
 function devUploadProxyPlugin(): Plugin {
   return {
     name: "dev-upload-proxy",
@@ -344,6 +393,7 @@ export default defineConfig({
     tailwindcss(),
     localSlideWorkspacePlugin(),
     devCreateConversationProxyPlugin(),
+    devSandboxPreviewProxyPlugin(),
     devPresignProxyPlugin(),
     devUploadProxyPlugin(),
   ],
@@ -355,6 +405,11 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
     proxy: {
+      "/api/v1/agnes": {
+        target: process.env.VITE_BFF_BASE_URL || DEV_BFF_BASE_URL,
+        changeOrigin: true,
+        secure: true,
+      },
       "/api/v1/file": {
         target: "https://api-agnes-dev.kiwiar.com",
         changeOrigin: true,
