@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import type { ToolRenderProps } from "../registry";
 import { ExpandableInput } from "../ExpandableInput";
 import { HtmlPreviewFrame } from "@/components/HtmlPreviewFrame";
+import { buildSandboxPreviewFileUrl } from "@/api/sandboxPreview";
+import { useConversationStore } from "@/stores/conversationStore";
 
 const AUTO_COLLAPSE_MS = 2000;
 
@@ -169,7 +171,7 @@ function CodeContent({ content, label }: { content: string; label: string }) {
   );
 }
 
-function PreviewableContent({ content, label }: { content: string; label: string }) {
+function PreviewableContent({ content, label, previewUrl }: { content: string; label: string; previewUrl?: string }) {
   const [tab, setTab] = useState<"preview" | "code">("preview");
   return (
     <div className="mt-2">
@@ -196,7 +198,9 @@ function PreviewableContent({ content, label }: { content: string; label: string
       </div>
       {tab === "preview" ? (
         <HtmlPreviewFrame
-          srcDoc={content}
+          src={previewUrl}
+          srcDoc={previewUrl ? undefined : content}
+          sandbox="allow-scripts allow-popups allow-downloads"
           title={label}
           className="w-full border border-border-light rounded-lg bg-white"
           style={{ height: "300px" }}
@@ -223,7 +227,18 @@ function OpenByDefaultDetails({ summary, children }: { summary: string; children
   );
 }
 
+function buildPreviewUrl(conversationId: string | null, filePath: string): string | undefined {
+  const trimmedConversationId = conversationId?.trim();
+  const trimmedPath = filePath.trim();
+  if (!trimmedConversationId || !trimmedPath) {
+    return undefined;
+  }
+  return buildSandboxPreviewFileUrl(trimmedConversationId, trimmedPath);
+}
+
 function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolName: string; toolInput: Record<string, unknown>; toolResult: Record<string, unknown>; autoCollapse?: boolean }) {
+  const conversationId = useConversationStore((s) => s.conversationId);
+
   switch (toolName) {
     case "read_file": {
       const content = toolResult.content as string | undefined;
@@ -239,10 +254,11 @@ function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolNa
       if (!content) return null;
       const filePath = (toolInput.path as string) ?? "";
       const isPreviewable = /\.(svg|html?)$/i.test(filePath);
+      const previewUrl = isPreviewable ? buildPreviewUrl(conversationId, filePath) : undefined;
       return (
         <OpenByDefaultDetails summary="View Content">
           {isPreviewable ? (
-            <PreviewableContent content={content} label="Written Content" />
+            <PreviewableContent content={content} label="Written Content" previewUrl={previewUrl} />
           ) : (
             <CodeContent content={content} label="Written Content" />
           )}

@@ -7,6 +7,7 @@ const DEV_CREATE_CONVERSATION_PROXY_PATH = "/__dev_agnes_conversation";
 const DEV_SANDBOX_PREVIEW_PROXY_PATH = "/__dev_agnes_sandbox_file/";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
 const UPLOAD_PROXY_PATH = "/__upload_proxy";
+const DEFAULT_BFF_BASE_URL = "https://api-agnes-dev.kiwiar.com";
 // Local browser upload debugging should not require agents to mint short-lived JWTs by hand.
 // When the page runs on localhost/127.0.0.1, the Vite dev server logs into the remote dev BFF
 // on demand and proxies /file/presigned-url plus the subsequent object PUT upload.
@@ -209,7 +210,7 @@ function devSandboxPreviewProxyPlugin(): Plugin {
         try {
           const devLane = getDevLane(req);
           const upstream = await fetch(
-            `${process.env.VITE_BFF_BASE_URL || "http://127.0.0.1:18080"}/api/v1/agnes/conversation/sandbox-file/${rawUrl.slice(DEV_SANDBOX_PREVIEW_PROXY_PATH.length)}`,
+            `${process.env.VITE_BFF_BASE_URL || DEFAULT_BFF_BASE_URL}/api/v1/agnes/conversation/sandbox-file/${rawUrl.slice(DEV_SANDBOX_PREVIEW_PROXY_PATH.length)}`,
             {
               method: "GET",
               headers: {

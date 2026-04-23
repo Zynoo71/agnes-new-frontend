@@ -2,7 +2,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
 interface Props {
-  srcDoc: string;
+  src?: string;
+  srcDoc?: string;
   /** Passed through to both the inline and fullscreen iframes. */
   sandbox?: string;
   title?: string;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function HtmlPreviewFrame({
+  src,
   srcDoc,
   sandbox = "",
   title = "HTML preview",
@@ -19,6 +21,7 @@ export function HtmlPreviewFrame({
   style,
 }: Props) {
   const [fullscreen, setFullscreen] = useState(false);
+  const frameProps = src ? { src } : { srcDoc: srcDoc ?? "" };
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -38,7 +41,7 @@ export function HtmlPreviewFrame({
     <>
       <div className="relative">
         <iframe
-          srcDoc={srcDoc}
+          {...frameProps}
           sandbox={sandbox}
           title={title}
           className={className}
@@ -72,7 +75,7 @@ export function HtmlPreviewFrame({
               </button>
             </div>
             <iframe
-              srcDoc={srcDoc}
+              {...frameProps}
               sandbox={sandbox}
               title={title}
               className="flex-1 w-full bg-white border-0"
