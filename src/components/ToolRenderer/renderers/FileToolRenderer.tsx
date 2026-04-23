@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import type { ToolRenderProps } from "../registry";
 import { ExpandableInput } from "../ExpandableInput";
 import { HtmlPreviewFrame } from "@/components/HtmlPreviewFrame";
@@ -209,18 +210,28 @@ function PreviewableContent({ content, label }: { content: string; label: string
   );
 }
 
+function OpenByDefaultDetails({ summary, children }: { summary: string; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <details className="mt-2" open={open} onToggle={(event) => setOpen((event.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
+        {summary}
+      </summary>
+      {children}
+    </details>
+  );
+}
+
 function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolName: string; toolInput: Record<string, unknown>; toolResult: Record<string, unknown>; autoCollapse?: boolean }) {
   switch (toolName) {
     case "read_file": {
       const content = toolResult.content as string | undefined;
       if (!content) return null;
       return (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
-            View Content
-          </summary>
+        <OpenByDefaultDetails summary="View Content">
           <CodeContent content={content} label="File Content" />
-        </details>
+        </OpenByDefaultDetails>
       );
     }
     case "write_file": {
@@ -229,16 +240,13 @@ function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolNa
       const filePath = (toolInput.path as string) ?? "";
       const isPreviewable = /\.(svg|html?)$/i.test(filePath);
       return (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
-            View Content
-          </summary>
+        <OpenByDefaultDetails summary="View Content">
           {isPreviewable ? (
             <PreviewableContent content={content} label="Written Content" />
           ) : (
             <CodeContent content={content} label="Written Content" />
           )}
-        </details>
+        </OpenByDefaultDetails>
       );
     }
     case "edit_file":
@@ -247,28 +255,22 @@ function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolNa
       const items = toolResult.items as string[] | undefined;
       if (!items?.length) return null;
       return (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
-            Files
-          </summary>
+        <OpenByDefaultDetails summary="Files">
           <pre className="mt-1.5 text-[11px] font-mono bg-background rounded-lg p-2.5 whitespace-pre-wrap leading-relaxed border border-border-light text-text-secondary max-h-40 overflow-y-auto">
             {items.join("\n")}
           </pre>
-        </details>
+        </OpenByDefaultDetails>
       );
     }
     case "glob": {
       const matches = toolResult.matches as string[] | undefined;
       if (!matches?.length) return null;
       return (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
-            Matches
-          </summary>
+        <OpenByDefaultDetails summary="Matches">
           <pre className="mt-1.5 text-[11px] font-mono bg-background rounded-lg p-2.5 whitespace-pre-wrap leading-relaxed border border-border-light text-text-secondary max-h-40 overflow-y-auto">
             {matches.join("\n")}
           </pre>
-        </details>
+        </OpenByDefaultDetails>
       );
     }
     default:
@@ -309,4 +311,3 @@ export function FileToolRenderer(props: ToolRenderProps) {
     </div>
   );
 }
-
