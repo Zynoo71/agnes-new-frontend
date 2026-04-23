@@ -5,7 +5,7 @@ const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
-const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
+const UPLOAD_PROXY_PATH = "/__upload_proxy";
 
 interface PresignedUrlResponse {
   code: string;
@@ -27,6 +27,13 @@ function isLocalDev(): boolean {
 function resolveBffBaseUrl(): string {
   if (BFF_BASE_URL) return BFF_BASE_URL;
   return "https://api-agnes-dev.kiwiar.com";
+}
+
+function shouldUseUploadProxy(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return isLocalDev() || !BFF_BASE_URL;
 }
 
 export async function uploadChatAttachment(file: File, conversationId?: string | null): Promise<ChatAttachment> {
@@ -80,8 +87,8 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
     uploadHeaders.set("Content-Type", mimeType);
   }
 
-  const uploadResp = isLocalDev()
-    ? await fetch(DEV_UPLOAD_PROXY_PATH, {
+  const uploadResp = shouldUseUploadProxy()
+    ? await fetch(UPLOAD_PROXY_PATH, {
         method: "PUT",
         headers: {
           ...Object.fromEntries(uploadHeaders.entries()),
