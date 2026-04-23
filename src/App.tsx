@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ImagePreview } from "@/components/ImagePreview";
 import { LocalSlidePreview } from "@/components/LocalSlidePreview";
+import { ReportPreview } from "@/components/ReportPreview";
 import { UserIdSetupModal } from "@/components/UserIdSetupModal";
 import { ChatPanel } from "@/panels/ChatPanel";
 import { PromptManagementPage } from "@/pages/PromptManagementPage";
@@ -82,6 +83,7 @@ function AppLayout() {
       </main>
       <ImagePreview />
       <LocalSlidePreview />
+      <ReportPreview />
       <UserIdSetupModal />
     </div>
   );

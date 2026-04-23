@@ -14,6 +14,7 @@ import { SheetToolRenderer } from "./renderers/SheetToolRenderer";
 import { SportsResultsRenderer } from "./renderers/SportsResultsRenderer";
 import { YoutubeVideosRenderer } from "./renderers/YoutubeVideosRenderer";
 import { StockQuoteRenderer } from "./renderers/StockQuoteRenderer";
+import { ReportCardRenderer } from "./renderers/ReportCardRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
@@ -60,7 +61,7 @@ const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   run_python: SheetToolRenderer,
   search_table: SheetToolRenderer,
   make_chart: SheetToolRenderer,
-  write_report: SheetToolRenderer,
+  write_report: ReportCardRenderer,
   compose_report: SheetToolRenderer,
   record_insight: SheetToolRenderer,
   spawn_worker: SheetToolRenderer,
