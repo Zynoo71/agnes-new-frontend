@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { ToolRenderProps } from "../registry";
 import { ExpandableInput } from "../ExpandableInput";
+import { HtmlPreviewFrame } from "@/components/HtmlPreviewFrame";
 
 const AUTO_COLLAPSE_MS = 2000;
 
@@ -193,9 +194,9 @@ function PreviewableContent({ content, label }: { content: string; label: string
         <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">{label}</span>
       </div>
       {tab === "preview" ? (
-        <iframe
+        <HtmlPreviewFrame
           srcDoc={content}
-          sandbox=""
+          title={label}
           className="w-full border border-border-light rounded-lg bg-white"
           style={{ height: "300px" }}
         />
