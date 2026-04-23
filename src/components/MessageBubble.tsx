@@ -136,7 +136,14 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         .reverse()
         .find((block): block is { type: "SlideOutline"; data: SlideOutlineData } => block.type === "SlideOutline")
     : undefined;
-  const shouldShowLocalPreview = !isUser && !!isLast && !!conversationId && (agentType === "slide" || !!slideOutlineBlock);
+  const hasSlideDelegateCall = !isUser && message.blocks.some(
+    (block) => block.type === "ToolCallStart" && block.data.toolName === "delegate_to_slide_agent",
+  );
+  const isSlidePreviewTurn =
+    !isUser &&
+    !!isLast &&
+    (agentType === "slide" || (agentType === "super" && hasSlideDelegateCall));
+  const shouldShowLocalPreview = isSlidePreviewTurn && !!conversationId && !isStreaming;
   const canOpenLocalPreview = shouldShowLocalPreview && !isStreaming && !!conversationId;
 
   const handleCopy = useCallback(() => {
