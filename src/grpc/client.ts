@@ -4,7 +4,7 @@ import { KwAgentServiceService } from "@/gen/kw_agent_service/v1/kw_agent_servic
 import { useUserStore } from "@/stores/userStore";
 
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
-const APP_ID = import.meta.env.VITE_APP_ID ?? "";
+const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
 
 function generateTraceId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
