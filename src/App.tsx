@@ -72,6 +72,7 @@ function AppLayout() {
 
       <main className="flex-1 overflow-hidden min-w-0">
         <Routes>
+          <Route path="/" element={<Navigate to="/chat" replace />} />
           <Route path="/chat" element={<ErrorBoundary><ChatPanel /></ErrorBoundary>} />
           <Route path="/chat/:convId" element={<ChatRoute />} />
           <Route path="/prompts" element={<ErrorBoundary><PromptManagementPage /></ErrorBoundary>} />
