@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { agentClient } from "@/grpc/client";
 import { createAgnesConversation } from "@/api/agnesConversation";
-import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend } from "@/stores/conversationStore";
+import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend, parseHitlResumeBlock, resolveReviewsByHitlBlocks } from "@/stores/conversationStore";
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
@@ -24,9 +24,9 @@ function beginStream(convId: string): AbortSignal {
   return ac.signal;
 }
 
-// Reset per-turn seq tracker before initiating a new turn
-// (ChatStream / EditResend / Regenerate / HitlResume-modify).
-// Note: HitlResume-approve keeps seq since the backend reuses the request_id.
+// Reset per-turn seq tracker before initiating a new turn. Per spec §8.9,
+// HitlResume actions (approve / modify / reject) all open new turns now —
+// the legacy "approve reuses request_id" path was removed backend-side.
 function beginNewTurn(convId: string): AbortSignal {
   resetLatestSeq(convId);
   return beginStream(convId);
@@ -174,6 +174,7 @@ function rebuildTasksFromTurns(turns: { user: unknown[]; assistant: unknown[] }[
 
 function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): Message[] {
   const messages: Message[] = [];
+  const hitlBlocksAll: ContentBlock[] = [];
   for (const turn of turns) {
     const userBlocks = turn.user as Array<Record<string, unknown> & { type: string; data: unknown }>;
     const userTextBlocks = userBlocks
@@ -190,12 +191,18 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
         return { type: "File", data: { filename, mimeType, url } } as ContentBlock;
       })
       .filter((b): b is ContentBlock => b !== null);
-    if (userTextBlocks.length > 0 || fileBlocks.length > 0) {
+    // §8.9: history `turn.user[]` may carry HitlResume blocks alongside Message/File.
+    const hitlBlocks: ContentBlock[] = userBlocks
+      .filter((b) => b.type === "HitlResume")
+      .map((b) => parseHitlResumeBlock((b.data ?? {}) as Record<string, unknown>))
+      .filter((b): b is ContentBlock => b !== null);
+    hitlBlocksAll.push(...hitlBlocks);
+    if (userTextBlocks.length > 0 || fileBlocks.length > 0 || hitlBlocks.length > 0) {
       // Derive the user message id from the backend message_id so a later Resume
       // HumanInput replay can be deduplicated against this bubble.
       const backendMsgId = extractUserBlockMessageId(userBlocks);
       const userId = backendMsgId ? userMessageIdFromBackend(backendMsgId) : nextHistoryId();
-      messages.push({ id: userId, role: "user", blocks: [...userTextBlocks, ...fileBlocks], nodes: [], workers: {}, sources: [] });
+      messages.push({ id: userId, role: "user", blocks: [...userTextBlocks, ...fileBlocks, ...hitlBlocks], nodes: [], workers: {}, sources: [] });
     }
     const assistantBlocks: ContentBlock[] = [];
     const turnSources: SourceCitation[] = [];
@@ -220,9 +227,13 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
         });
       } else if (block.type === "HumanReview") {
         const data = (block.data ?? {}) as Record<string, unknown>;
+        const blockRec = block as Record<string, unknown>;
+        const eventId = typeof blockRec.event_id === "string" ? blockRec.event_id
+          : typeof blockRec.eventId === "string" ? blockRec.eventId
+          : undefined;
         assistantBlocks.push({
           type: "human_review",
-          data: { payload: data, resolved: true },
+          data: { payload: data, resolved: true, event_id: eventId },
         });
       } else if (block.type === "SourcesCited") {
         const data = (block.data ?? {}) as Record<string, unknown>;
@@ -393,7 +404,10 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers, sources: turnSources });
     }
   }
-  return messages;
+  // §8.9 #4: link HitlResume blocks back to their HumanReview cards via event_id.
+  // (History HumanReview is already resolved=true; this is a no-op today but keeps
+  // the pipeline consistent should that default ever change.)
+  return resolveReviewsByHitlBlocks(messages, hitlBlocksAll);
 }
 
 // ── Hook ──
@@ -478,11 +492,10 @@ export function useChat() {
     const convId = s.conversationId;
     const requestStartedAt = Date.now();
 
-    s.resolveHumanReview();
+    s.resolveHumanReview(action, feedback);
     s.startAssistantMessage(requestStartedAt);
-    // `modify` starts a new turn (new request_id, seq resets to 1 on backend).
-    // `approve` continues the current turn (same request_id), so keep seq.
-    const signal = action === "modify" ? beginNewTurn(convId) : beginStream(convId);
+    // §8.9: approve / modify / reject 一律开新 turn，新 request_id，seq 重置为 1。
+    const signal = beginNewTurn(convId);
 
     const resumePayload: Record<string, unknown> = { action };
     if (action === "modify" && feedback) resumePayload.feedback = feedback;

@@ -6,6 +6,7 @@ import type {
   Message,
   ContentBlock,
   HumanReviewData,
+  HitlResumeData,
   ToolCallData,
   FileData,
   MemoryUpdateData,
@@ -121,6 +122,10 @@ function UserAvatar() {
 
 export const MessageBubble = memo(function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming, animate = true }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  // §8.9: a user turn whose only payload is a HitlResume block has its
+  // visual representation merged into the linked HumanReview card above —
+  // skip rendering the otherwise-empty user bubble entirely.
+  const allHitlResume = message.blocks.length > 0 && message.blocks.every((b) => b.type === "HitlResume");
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
   const [copied, setCopied] = useState(false);
@@ -178,6 +183,8 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
     setEditing(false);
     setEditText("");
   };
+
+  if (isUser && allHitlResume) return null;
 
   if (isUser) {
     return (
@@ -478,6 +485,10 @@ const BlockRenderer = memo(function BlockRenderer({
           disabled={isStreaming}
         />
       );
+    case "HitlResume":
+      // §8.9: HitlResume info is merged into the linked HumanReview card
+      // (action badge + feedback) — no separate user-side chip.
+      return null;
     case "TaskList":
       return <TaskListPanel />;
     case "ContextCompacting":
@@ -722,6 +733,21 @@ const REVIEW_TYPE_CONFIG: Record<string, { title: string; description: string }>
   batch_generation_plan: { title: "Generation Plan", description: "Review the batch generation plan" },
 };
 
+// §8.9: HitlResume action → small corner badge merged into the HumanReview card.
+function ResumeActionBadge({ action }: { action: HitlResumeData["action"] }) {
+  const config = action === "approve"
+    ? { icon: "✓", label: "Approved", cls: "bg-success/10 text-success border-success/30" }
+    : action === "reject"
+      ? { icon: "✕", label: "Rejected", cls: "bg-error/10 text-error border-error/30" }
+      : { icon: "✎", label: "Modified", cls: "bg-accent/10 text-accent border-accent/30" };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${config.cls}`}>
+      <span className="font-bold leading-none">{config.icon}</span>
+      <span>{config.label}</span>
+    </span>
+  );
+}
+
 function HumanReviewBlock({
   data,
   onResume,
@@ -756,6 +782,7 @@ function HumanReviewBlock({
         {timeoutSeconds && !data.resolved && (
           <CountdownBadge seconds={timeoutSeconds} defaultAction={defaultAction} onTimeout={() => onResume?.(defaultAction as "approve")} />
         )}
+        {data.resolved && data.resumeAction && <ResumeActionBadge action={data.resumeAction} />}
       </div>
 
       {/* Review content */}
@@ -778,14 +805,25 @@ function HumanReviewBlock({
         </details>
       )}
 
+      {/* Modify feedback (free-text user note) */}
+      {data.resolved && data.resumeAction === "modify" && data.resumeFeedback && (
+        <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 px-3 py-2">
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider mb-1">User's note</div>
+          <div className="text-[12px] text-text-primary leading-snug whitespace-pre-wrap break-words">{data.resumeFeedback}</div>
+        </div>
+      )}
+
       {/* Actions */}
       {data.resolved ? (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-medium">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-          </svg>
-          Resolved
-        </div>
+        // Status text falls back to "Resolved" for legacy data without resumeAction.
+        !data.resumeAction && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-medium">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            Resolved
+          </div>
+        )
       ) : (
         onResume && (
           <div className="mt-4 space-y-3">

@@ -70,6 +70,23 @@ export interface NodeData {
 export interface HumanReviewData {
   payload: Record<string, unknown>;
   resolved: boolean;
+  // EmitEvent envelope event_id (e.g. "evt_..."). Used as the match key for
+  // HitlResume.resolves_event_id (spec §8.9). Optional for legacy data.
+  event_id?: string;
+  // §8.9: when this review is resolved by a HitlResume block, the action and
+  // optional feedback are merged here so the card itself can render the
+  // decision (no separate user-side chip).
+  resumeAction?: HitlAction;
+  resumeFeedback?: string;
+}
+
+export type HitlAction = "approve" | "modify" | "reject";
+
+export interface HitlResumeData {
+  action: HitlAction;
+  resolves_event_id: string;
+  feedback?: string;
+  modify_data?: Record<string, unknown> | null;
 }
 
 export type WorkerItem =
@@ -313,6 +330,7 @@ export type ContentBlock =
   | { type: "Reasoning"; content: string }
   | { type: "ToolCallStart"; data: ToolCallData }
   | { type: "human_review"; data: HumanReviewData }
+  | { type: "HitlResume"; data: HitlResumeData }
   | { type: "TaskList" }
   | { type: "ContextCompacting"; done: boolean }
   | { type: "SlideOutline"; data: SlideOutlineData }
@@ -528,6 +546,100 @@ export function userMessageIdFromBackend(backendMessageId: string): string {
   return `user-${backendMessageId}`;
 }
 
+// §8.9: parse a HitlResume block payload from `HumanInput.blocks[]` or `turn.user[]`.
+export function parseHitlResumeBlock(d: Record<string, unknown>): ContentBlock | null {
+  const action = d.action;
+  if (action !== "approve" && action !== "modify" && action !== "reject") return null;
+  const resolvesEventId = typeof d.resolves_event_id === "string" ? d.resolves_event_id : "";
+  const feedback = typeof d.feedback === "string" && d.feedback.length > 0 ? d.feedback : undefined;
+  const modifyData = d.modify_data && typeof d.modify_data === "object" && !Array.isArray(d.modify_data)
+    ? (d.modify_data as Record<string, unknown>)
+    : null;
+  return {
+    type: "HitlResume",
+    data: { action, resolves_event_id: resolvesEventId, feedback, modify_data: modifyData },
+  };
+}
+
+// Apply HitlResume.modify_data onto the matching HumanReview's payload so the
+// existing renderer (e.g. MaterialSupplementRenderer) reflects the user's
+// decision automatically. The merge strategy is **review_type-dependent** per
+// spec §8.9 — naive shallow merge would corrupt material_supplement (drops
+// candidates), so each type is handled explicitly.
+function applyModifyDataToPayload(
+  payload: Record<string, unknown>,
+  modifyData: Record<string, unknown>,
+): Record<string, unknown> {
+  const reviewType = typeof payload.review_type === "string" ? payload.review_type : "";
+  const dataKey = payload.details !== undefined ? "details" : "data";
+  const inner = (payload[dataKey] ?? {}) as Record<string, unknown>;
+
+  // material_supplement: modify_data only carries `slots[i].selected_index`;
+  // candidates live exclusively on the original review (per spec — avoids
+  // duplicating url data). Per-slot overwrite preserves candidates so the
+  // existing image-picker renderer naturally highlights the user's choice.
+  if (reviewType === "material_supplement") {
+    const modSlots = Array.isArray(modifyData.slots) ? modifyData.slots as Array<Record<string, unknown>> : null;
+    if (!modSlots) return payload;
+    const origSlots = Array.isArray(inner.slots) ? inner.slots as Array<Record<string, unknown>> : [];
+    const mergedSlots = origSlots.map((slot, i) => {
+      const upd = modSlots[i];
+      if (!upd || typeof upd.selected_index !== "number") return slot;
+      return { ...slot, selected_index: upd.selected_index };
+    });
+    return { ...payload, [dataKey]: { ...inner, slots: mergedSlots } };
+  }
+
+  // research_plan / batch_generation_plan: modify_data ships full top-level
+  // replacement structures (e.g. `{tasks: [...]}` or `{items: [...]}` already
+  // contain complete records), so shallow merge is correct here.
+  return { ...payload, [dataKey]: { ...inner, ...modifyData } };
+}
+
+// §8.9 #4: scan all messages, flip `human_review` blocks whose event_id
+// matches any `HitlResume.resolves_event_id` in the new user turn AND merge
+// action / feedback / (review-type-aware) modify_data onto the card so its
+// renderer shows the decision inline (no separate user-side chip).
+export function resolveReviewsByHitlBlocks(messages: Message[], hitlBlocks: ContentBlock[]): Message[] {
+  const byEventId = new Map<string, HitlResumeData>();
+  for (const b of hitlBlocks) {
+    if (b.type === "HitlResume" && b.data.resolves_event_id) {
+      byEventId.set(b.data.resolves_event_id, b.data);
+    }
+  }
+  if (byEventId.size === 0) return messages;
+  let touched = false;
+  const next = messages.map((m) => {
+    let blockChanged = false;
+    const blocks = m.blocks.map((b) => {
+      if (b.type !== "human_review") return b;
+      const eid = b.data.event_id;
+      if (!eid) return b;
+      const hitl = byEventId.get(eid);
+      if (!hitl) return b;
+      if (b.data.resolved && b.data.resumeAction === hitl.action && b.data.resumeFeedback === hitl.feedback) return b;
+      blockChanged = true;
+      const mergedPayload = hitl.modify_data
+        ? applyModifyDataToPayload(b.data.payload, hitl.modify_data)
+        : b.data.payload;
+      return {
+        type: "human_review",
+        data: {
+          ...b.data,
+          payload: mergedPayload,
+          resolved: true,
+          resumeAction: hitl.action,
+          resumeFeedback: hitl.feedback,
+        },
+      } as ContentBlock;
+    });
+    if (!blockChanged) return m;
+    touched = true;
+    return { ...m, blocks };
+  });
+  return touched ? next : messages;
+}
+
 export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, eventTimestamp = Date.now()): Message[] {
   const msgs = [...messages];
 
@@ -558,7 +670,12 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
         .map((b) => asFileData(b.data))
         .filter((b): b is FileData => b !== null)
         .map((data) => ({ type: "File", data }) as ContentBlock);
-      if (!userText && fileBlocks.length === 0) return msgs;
+      // §8.9: HitlResumeStream 首帧的 user blocks[0] = HitlResume(action, resolves_event_id, ...)
+      const hitlBlocks: ContentBlock[] = rawBlocks
+        .filter((b) => b.type === "HitlResume")
+        .map((b) => parseHitlResumeBlock(asRecord(b.data)))
+        .filter((b): b is ContentBlock => b !== null);
+      if (!userText && fileBlocks.length === 0 && hitlBlocks.length === 0) return msgs;
 
       const lastIdx = msgs.length - 1;
       const trailingAssistantIdx = msgs[lastIdx]?.role === "assistant" ? lastIdx : -1;
@@ -586,6 +703,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
         blocks: [
           ...(userText ? [{ type: "Message", content: userText } as ContentBlock] : []),
           ...fileBlocks,
+          ...hitlBlocks,
         ],
         nodes: [], workers: {}, sources: [],
       };
@@ -594,7 +712,8 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       } else {
         msgs.push(userMsg);
       }
-      return msgs;
+      // §8.9 #4: flip matching HumanReview cards via resolves_event_id reverse-link.
+      return resolveReviewsByHitlBlocks(msgs, hitlBlocks);
     }
   }
 
@@ -699,7 +818,8 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
     }
     case "custom": {
       const custom = event.event.value;
-      const payload = unwrapEmitEvent(asRecord(tryDecodeJson(custom.payload)));
+      const rawPayload = asRecord(tryDecodeJson(custom.payload));
+      const payload = unwrapEmitEvent(rawPayload);
 
       // ── Sub-agent typed event passthrough ──
       // SuperAgent 把 SheetAgent 的 planner 流式事件用 custom 通道转发出来,
@@ -786,9 +906,12 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       }
 
       if (custom.type === "HumanReview") {
+        // §8.9: capture envelope event_id so a downstream HitlResume block
+        // (with `resolves_event_id`) can flip this card's resolved state.
+        const eventId = typeof rawPayload.event_id === "string" ? rawPayload.event_id : undefined;
         updated.blocks.push({
           type: "human_review",
-          data: { payload, resolved: false },
+          data: { payload, resolved: false, event_id: eventId },
         });
         break;
       }
@@ -1136,7 +1259,7 @@ interface ConversationStore {
   setError: (err: string | null) => void;
   addUserMessage: (content: string, files?: ChatAttachment[]) => void;
   startAssistantMessage: (requestStartedAt?: number) => void;
-  resolveHumanReview: () => void;
+  resolveHumanReview: (action: HitlAction, feedback?: string) => void;
   removeLastRound: () => void;
   removeLastAssistantMessage: () => void;
   setMessages: (messages: Message[]) => void;
@@ -1367,7 +1490,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
       set({ messages: msgs, pendingTextQueue: newQueue });
     },
 
-    resolveHumanReview: () =>
+    resolveHumanReview: (action, feedback) =>
       set((s) => {
         const messages = [...s.messages];
         const last = messages[messages.length - 1];
@@ -1376,7 +1499,10 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         for (let i = blocks.length - 1; i >= 0; i--) {
           const block = blocks[i];
           if (block.type === "human_review" && !block.data.resolved) {
-            blocks[i] = { type: "human_review", data: { ...block.data, resolved: true } };
+            blocks[i] = {
+              type: "human_review",
+              data: { ...block.data, resolved: true, resumeAction: action, resumeFeedback: feedback },
+            };
             break;
           }
         }
