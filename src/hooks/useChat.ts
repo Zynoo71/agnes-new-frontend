@@ -486,7 +486,11 @@ export function useChat() {
     await runStream(stream, signal, convId);
   }, []);
 
-  const hitlResume = useCallback(async (action: "approve" | "modify", feedback?: string) => {
+  const hitlResume = useCallback(async (
+    action: "approve" | "modify",
+    feedback?: string,
+    data?: Record<string, unknown>,
+  ) => {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
@@ -499,6 +503,7 @@ export function useChat() {
 
     const resumePayload: Record<string, unknown> = { action };
     if (action === "modify" && feedback) resumePayload.feedback = feedback;
+    if (action === "modify" && data) resumePayload.data = data;
 
     const stream = agentClient.hitlResumeStream(
       {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, memo } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
@@ -92,7 +92,7 @@ const MARKDOWN_COMPONENTS = {
 interface MessageBubbleProps {
   message: Message;
   isLast?: boolean;
-  onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onHitlResume?: (action: "approve" | "modify", feedback?: string, data?: Record<string, unknown>) => void;
   onEditResend?: (newQuery: string) => void;
   onRegenerate?: () => void;
   isStreaming?: boolean;
@@ -453,7 +453,7 @@ const BlockRenderer = memo(function BlockRenderer({
   autoCollapse,
 }: {
   block: ContentBlock;
-  onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onHitlResume?: (action: "approve" | "modify", feedback?: string, data?: Record<string, unknown>) => void;
   isStreaming?: boolean;
   autoCollapse?: boolean;
 }) {
@@ -754,7 +754,7 @@ function HumanReviewBlock({
   disabled,
 }: {
   data: HumanReviewData;
-  onResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onResume?: (action: "approve" | "modify", feedback?: string, data?: Record<string, unknown>) => void;
   disabled?: boolean;
 }) {
   const reviewType = data.payload.review_type as string | undefined;
@@ -765,6 +765,45 @@ function HumanReviewBlock({
     title: "Review Required",
     description: "The agent is waiting for your decision",
   };
+
+  // §8.9 structured-modify: per-slot selection state for material_supplement.
+  // Initialised from agent's pre-selection; changes flip the action button to
+  // "Confirm Selection" which submits {action: "modify", data: {slots: [...]}}.
+  const slots = useMemo<Array<{ selected_index: number | null; candidates: unknown[] }>>(() => {
+    if (reviewType !== "material_supplement" || !reviewData) return [];
+    return (reviewData.slots as Array<{ selected_index: number | null; candidates: unknown[] }> | undefined) ?? [];
+  }, [reviewType, reviewData]);
+  const initialSelections = useMemo(
+    () => slots.map((s) => s.selected_index ?? 0),
+    [slots],
+  );
+  const [localSelections, setLocalSelections] = useState<number[]>(initialSelections);
+  // Re-sync if a Resume replays the review or candidates change.
+  useEffect(() => { setLocalSelections(initialSelections); }, [initialSelections]);
+  const selectionChanged = localSelections.some((v, i) => v !== initialSelections[i]);
+  const handleSlotSelect = (slotIdx: number, candIdx: number) => {
+    setLocalSelections((prev) => {
+      const next = [...prev];
+      next[slotIdx] = candIdx;
+      return next;
+    });
+  };
+  const handleConfirm = () => {
+    if (!onResume) return;
+    if (!selectionChanged) {
+      onResume("approve");
+      return;
+    }
+    const modifyData = { slots: localSelections.map((selected_index) => ({ selected_index })) };
+    onResume("modify", undefined, modifyData);
+  };
+  // Inject local selection + click handler into MaterialSupplementRenderer.
+  const reviewDataForRender = reviewType === "material_supplement" && reviewData && !data.resolved
+    ? { ...reviewData, slots: slots.map((s, i) => ({ ...s, selected_index: localSelections[i] })) }
+    : reviewData;
+  const onSlotSelect = reviewType === "material_supplement" && !data.resolved && !disabled
+    ? handleSlotSelect
+    : undefined;
 
   return (
     <div className="my-3 rounded-xl border border-warning/30 bg-warning-light/50 p-4">
@@ -786,9 +825,13 @@ function HumanReviewBlock({
       </div>
 
       {/* Review content */}
-      {reviewData && (
+      {reviewDataForRender && (
         <div className="mb-3">
-          <ReviewDataDisplay reviewType={reviewType} data={reviewData} />
+          <ReviewDataDisplay
+            reviewType={reviewType}
+            data={reviewDataForRender}
+            onSlotSelect={onSlotSelect}
+          />
         </div>
       )}
 
@@ -828,15 +871,21 @@ function HumanReviewBlock({
         onResume && (
           <div className="mt-4 space-y-3">
             <button
-              onClick={() => onResume("approve")}
+              onClick={handleConfirm}
               disabled={disabled}
-              className="rounded-lg bg-success text-white px-4 py-1.5 text-xs font-medium
-                         hover:bg-success/90 active:scale-[0.97] disabled:opacity-40 transition-all"
+              className={`rounded-lg text-white px-4 py-1.5 text-xs font-medium
+                         active:scale-[0.97] disabled:opacity-40 transition-all ${
+                           selectionChanged
+                             ? "bg-accent hover:bg-accent-hover"
+                             : "bg-success hover:bg-success/90"
+                         }`}
             >
-              Approve
+              {selectionChanged ? "Confirm Selection" : "Approve"}
             </button>
             <p className="text-[11px] text-text-tertiary">
-              Or type in the chat input to provide feedback
+              {selectionChanged
+                ? "Submitting your selection above"
+                : "Or type in the chat input to provide feedback"}
             </p>
           </div>
         )
@@ -849,7 +898,11 @@ function HumanReviewBlock({
 
 // ── Review data renderers (registry pattern) ──
 
-type ReviewRenderer = (data: Record<string, unknown>) => React.ReactNode;
+interface ReviewRendererProps {
+  /** §8.9: when provided, material_supplement candidates become clickable. */
+  onSlotSelect?: (slotIdx: number, candIdx: number) => void;
+}
+type ReviewRenderer = (data: Record<string, unknown>, props?: ReviewRendererProps) => React.ReactNode;
 
 interface ReviewTask {
   id: number;
@@ -939,10 +992,12 @@ interface MaterialSlot {
   selected_index: number | null;
 }
 
-function MaterialSupplementRenderer(data: Record<string, unknown>) {
+function MaterialSupplementRenderer(data: Record<string, unknown>, props?: ReviewRendererProps) {
   const slots = (data.slots as MaterialSlot[]) ?? [];
   const contextSummary = (data.context_summary as string) ?? "";
   const message = (data.message as string) ?? "";
+  const onSlotSelect = props?.onSlotSelect;
+  const interactive = !!onSlotSelect;
 
   return (
     <div className="space-y-3">
@@ -968,15 +1023,16 @@ function MaterialSupplementRenderer(data: Record<string, unknown>) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {slot.candidates.map((c, ci) => {
                     const isSelected = slot.selected_index === ci;
-                    return (
-                      <div
-                        key={ci}
-                        className={`rounded-lg border overflow-hidden ${
-                          isSelected
-                            ? "border-accent ring-2 ring-accent/30"
-                            : "border-border-light"
-                        }`}
-                      >
+                    const baseCls = `rounded-lg border overflow-hidden text-left transition-all ${
+                      isSelected
+                        ? "border-accent ring-2 ring-accent/30"
+                        : "border-border-light"
+                    }`;
+                    const interactiveCls = interactive
+                      ? "cursor-pointer hover:border-accent/60 hover:shadow-sm active:scale-[0.98]"
+                      : "";
+                    const inner = (
+                      <>
                         {c.type === "video" ? (
                           <div className="w-full h-24 bg-surface-hover flex items-center justify-center">
                             <span className="text-[10px] text-text-tertiary">VIDEO</span>
@@ -997,6 +1053,20 @@ function MaterialSupplementRenderer(data: Record<string, unknown>) {
                             )}
                           </div>
                         </div>
+                      </>
+                    );
+                    return interactive ? (
+                      <button
+                        key={ci}
+                        type="button"
+                        onClick={() => onSlotSelect(si, ci)}
+                        className={`${baseCls} ${interactiveCls} block w-full bg-transparent`}
+                      >
+                        {inner}
+                      </button>
+                    ) : (
+                      <div key={ci} className={baseCls}>
+                        {inner}
                       </div>
                     );
                   })}
@@ -1097,9 +1167,17 @@ const REVIEW_RENDERERS: Record<string, ReviewRenderer> = {
   batch_generation_plan: BatchGenerationPlanRenderer,
 };
 
-function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Record<string, unknown> }) {
+function ReviewDataDisplay({
+  reviewType,
+  data,
+  onSlotSelect,
+}: {
+  reviewType?: string;
+  data: Record<string, unknown>;
+  onSlotSelect?: (slotIdx: number, candIdx: number) => void;
+}) {
   const renderer = reviewType ? REVIEW_RENDERERS[reviewType] : undefined;
-  const content = renderer?.(data);
+  const content = renderer?.(data, { onSlotSelect });
   if (content) return <>{content}</>;
 
   return (
