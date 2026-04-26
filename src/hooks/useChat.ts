@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { agentClient } from "@/grpc/client";
 import { createAgnesConversation } from "@/api/agnesConversation";
-import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend, parseHitlResumeBlock, resolveReviewsByHitlBlocks } from "@/stores/conversationStore";
+import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, type ReviewState, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend, parseHitlResumeBlock, resolveReviewsByHitlBlocks } from "@/stores/conversationStore";
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
@@ -172,10 +172,26 @@ function rebuildTasksFromTurns(turns: { user: unknown[]; assistant: unknown[] }[
   return tasks;
 }
 
-function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): Message[] {
+// §8.9: ConversationTurn.status → HumanReview card state. Card defaults to
+// `decided` for unknown/empty status (history default = the agent ran past it).
+// `pending` (from `interrupted`) is the only state where decision buttons render.
+function turnStatusToReviewState(status: string | undefined): ReviewState {
+  switch (status) {
+    case "interrupted": return "pending";
+    case "ignored":     return "ignored";
+    case "cancelled":   return "cancelled";
+    case "completed":
+    case "failed":
+    case "exhausted":
+    default:            return "decided";
+  }
+}
+
+function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[]; status?: string }[]): Message[] {
   const messages: Message[] = [];
   const hitlBlocksAll: ContentBlock[] = [];
   for (const turn of turns) {
+    const reviewState = turnStatusToReviewState(turn.status);
     const userBlocks = turn.user as Array<Record<string, unknown> & { type: string; data: unknown }>;
     const userTextBlocks = userBlocks
       .filter((b) => b.type === "Message")
@@ -233,7 +249,7 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
           : undefined;
         assistantBlocks.push({
           type: "human_review",
-          data: { payload: data, resolved: true, event_id: eventId },
+          data: { payload: data, state: reviewState, event_id: eventId },
         });
       } else if (block.type === "SourcesCited") {
         const data = (block.data ?? {}) as Record<string, unknown>;
@@ -416,16 +432,17 @@ export function useChat() {
   const loadHistory = async (id: string) => {
     const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
     const messages = parseHistoryTurns(resp.turns);
-    // If there's a pending review, mark the last HumanReview as unresolved
-    // ONLY if it's the very last block in the last message (no subsequent content
-    // means the agent hasn't continued after the review).
+    // §8.9: turn.status="interrupted" already maps to state="pending" inside
+    // parseHistoryTurns. The legacy `resp.pendingReview` flag is a fallback for
+    // older backends that don't populate turn.status — only flip the very last
+    // HumanReview to pending if no turn.status told us so.
     if (resp.pendingReview && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       const lastBlock = lastMsg.blocks[lastMsg.blocks.length - 1];
-      if (lastBlock?.type === "human_review") {
+      if (lastBlock?.type === "human_review" && lastBlock.data.state === "decided") {
         lastMsg.blocks[lastMsg.blocks.length - 1] = {
           type: "human_review",
-          data: { ...lastBlock.data, resolved: false },
+          data: { ...lastBlock.data, state: "pending" },
         };
       }
     }
@@ -456,6 +473,11 @@ export function useChat() {
     const isFirstMessage = s.messages.every((m) => m.role !== "user");
     const requestStartedAt = Date.now();
 
+    // §8.9 IGNORED: if a HumanReview was pending, the backend will mark the old
+    // turn as `ignored` once this ChatStream lands. Optimistically grey out the
+    // card so the UI flips immediately instead of waiting for the next history
+    // refresh.
+    s.dismissPendingHumanReviews();
     s.addUserMessage(query, files);
     s.startAssistantMessage(requestStartedAt);
     const signal = beginNewTurn(convId);

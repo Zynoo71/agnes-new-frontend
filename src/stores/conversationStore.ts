@@ -67,9 +67,17 @@ export interface NodeData {
   status: "running" | "done";
 }
 
+// §8.9: HumanReview card lifecycle. Sourced from `turn.status` on history,
+// or set by client-side actions for the live turn.
+//   pending   — INTERRUPTED, awaiting user decision (decision buttons shown)
+//   decided   — user clicked approve/modify/reject (or normal completion)
+//   cancelled — user explicitly cancelled the stream
+//   ignored   — user bypassed the card by sending a new ChatStream
+export type ReviewState = "pending" | "decided" | "cancelled" | "ignored";
+
 export interface HumanReviewData {
   payload: Record<string, unknown>;
-  resolved: boolean;
+  state: ReviewState;
   // EmitEvent envelope event_id (e.g. "evt_..."). Used as the match key for
   // HitlResume.resolves_event_id (spec §8.9). Optional for legacy data.
   event_id?: string;
@@ -617,7 +625,7 @@ export function resolveReviewsByHitlBlocks(messages: Message[], hitlBlocks: Cont
       if (!eid) return b;
       const hitl = byEventId.get(eid);
       if (!hitl) return b;
-      if (b.data.resolved && b.data.resumeAction === hitl.action && b.data.resumeFeedback === hitl.feedback) return b;
+      if (b.data.state === "decided" && b.data.resumeAction === hitl.action && b.data.resumeFeedback === hitl.feedback) return b;
       blockChanged = true;
       const mergedPayload = hitl.modify_data
         ? applyModifyDataToPayload(b.data.payload, hitl.modify_data)
@@ -627,7 +635,7 @@ export function resolveReviewsByHitlBlocks(messages: Message[], hitlBlocks: Cont
         data: {
           ...b.data,
           payload: mergedPayload,
-          resolved: true,
+          state: "decided",
           resumeAction: hitl.action,
           resumeFeedback: hitl.feedback,
         },
@@ -907,11 +915,11 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
 
       if (custom.type === "HumanReview") {
         // §8.9: capture envelope event_id so a downstream HitlResume block
-        // (with `resolves_event_id`) can flip this card's resolved state.
+        // (with `resolves_event_id`) can flip this card's state.
         const eventId = typeof rawPayload.event_id === "string" ? rawPayload.event_id : undefined;
         updated.blocks.push({
           type: "human_review",
-          data: { payload, resolved: false, event_id: eventId },
+          data: { payload, state: "pending", event_id: eventId },
         });
         break;
       }
@@ -1260,6 +1268,7 @@ interface ConversationStore {
   addUserMessage: (content: string, files?: ChatAttachment[]) => void;
   startAssistantMessage: (requestStartedAt?: number) => void;
   resolveHumanReview: (action: HitlAction, feedback?: string) => void;
+  dismissPendingHumanReviews: () => void;
   removeLastRound: () => void;
   removeLastAssistantMessage: () => void;
   setMessages: (messages: Message[]) => void;
@@ -1498,16 +1507,39 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         const blocks = [...last.blocks];
         for (let i = blocks.length - 1; i >= 0; i--) {
           const block = blocks[i];
-          if (block.type === "human_review" && !block.data.resolved) {
+          if (block.type === "human_review" && block.data.state === "pending") {
             blocks[i] = {
               type: "human_review",
-              data: { ...block.data, resolved: true, resumeAction: action, resumeFeedback: feedback },
+              data: { ...block.data, state: "decided", resumeAction: action, resumeFeedback: feedback },
             };
             break;
           }
         }
         messages[messages.length - 1] = { ...last, blocks };
         return { messages };
+      }),
+
+    // §8.9 IGNORED: user sent a normal ChatStream while a HumanReview was
+    // pending — backend will mark the old turn `ignored`. Optimistically grey
+    // out any pending cards locally so the UI flips immediately.
+    dismissPendingHumanReviews: () =>
+      set((s) => {
+        let touched = false;
+        const messages = s.messages.map((m) => {
+          let blockChanged = false;
+          const blocks = m.blocks.map((b) => {
+            if (b.type !== "human_review" || b.data.state !== "pending") return b;
+            blockChanged = true;
+            return {
+              type: "human_review",
+              data: { ...b.data, state: "ignored" },
+            } as ContentBlock;
+          });
+          if (!blockChanged) return m;
+          touched = true;
+          return { ...m, blocks };
+        });
+        return touched ? { messages } : s;
       }),
 
     removeLastRound: () =>

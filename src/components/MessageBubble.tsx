@@ -766,6 +766,8 @@ function HumanReviewBlock({
     description: "The agent is waiting for your decision",
   };
 
+  const isPending = data.state === "pending";
+
   // §8.9 structured-modify: per-slot selection state for material_supplement.
   // Initialised from agent's pre-selection; changes flip the action button to
   // "Confirm Selection" which submits {action: "modify", data: {slots: [...]}}.
@@ -797,31 +799,55 @@ function HumanReviewBlock({
     const modifyData = { slots: localSelections.map((selected_index) => ({ selected_index })) };
     onResume("modify", undefined, modifyData);
   };
+
+  // §8.9: inline modify composer. Hidden by default; user clicks Modify to
+  // expand. Submits onResume("modify", text). Only available for non-structured
+  // review types (material_supplement uses the slot picker above).
+  const [modifyOpen, setModifyOpen] = useState(false);
+  const [modifyText, setModifyText] = useState("");
+  const canInlineModify = reviewType !== "material_supplement";
+  const handleSubmitModify = () => {
+    const trimmed = modifyText.trim();
+    if (!onResume || !trimmed) return;
+    onResume("modify", trimmed);
+    setModifyOpen(false);
+    setModifyText("");
+  };
+
   // Inject local selection + click handler into MaterialSupplementRenderer.
-  const reviewDataForRender = reviewType === "material_supplement" && reviewData && !data.resolved
+  const reviewDataForRender = reviewType === "material_supplement" && reviewData && isPending
     ? { ...reviewData, slots: slots.map((s, i) => ({ ...s, selected_index: localSelections[i] })) }
     : reviewData;
-  const onSlotSelect = reviewType === "material_supplement" && !data.resolved && !disabled
+  const onSlotSelect = reviewType === "material_supplement" && isPending && !disabled
     ? handleSlotSelect
     : undefined;
 
+  const isDimmed = data.state === "ignored" || data.state === "cancelled";
+  const containerClass = isDimmed
+    ? "my-3 rounded-xl border border-border-light bg-surface-muted/40 p-4 opacity-70"
+    : "my-3 rounded-xl border border-warning/30 bg-warning-light/50 p-4";
+
   return (
-    <div className="my-3 rounded-xl border border-warning/30 bg-warning-light/50 p-4">
+    <div className={containerClass}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-warning/20 flex items-center justify-center shrink-0">
-            <span className="text-warning text-xs font-bold">?</span>
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+            isDimmed ? "bg-text-tertiary/20" : "bg-warning/20"
+          }`}>
+            <span className={`text-xs font-bold ${isDimmed ? "text-text-tertiary" : "text-warning"}`}>?</span>
           </div>
           <div>
             <span className="text-sm font-semibold text-text-primary">{config.title}</span>
             <p className="text-[11px] text-text-tertiary mt-0.5">{config.description}</p>
           </div>
         </div>
-        {timeoutSeconds && !data.resolved && (
+        {timeoutSeconds && isPending && (
           <CountdownBadge seconds={timeoutSeconds} defaultAction={defaultAction} onTimeout={() => onResume?.(defaultAction as "approve")} />
         )}
-        {data.resolved && data.resumeAction && <ResumeActionBadge action={data.resumeAction} />}
+        {data.state === "decided" && data.resumeAction && <ResumeActionBadge action={data.resumeAction} />}
+        {data.state === "ignored" && <StatusChip label="Ignored" />}
+        {data.state === "cancelled" && <StatusChip label="Cancelled" />}
       </div>
 
       {/* Review content */}
@@ -849,7 +875,7 @@ function HumanReviewBlock({
       )}
 
       {/* Modify feedback (free-text user note) */}
-      {data.resolved && data.resumeAction === "modify" && data.resumeFeedback && (
+      {data.state === "decided" && data.resumeAction === "modify" && data.resumeFeedback && (
         <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 px-3 py-2">
           <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider mb-1">User's note</div>
           <div className="text-[12px] text-text-primary leading-snug whitespace-pre-wrap break-words">{data.resumeFeedback}</div>
@@ -857,9 +883,10 @@ function HumanReviewBlock({
       )}
 
       {/* Actions */}
-      {data.resolved ? (
-        // Status text falls back to "Resolved" for legacy data without resumeAction.
-        !data.resumeAction && (
+      {!isPending ? (
+        // Decided/ignored/cancelled: only show fallback "Resolved" tick for
+        // legacy `decided` data without resumeAction.
+        data.state === "decided" && !data.resumeAction && (
           <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-medium">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -870,27 +897,85 @@ function HumanReviewBlock({
       ) : (
         onResume && (
           <div className="mt-4 space-y-3">
-            <button
-              onClick={handleConfirm}
-              disabled={disabled}
-              className={`rounded-lg text-white px-4 py-1.5 text-xs font-medium
-                         active:scale-[0.97] disabled:opacity-40 transition-all ${
-                           selectionChanged
-                             ? "bg-accent hover:bg-accent-hover"
-                             : "bg-success hover:bg-success/90"
-                         }`}
-            >
-              {selectionChanged ? "Confirm Selection" : "Approve"}
-            </button>
-            <p className="text-[11px] text-text-tertiary">
-              {selectionChanged
-                ? "Submitting your selection above"
-                : "Or type in the chat input to provide feedback"}
-            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleConfirm}
+                disabled={disabled}
+                className={`rounded-lg text-white px-4 py-1.5 text-xs font-medium
+                           active:scale-[0.97] disabled:opacity-40 transition-all ${
+                             selectionChanged
+                               ? "bg-accent hover:bg-accent-hover"
+                               : "bg-success hover:bg-success/90"
+                           }`}
+              >
+                {selectionChanged ? "Confirm Selection" : "Approve"}
+              </button>
+              {canInlineModify && !modifyOpen && (
+                <button
+                  onClick={() => setModifyOpen(true)}
+                  disabled={disabled}
+                  className="rounded-lg px-4 py-1.5 text-xs font-medium border border-border-light
+                             text-text-secondary hover:text-text-primary hover:bg-surface-muted
+                             active:scale-[0.97] disabled:opacity-40 transition-all"
+                >
+                  Modify
+                </button>
+              )}
+            </div>
+            {canInlineModify && modifyOpen && (
+              <div className="rounded-lg border border-accent/30 bg-surface p-2 space-y-2">
+                <textarea
+                  autoFocus
+                  value={modifyText}
+                  onChange={(e) => setModifyText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      handleSubmitModify();
+                    }
+                  }}
+                  placeholder="Describe what to change…"
+                  rows={3}
+                  className="w-full resize-none bg-transparent text-[13px] text-text-primary
+                             placeholder:text-text-tertiary outline-none"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-text-tertiary">⌘/Ctrl+Enter to submit</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => { setModifyOpen(false); setModifyText(""); }}
+                      className="rounded-md px-2.5 py-1 text-xs text-text-secondary hover:bg-surface-muted"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmitModify}
+                      disabled={disabled || !modifyText.trim()}
+                      className="rounded-md bg-accent hover:bg-accent-hover text-white px-3 py-1
+                                 text-xs font-medium active:scale-[0.97] disabled:opacity-40 transition-all"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!modifyOpen && selectionChanged && (
+              <p className="text-[11px] text-text-tertiary">Submitting your selection above</p>
+            )}
           </div>
         )
       )}
     </div>
+  );
+}
+
+function StatusChip({ label }: { label: string }) {
+  return (
+    <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary
+                     border border-border-light rounded-full px-2 py-0.5 shrink-0">
+      {label}
+    </span>
   );
 }
 

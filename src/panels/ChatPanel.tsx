@@ -181,7 +181,7 @@ function renderHtmlBlock(block: ContentBlock, tasks: AgentTask[]): string {
       return `
         <section class="section-block">
           <h4>Human Review</h4>
-          <div class="meta-grid">${renderHtmlDataList([{ label: "resolved", value: block.data.resolved ? "yes" : "no" }])}</div>
+          <div class="meta-grid">${renderHtmlDataList([{ label: "state", value: block.data.state }])}</div>
           <div class="mini-block"><div class="mini-label">Payload</div>${renderHtmlCodeBlock(stringifyForExport(block.data.payload), "json")}</div>
         </section>
       `;
@@ -657,10 +657,6 @@ export function ChatPanel() {
 
   const health = useHealthCheck();
 
-  const hasPendingReview = messages.some(
-    (m) => m.blocks.some((b) => b.type === "human_review" && !b.data.resolved)
-  );
-
   const isEmpty = messages.length === 0;
   const hasUserMessages = messages.some((m) => m.role === "user");
 
@@ -715,10 +711,6 @@ export function ChatPanel() {
   const sendNow = useCallback(async (text: string, files: ChatAttachment[]) => {
     const trimmed = text.trim();
     if (!trimmed && files.length === 0) return;
-    if (hasPendingReview && files.length > 0) {
-      setError("Attachments are not supported while replying to a human review step.");
-      return;
-    }
 
     isNearBottomRef.current = true;
 
@@ -726,13 +718,12 @@ export function ChatPanel() {
       await createConversation();
     }
 
-    if (hasPendingReview) {
-      await hitlResume("modify", trimmed);
-      return;
-    }
-
+    // §8.9 IGNORED: typing in the chat input while a HumanReview is pending now
+    // bypasses the card — backend will mark the old turn `ignored`. The card
+    // itself owns approve/modify (see HumanReviewBlock). useChat.sendMessage
+    // optimistically greys out any pending review locally.
     await sendMessage(trimmed, files);
-  }, [conversationId, createConversation, hasPendingReview, hitlResume, sendMessage, setError]);
+  }, [conversationId, createConversation, sendMessage]);
 
   const handleSend = async (text?: string) => {
     const trimmed = (text ?? input).trim();
@@ -895,7 +886,7 @@ export function ChatPanel() {
           onKeyDown={handleKeyDown}
           onCompositionStart={() => { isComposingRef.current = true; }}
           onCompositionEnd={() => { isComposingRef.current = false; }}
-          placeholder={hasPendingReview ? "Type feedback to modify..." : isUploadingFiles ? "Uploading attachment..." : "Ask Agnes anything..."}
+          placeholder={isUploadingFiles ? "Uploading attachment..." : "Ask Agnes anything..."}
           rows={1}
           className="flex-1 resize-none bg-transparent py-2.5 px-4 text-sm
                      focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
@@ -933,13 +924,13 @@ export function ChatPanel() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={isStreaming || isUploadingFiles || hasPendingReview}
+          disabled={isStreaming || isUploadingFiles}
           className={`flex items-center gap-1 px-2 py-1 text-[11px] rounded-full transition-all ${
             pendingFiles.length > 0
               ? "bg-accent/10 text-accent"
               : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
           } disabled:cursor-not-allowed disabled:opacity-40`}
-          title={hasPendingReview ? "Attachments are unavailable during review replies" : "Upload file"}
+          title="Upload file"
         >
           {isUploadingFiles ? (
             <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
