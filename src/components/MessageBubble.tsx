@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, memo } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
@@ -6,6 +6,7 @@ import type {
   Message,
   ContentBlock,
   HumanReviewData,
+  HitlResumeData,
   ToolCallData,
   FileData,
   MemoryUpdateData,
@@ -91,7 +92,7 @@ const MARKDOWN_COMPONENTS = {
 interface MessageBubbleProps {
   message: Message;
   isLast?: boolean;
-  onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onHitlResume?: (action: "approve" | "modify", feedback?: string, data?: Record<string, unknown>) => void;
   onEditResend?: (newQuery: string) => void;
   onRegenerate?: () => void;
   isStreaming?: boolean;
@@ -121,6 +122,10 @@ function UserAvatar() {
 
 export const MessageBubble = memo(function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming, animate = true }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  // §8.9: a user turn whose only payload is a HitlResume block has its
+  // visual representation merged into the linked HumanReview card above —
+  // skip rendering the otherwise-empty user bubble entirely.
+  const allHitlResume = message.blocks.length > 0 && message.blocks.every((b) => b.type === "HitlResume");
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
   const [copied, setCopied] = useState(false);
@@ -178,6 +183,8 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
     setEditing(false);
     setEditText("");
   };
+
+  if (isUser && allHitlResume) return null;
 
   if (isUser) {
     return (
@@ -446,7 +453,7 @@ const BlockRenderer = memo(function BlockRenderer({
   autoCollapse,
 }: {
   block: ContentBlock;
-  onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onHitlResume?: (action: "approve" | "modify", feedback?: string, data?: Record<string, unknown>) => void;
   isStreaming?: boolean;
   autoCollapse?: boolean;
 }) {
@@ -478,6 +485,10 @@ const BlockRenderer = memo(function BlockRenderer({
           disabled={isStreaming}
         />
       );
+    case "HitlResume":
+      // §8.9: HitlResume info is merged into the linked HumanReview card
+      // (action badge + feedback) — no separate user-side chip.
+      return null;
     case "TaskList":
       return <TaskListPanel />;
     case "ContextCompacting":
@@ -722,13 +733,28 @@ const REVIEW_TYPE_CONFIG: Record<string, { title: string; description: string }>
   batch_generation_plan: { title: "Generation Plan", description: "Review the batch generation plan" },
 };
 
+// §8.9: HitlResume action → small corner badge merged into the HumanReview card.
+function ResumeActionBadge({ action }: { action: HitlResumeData["action"] }) {
+  const config = action === "approve"
+    ? { icon: "✓", label: "Approved", cls: "bg-success/10 text-success border-success/30" }
+    : action === "reject"
+      ? { icon: "✕", label: "Rejected", cls: "bg-error/10 text-error border-error/30" }
+      : { icon: "✎", label: "Modified", cls: "bg-accent/10 text-accent border-accent/30" };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${config.cls}`}>
+      <span className="font-bold leading-none">{config.icon}</span>
+      <span>{config.label}</span>
+    </span>
+  );
+}
+
 function HumanReviewBlock({
   data,
   onResume,
   disabled,
 }: {
   data: HumanReviewData;
-  onResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onResume?: (action: "approve" | "modify", feedback?: string, data?: Record<string, unknown>) => void;
   disabled?: boolean;
 }) {
   const reviewType = data.payload.review_type as string | undefined;
@@ -740,28 +766,98 @@ function HumanReviewBlock({
     description: "The agent is waiting for your decision",
   };
 
+  const isPending = data.state === "pending";
+
+  // §8.9 structured-modify: per-slot selection state for material_supplement.
+  // Initialised from agent's pre-selection; changes flip the action button to
+  // "Confirm Selection" which submits {action: "modify", data: {slots: [...]}}.
+  const slots = useMemo<Array<{ selected_index: number | null; candidates: unknown[] }>>(() => {
+    if (reviewType !== "material_supplement" || !reviewData) return [];
+    return (reviewData.slots as Array<{ selected_index: number | null; candidates: unknown[] }> | undefined) ?? [];
+  }, [reviewType, reviewData]);
+  const initialSelections = useMemo(
+    () => slots.map((s) => s.selected_index ?? 0),
+    [slots],
+  );
+  const [localSelections, setLocalSelections] = useState<number[]>(initialSelections);
+  // Re-sync if a Resume replays the review or candidates change.
+  useEffect(() => { setLocalSelections(initialSelections); }, [initialSelections]);
+  const selectionChanged = localSelections.some((v, i) => v !== initialSelections[i]);
+  const handleSlotSelect = (slotIdx: number, candIdx: number) => {
+    setLocalSelections((prev) => {
+      const next = [...prev];
+      next[slotIdx] = candIdx;
+      return next;
+    });
+  };
+  const handleConfirm = () => {
+    if (!onResume) return;
+    if (!selectionChanged) {
+      onResume("approve");
+      return;
+    }
+    const modifyData = { slots: localSelections.map((selected_index) => ({ selected_index })) };
+    onResume("modify", undefined, modifyData);
+  };
+
+  // §8.9: inline modify composer. Hidden by default; user clicks Modify to
+  // expand. Submits onResume("modify", text). Only available for non-structured
+  // review types (material_supplement uses the slot picker above).
+  const [modifyOpen, setModifyOpen] = useState(false);
+  const [modifyText, setModifyText] = useState("");
+  const canInlineModify = reviewType !== "material_supplement";
+  const handleSubmitModify = () => {
+    const trimmed = modifyText.trim();
+    if (!onResume || !trimmed) return;
+    onResume("modify", trimmed);
+    setModifyOpen(false);
+    setModifyText("");
+  };
+
+  // Inject local selection + click handler into MaterialSupplementRenderer.
+  const reviewDataForRender = reviewType === "material_supplement" && reviewData && isPending
+    ? { ...reviewData, slots: slots.map((s, i) => ({ ...s, selected_index: localSelections[i] })) }
+    : reviewData;
+  const onSlotSelect = reviewType === "material_supplement" && isPending && !disabled
+    ? handleSlotSelect
+    : undefined;
+
+  const isDimmed = data.state === "ignored" || data.state === "cancelled";
+  const containerClass = isDimmed
+    ? "my-3 rounded-xl border border-border-light bg-surface-muted/40 p-4 opacity-70"
+    : "my-3 rounded-xl border border-warning/30 bg-warning-light/50 p-4";
+
   return (
-    <div className="my-3 rounded-xl border border-warning/30 bg-warning-light/50 p-4">
+    <div className={containerClass}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-warning/20 flex items-center justify-center shrink-0">
-            <span className="text-warning text-xs font-bold">?</span>
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+            isDimmed ? "bg-text-tertiary/20" : "bg-warning/20"
+          }`}>
+            <span className={`text-xs font-bold ${isDimmed ? "text-text-tertiary" : "text-warning"}`}>?</span>
           </div>
           <div>
             <span className="text-sm font-semibold text-text-primary">{config.title}</span>
             <p className="text-[11px] text-text-tertiary mt-0.5">{config.description}</p>
           </div>
         </div>
-        {timeoutSeconds && !data.resolved && (
+        {timeoutSeconds && isPending && (
           <CountdownBadge seconds={timeoutSeconds} defaultAction={defaultAction} onTimeout={() => onResume?.(defaultAction as "approve")} />
         )}
+        {data.state === "decided" && data.resumeAction && <ResumeActionBadge action={data.resumeAction} />}
+        {data.state === "ignored" && <StatusChip label="Ignored" />}
+        {data.state === "cancelled" && <StatusChip label="Cancelled" />}
       </div>
 
       {/* Review content */}
-      {reviewData && (
+      {reviewDataForRender && (
         <div className="mb-3">
-          <ReviewDataDisplay reviewType={reviewType} data={reviewData} />
+          <ReviewDataDisplay
+            reviewType={reviewType}
+            data={reviewDataForRender}
+            onSlotSelect={onSlotSelect}
+          />
         </div>
       )}
 
@@ -778,28 +874,95 @@ function HumanReviewBlock({
         </details>
       )}
 
-      {/* Actions */}
-      {data.resolved ? (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-medium">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-          </svg>
-          Resolved
+      {/* Modify feedback (free-text user note) */}
+      {data.state === "decided" && data.resumeAction === "modify" && data.resumeFeedback && (
+        <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 px-3 py-2">
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider mb-1">User's note</div>
+          <div className="text-[12px] text-text-primary leading-snug whitespace-pre-wrap break-words">{data.resumeFeedback}</div>
         </div>
+      )}
+
+      {/* Actions */}
+      {!isPending ? (
+        // Decided/ignored/cancelled: only show fallback "Resolved" tick for
+        // legacy `decided` data without resumeAction.
+        data.state === "decided" && !data.resumeAction && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-medium">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            Resolved
+          </div>
+        )
       ) : (
         onResume && (
           <div className="mt-4 space-y-3">
-            <button
-              onClick={() => onResume("approve")}
-              disabled={disabled}
-              className="rounded-lg bg-success text-white px-4 py-1.5 text-xs font-medium
-                         hover:bg-success/90 active:scale-[0.97] disabled:opacity-40 transition-all"
-            >
-              Approve
-            </button>
-            <p className="text-[11px] text-text-tertiary">
-              Or type in the chat input to provide feedback
-            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleConfirm}
+                disabled={disabled}
+                className={`rounded-lg text-white px-4 py-1.5 text-xs font-medium
+                           active:scale-[0.97] disabled:opacity-40 transition-all ${
+                             selectionChanged
+                               ? "bg-accent hover:bg-accent-hover"
+                               : "bg-success hover:bg-success/90"
+                           }`}
+              >
+                {selectionChanged ? "Confirm Selection" : "Approve"}
+              </button>
+              {canInlineModify && !modifyOpen && (
+                <button
+                  onClick={() => setModifyOpen(true)}
+                  disabled={disabled}
+                  className="rounded-lg px-4 py-1.5 text-xs font-medium border border-border-light
+                             text-text-secondary hover:text-text-primary hover:bg-surface-muted
+                             active:scale-[0.97] disabled:opacity-40 transition-all"
+                >
+                  Modify
+                </button>
+              )}
+            </div>
+            {canInlineModify && modifyOpen && (
+              <div className="rounded-lg border border-accent/30 bg-surface p-2 space-y-2">
+                <textarea
+                  autoFocus
+                  value={modifyText}
+                  onChange={(e) => setModifyText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      handleSubmitModify();
+                    }
+                  }}
+                  placeholder="Describe what to change…"
+                  rows={3}
+                  className="w-full resize-none bg-transparent text-[13px] text-text-primary
+                             placeholder:text-text-tertiary outline-none"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-text-tertiary">⌘/Ctrl+Enter to submit</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => { setModifyOpen(false); setModifyText(""); }}
+                      className="rounded-md px-2.5 py-1 text-xs text-text-secondary hover:bg-surface-muted"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmitModify}
+                      disabled={disabled || !modifyText.trim()}
+                      className="rounded-md bg-accent hover:bg-accent-hover text-white px-3 py-1
+                                 text-xs font-medium active:scale-[0.97] disabled:opacity-40 transition-all"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!modifyOpen && selectionChanged && (
+              <p className="text-[11px] text-text-tertiary">Submitting your selection above</p>
+            )}
           </div>
         )
       )}
@@ -807,11 +970,24 @@ function HumanReviewBlock({
   );
 }
 
+function StatusChip({ label }: { label: string }) {
+  return (
+    <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary
+                     border border-border-light rounded-full px-2 py-0.5 shrink-0">
+      {label}
+    </span>
+  );
+}
+
 // ── Review data renderer ──
 
 // ── Review data renderers (registry pattern) ──
 
-type ReviewRenderer = (data: Record<string, unknown>) => React.ReactNode;
+interface ReviewRendererProps {
+  /** §8.9: when provided, material_supplement candidates become clickable. */
+  onSlotSelect?: (slotIdx: number, candIdx: number) => void;
+}
+type ReviewRenderer = (data: Record<string, unknown>, props?: ReviewRendererProps) => React.ReactNode;
 
 interface ReviewTask {
   id: number;
@@ -901,10 +1077,12 @@ interface MaterialSlot {
   selected_index: number | null;
 }
 
-function MaterialSupplementRenderer(data: Record<string, unknown>) {
+function MaterialSupplementRenderer(data: Record<string, unknown>, props?: ReviewRendererProps) {
   const slots = (data.slots as MaterialSlot[]) ?? [];
   const contextSummary = (data.context_summary as string) ?? "";
   const message = (data.message as string) ?? "";
+  const onSlotSelect = props?.onSlotSelect;
+  const interactive = !!onSlotSelect;
 
   return (
     <div className="space-y-3">
@@ -930,15 +1108,16 @@ function MaterialSupplementRenderer(data: Record<string, unknown>) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {slot.candidates.map((c, ci) => {
                     const isSelected = slot.selected_index === ci;
-                    return (
-                      <div
-                        key={ci}
-                        className={`rounded-lg border overflow-hidden ${
-                          isSelected
-                            ? "border-accent ring-2 ring-accent/30"
-                            : "border-border-light"
-                        }`}
-                      >
+                    const baseCls = `rounded-lg border overflow-hidden text-left transition-all ${
+                      isSelected
+                        ? "border-accent ring-2 ring-accent/30"
+                        : "border-border-light"
+                    }`;
+                    const interactiveCls = interactive
+                      ? "cursor-pointer hover:border-accent/60 hover:shadow-sm active:scale-[0.98]"
+                      : "";
+                    const inner = (
+                      <>
                         {c.type === "video" ? (
                           <div className="w-full h-24 bg-surface-hover flex items-center justify-center">
                             <span className="text-[10px] text-text-tertiary">VIDEO</span>
@@ -959,6 +1138,20 @@ function MaterialSupplementRenderer(data: Record<string, unknown>) {
                             )}
                           </div>
                         </div>
+                      </>
+                    );
+                    return interactive ? (
+                      <button
+                        key={ci}
+                        type="button"
+                        onClick={() => onSlotSelect(si, ci)}
+                        className={`${baseCls} ${interactiveCls} block w-full bg-transparent`}
+                      >
+                        {inner}
+                      </button>
+                    ) : (
+                      <div key={ci} className={baseCls}>
+                        {inner}
                       </div>
                     );
                   })}
@@ -1059,9 +1252,17 @@ const REVIEW_RENDERERS: Record<string, ReviewRenderer> = {
   batch_generation_plan: BatchGenerationPlanRenderer,
 };
 
-function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Record<string, unknown> }) {
+function ReviewDataDisplay({
+  reviewType,
+  data,
+  onSlotSelect,
+}: {
+  reviewType?: string;
+  data: Record<string, unknown>;
+  onSlotSelect?: (slotIdx: number, candIdx: number) => void;
+}) {
   const renderer = reviewType ? REVIEW_RENDERERS[reviewType] : undefined;
-  const content = renderer?.(data);
+  const content = renderer?.(data, { onSlotSelect });
   if (content) return <>{content}</>;
 
   return (

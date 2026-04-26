@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { agentClient } from "@/grpc/client";
 import { createAgnesConversation } from "@/api/agnesConversation";
-import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend } from "@/stores/conversationStore";
+import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, type ReviewState, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend, parseHitlResumeBlock, resolveReviewsByHitlBlocks } from "@/stores/conversationStore";
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
@@ -24,9 +24,9 @@ function beginStream(convId: string): AbortSignal {
   return ac.signal;
 }
 
-// Reset per-turn seq tracker before initiating a new turn
-// (ChatStream / EditResend / Regenerate / HitlResume-modify).
-// Note: HitlResume-approve keeps seq since the backend reuses the request_id.
+// Reset per-turn seq tracker before initiating a new turn. Per spec §8.9,
+// HitlResume actions (approve / modify / reject) all open new turns now —
+// the legacy "approve reuses request_id" path was removed backend-side.
 function beginNewTurn(convId: string): AbortSignal {
   resetLatestSeq(convId);
   return beginStream(convId);
@@ -172,9 +172,26 @@ function rebuildTasksFromTurns(turns: { user: unknown[]; assistant: unknown[] }[
   return tasks;
 }
 
-function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): Message[] {
+// §8.9: ConversationTurn.status → HumanReview card state. Card defaults to
+// `decided` for unknown/empty status (history default = the agent ran past it).
+// `pending` (from `interrupted`) is the only state where decision buttons render.
+function turnStatusToReviewState(status: string | undefined): ReviewState {
+  switch (status) {
+    case "interrupted": return "pending";
+    case "ignored":     return "ignored";
+    case "cancelled":   return "cancelled";
+    case "completed":
+    case "failed":
+    case "exhausted":
+    default:            return "decided";
+  }
+}
+
+function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[]; status?: string }[]): Message[] {
   const messages: Message[] = [];
+  const hitlBlocksAll: ContentBlock[] = [];
   for (const turn of turns) {
+    const reviewState = turnStatusToReviewState(turn.status);
     const userBlocks = turn.user as Array<Record<string, unknown> & { type: string; data: unknown }>;
     const userTextBlocks = userBlocks
       .filter((b) => b.type === "Message")
@@ -190,12 +207,18 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
         return { type: "File", data: { filename, mimeType, url } } as ContentBlock;
       })
       .filter((b): b is ContentBlock => b !== null);
-    if (userTextBlocks.length > 0 || fileBlocks.length > 0) {
+    // §8.9: history `turn.user[]` may carry HitlResume blocks alongside Message/File.
+    const hitlBlocks: ContentBlock[] = userBlocks
+      .filter((b) => b.type === "HitlResume")
+      .map((b) => parseHitlResumeBlock((b.data ?? {}) as Record<string, unknown>))
+      .filter((b): b is ContentBlock => b !== null);
+    hitlBlocksAll.push(...hitlBlocks);
+    if (userTextBlocks.length > 0 || fileBlocks.length > 0 || hitlBlocks.length > 0) {
       // Derive the user message id from the backend message_id so a later Resume
       // HumanInput replay can be deduplicated against this bubble.
       const backendMsgId = extractUserBlockMessageId(userBlocks);
       const userId = backendMsgId ? userMessageIdFromBackend(backendMsgId) : nextHistoryId();
-      messages.push({ id: userId, role: "user", blocks: [...userTextBlocks, ...fileBlocks], nodes: [], workers: {}, sources: [] });
+      messages.push({ id: userId, role: "user", blocks: [...userTextBlocks, ...fileBlocks, ...hitlBlocks], nodes: [], workers: {}, sources: [] });
     }
     const assistantBlocks: ContentBlock[] = [];
     const turnSources: SourceCitation[] = [];
@@ -220,9 +243,13 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
         });
       } else if (block.type === "HumanReview") {
         const data = (block.data ?? {}) as Record<string, unknown>;
+        const blockRec = block as Record<string, unknown>;
+        const eventId = typeof blockRec.event_id === "string" ? blockRec.event_id
+          : typeof blockRec.eventId === "string" ? blockRec.eventId
+          : undefined;
         assistantBlocks.push({
           type: "human_review",
-          data: { payload: data, resolved: true },
+          data: { payload: data, state: reviewState, event_id: eventId },
         });
       } else if (block.type === "SourcesCited") {
         const data = (block.data ?? {}) as Record<string, unknown>;
@@ -393,7 +420,10 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers, sources: turnSources });
     }
   }
-  return messages;
+  // §8.9 #4: link HitlResume blocks back to their HumanReview cards via event_id.
+  // (History HumanReview is already resolved=true; this is a no-op today but keeps
+  // the pipeline consistent should that default ever change.)
+  return resolveReviewsByHitlBlocks(messages, hitlBlocksAll);
 }
 
 // ── Hook ──
@@ -402,16 +432,17 @@ export function useChat() {
   const loadHistory = async (id: string) => {
     const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
     const messages = parseHistoryTurns(resp.turns);
-    // If there's a pending review, mark the last HumanReview as unresolved
-    // ONLY if it's the very last block in the last message (no subsequent content
-    // means the agent hasn't continued after the review).
+    // §8.9: turn.status="interrupted" already maps to state="pending" inside
+    // parseHistoryTurns. The legacy `resp.pendingReview` flag is a fallback for
+    // older backends that don't populate turn.status — only flip the very last
+    // HumanReview to pending if no turn.status told us so.
     if (resp.pendingReview && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       const lastBlock = lastMsg.blocks[lastMsg.blocks.length - 1];
-      if (lastBlock?.type === "human_review") {
+      if (lastBlock?.type === "human_review" && lastBlock.data.state === "decided") {
         lastMsg.blocks[lastMsg.blocks.length - 1] = {
           type: "human_review",
-          data: { ...lastBlock.data, resolved: false },
+          data: { ...lastBlock.data, state: "pending" },
         };
       }
     }
@@ -442,6 +473,11 @@ export function useChat() {
     const isFirstMessage = s.messages.every((m) => m.role !== "user");
     const requestStartedAt = Date.now();
 
+    // §8.9 IGNORED: if a HumanReview was pending, the backend will mark the old
+    // turn as `ignored` once this ChatStream lands. Optimistically grey out the
+    // card so the UI flips immediately instead of waiting for the next history
+    // refresh.
+    s.dismissPendingHumanReviews();
     s.addUserMessage(query, files);
     s.startAssistantMessage(requestStartedAt);
     const signal = beginNewTurn(convId);
@@ -472,20 +508,24 @@ export function useChat() {
     await runStream(stream, signal, convId);
   }, []);
 
-  const hitlResume = useCallback(async (action: "approve" | "modify", feedback?: string) => {
+  const hitlResume = useCallback(async (
+    action: "approve" | "modify",
+    feedback?: string,
+    data?: Record<string, unknown>,
+  ) => {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
     const requestStartedAt = Date.now();
 
-    s.resolveHumanReview();
+    s.resolveHumanReview(action, feedback);
     s.startAssistantMessage(requestStartedAt);
-    // `modify` starts a new turn (new request_id, seq resets to 1 on backend).
-    // `approve` continues the current turn (same request_id), so keep seq.
-    const signal = action === "modify" ? beginNewTurn(convId) : beginStream(convId);
+    // §8.9: approve / modify / reject 一律开新 turn，新 request_id，seq 重置为 1。
+    const signal = beginNewTurn(convId);
 
     const resumePayload: Record<string, unknown> = { action };
     if (action === "modify" && feedback) resumePayload.feedback = feedback;
+    if (action === "modify" && data) resumePayload.data = data;
 
     const stream = agentClient.hitlResumeStream(
       {
