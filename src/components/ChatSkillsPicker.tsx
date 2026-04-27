@@ -10,9 +10,11 @@ import {
   persistConversationSkillSelections,
 } from "@/lib/conversationSkillSync";
 import { useMySkillsStore } from "@/stores/mySkillsStore";
-import type {
-  SkillInfo,
-  SkillVersionInfo,
+import { create } from "@bufbuild/protobuf";
+import {
+  SkillInfoSchema,
+  type SkillInfo,
+  type SkillVersionInfo,
 } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
 
 const EMPTY_SELECTED: ChatSkillSelection[] = [];
@@ -21,7 +23,7 @@ const MAX_SELECTED = 3;
 /** 会话已选但不在「我的 Skills」列表里时，用 store 快照拼一张卡片（仍可调 listSkillVersions）。 */
 function skillInfoFromSessionSelection(sel: ChatSkillSelection): SkillInfo {
   const v = sel.version?.trim() || "";
-  return {
+  return create(SkillInfoSchema, {
     id: sel.skillId,
     appId: "",
     ownerUserId: "",
@@ -42,7 +44,7 @@ function skillInfoFromSessionSelection(sel: ChatSkillSelection): SkillInfo {
     isOwner: false,
     mineRelation: "",
     mineAddedAt: 0n,
-  };
+  });
 }
 
 // 模块级缓存：避免 Modal 每次开关都重拉同一个 skill 的 version 列表。
