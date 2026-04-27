@@ -1080,7 +1080,7 @@ export function SportsResultsRenderer({ toolInput, toolResult }: ToolRenderProps
         </div>
         <span className="text-xs font-semibold text-text-primary tracking-tight shrink-0">Sports Results</span>
         {query && <span className="text-[11px] text-text-secondary truncate min-w-0 flex-1">&ldquo;{query}&rdquo;</span>}
-        {!envelope && <span className="text-[10px] text-text-tertiary animate-gentle-pulse ml-auto shrink-0">Searching...</span>}
+        {!envelope && <span className="text-[10px] text-text-tertiary animate-gentle-pulse ml-auto shrink-0">Fetching...</span>}
       </div>
 
       {isError && (

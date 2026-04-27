@@ -49,9 +49,9 @@ const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   generate_image: GenerateImageRenderer,
   generate_video: GenerateVideoRenderer,
   query_weather: WeatherRenderer,
-  search_sports_results: SportsResultsRenderer,
-  search_youtube_videos: YoutubeVideosRenderer,
-  search_stock_quote: StockQuoteRenderer,
+  show_sports_card: SportsResultsRenderer,
+  show_youtube_videos: YoutubeVideosRenderer,
+  show_stock_card: StockQuoteRenderer,
   // Sheet Agent v3 (R21) tools
   plan_analysis: SheetToolRenderer,
   profile_data: SheetToolRenderer,
