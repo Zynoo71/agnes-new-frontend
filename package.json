@@ -4,11 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "docker compose up envoy -d && VITE_API_BASE_URL=http://localhost:8080 vite",
+    "dev": "docker compose up envoy -d && cross-env VITE_API_BASE_URL=http://localhost:8080 vite",
+    "start": "npm run dev",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "proto:gen": "NODE_NO_WARNINGS=1 buf generate ../agnes_core/proto",
+    "proto:gen": "cross-env NODE_NO_WARNINGS=1 buf generate ../agnes_core/proto",
+    "proxy": "docker compose up envoy",
     "deploy": "docker compose -f docker-compose.prod.yaml up --build -d"
   },
   "dependencies": {
@@ -36,6 +38,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "cross-env": "^7.0.3",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",

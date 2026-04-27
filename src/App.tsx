@@ -12,6 +12,8 @@ import { UserIdSetupModal } from "@/components/UserIdSetupModal";
 import { ChatPanel } from "@/panels/ChatPanel";
 import { PromptManagementPage } from "@/pages/PromptManagementPage";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { MarketPage, MySkillsPage } from "@/pages/AgnesHub";
+import { AdminAllSkillsPage, AdminLoginPage, AdminOfficialPage, AdminPendingPage } from "@/pages/Admin";
 
 /** Route: /chat/:convId — selects the conversation on mount */
 function ChatRoute() {
@@ -78,6 +80,9 @@ function AppLayout() {
           <Route path="/chat/:convId" element={<ChatRoute />} />
           <Route path="/prompts" element={<ErrorBoundary><PromptManagementPage /></ErrorBoundary>} />
           <Route path="/profile" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />
+          <Route path="/agnes-hub" element={<Navigate to="/agnes-hub/market" replace />} />
+          <Route path="/agnes-hub/market" element={<ErrorBoundary><MarketPage /></ErrorBoundary>} />
+          <Route path="/agnes-hub/mine" element={<ErrorBoundary><MySkillsPage /></ErrorBoundary>} />
           <Route path="*" element={<Navigate to="/chat" replace />} />
         </Routes>
       </main>
@@ -92,7 +97,17 @@ function AppLayout() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppLayout />
+      <Routes>
+        {/* Admin 子站：独立壳，无侧栏；登录页本身也不需要权限校验。*/}
+        <Route path="/admin/login" element={<ErrorBoundary><AdminLoginPage /></ErrorBoundary>} />
+        <Route path="/admin/skills" element={<ErrorBoundary><AdminPendingPage /></ErrorBoundary>} />
+        <Route path="/admin/skills/official" element={<ErrorBoundary><AdminOfficialPage /></ErrorBoundary>} />
+        <Route path="/admin/skills/all" element={<ErrorBoundary><AdminAllSkillsPage /></ErrorBoundary>} />
+        <Route path="/admin" element={<Navigate to="/admin/skills" replace />} />
+
+        {/* 其它一切走主壳 */}
+        <Route path="/*" element={<AppLayout />} />
+      </Routes>
     </BrowserRouter>
   );
 }

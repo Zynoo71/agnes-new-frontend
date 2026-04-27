@@ -14,7 +14,7 @@ export const file_common_v1_agent_stream: GenFile = /*@__PURE__*/
 
 /**
  * AgentStreamEvent 是所有 Agent 流式 RPC 的统一输出格式。
- *
+ * 
  * 框架事件使用 oneof 强类型；业务自定义事件走 CustomEvent 兜底。
  * BFF 根据 oneof case 决定 SSE event name 和 payload 序列化方式。
  *

@@ -8,7 +8,7 @@ import type { AgentStreamEventSchema } from "../../common/v1/agent_stream_pb";
 import { file_common_v1_agent_stream } from "../../common/v1/agent_stream_pb";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { CancelReplySchema, CancelRequestSchema, ConversationHistoryRequestSchema, ConversationHistoryResponseSchema, ResumeRequestSchema } from "../../kw_agent_service/v1/kw_agent_service_pb";
+import type { CancelReplySchema, CancelRequestSchema, ConversationHistoryRequestSchema, ConversationHistoryResponseSchema, PixaElementEditItem, PixaTextEditItem, ResumeRequestSchema } from "../../kw_agent_service/v1/kw_agent_service_pb";
 import { file_kw_agent_service_v1_kw_agent_service } from "../../kw_agent_service/v1/kw_agent_service_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kw_pixa_service/v1/agent.proto.
  */
 export const file_kw_pixa_service_v1_agent: GenFile = /*@__PURE__*/
-  fileDesc("Ch5rd19waXhhX3NlcnZpY2UvdjEvYWdlbnQucHJvdG8SEmt3X3BpeGFfc2VydmljZS52MSIfCh1QaXhhQ3JlYXRlQ29udmVyc2F0aW9uUmVxdWVzdCI2ChtQaXhhQ3JlYXRlQ29udmVyc2F0aW9uUmVwbHkSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDIj0KHExpc3RQaXhhQ29udmVyc2F0aW9uc1JlcXVlc3QSDQoFbGltaXQYASABKAUSDgoGb2Zmc2V0GAIgASgFIrYBCg5QaXhhVmlzdWFsSXRlbRIKCgJpZBgBIAEoAxIOCgZzb3VyY2UYAiABKAkSEwoLcmVzb3VyY2VfaWQYAyABKAMSEwoLdmlzdWFsX3R5cGUYBCABKAkSEAoIdHJhY2VfaWQYBSABKAkSHAoUdmlzdWFsX21ldGFkYXRhX2pzb24YBiABKAkSLgoKY3JlYXRlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAirwIKF1BpeGFDb252ZXJzYXRpb25TdW1tYXJ5EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoAxINCgV0aXRsZRgCIAEoCRIPCgdzdW1tYXJ5GAMgASgJEhAKCHBsYXRmb3JtGAQgASgJEhAKCGxhbmd1YWdlGAUgASgJEhIKCnNvcnRfb3JkZXIYBiABKAUSLgoKY3JlYXRlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMwoHdmlzdWFscxgJIAMoCzIiLmt3X3BpeGFfc2VydmljZS52MS5QaXhhVmlzdWFsSXRlbRIOCgZzdGF0dXMYCiABKAkiswMKGVBpeGFBaWdjVGVtcGxhdGVEcmFmdEl0ZW0SCgoCaWQYASABKAMSDwoHdGFza19pZBgCIAEoCRITCgt0ZW1wbGF0ZV9pZBgDIAEoCRIOCgZzdGF0dXMYBCABKAkSGQoRaW5wdXRfcGFyYW1zX2pzb24YBSABKAkSGgoSb3V0cHV0X3BhcmFtc19qc29uGAYgASgJEhoKEnJlc3VsdF9wYXJhbXNfanNvbhgHIAEoCRIPCgd1c2VyX2lkGAggASgJEhAKCHBsYXRmb3JtGAkgASgJEg4KBmFwcF9pZBgKIAEoCRIQCgh0cmFjZV9pZBgLIAEoCRIuCgpjcmVhdGVkX2F0GAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIzCgd2aXN1YWxzGA4gAygLMiIua3dfcGl4YV9zZXJ2aWNlLnYxLlBpeGFWaXN1YWxJdGVtEhUKDXRlbXBsYXRlX25hbWUYDyABKAkSEAoIZHJhZnRfaWQYECABKAkitQEKGkxpc3RQaXhhQ29udmVyc2F0aW9uc1JlcGx5EjoKBWl0ZW1zGAEgAygLMisua3dfcGl4YV9zZXJ2aWNlLnYxLlBpeGFDb252ZXJzYXRpb25TdW1tYXJ5EhMKC3RvdGFsX2NvdW50GAIgASgDEkYKD3RlbXBsYXRlX2RyYWZ0cxgDIAMoCzItLmt3X3BpeGFfc2VydmljZS52MS5QaXhhQWlnY1RlbXBsYXRlRHJhZnRJdGVtIjgKHERlbGV0ZVBpeGFDaGF0UHJvamVjdFJlcXVlc3QSDAoEa2luZBgBIAEoCRIKCgJpZBgCIAEoAyIcChpEZWxldGVQaXhhQ2hhdFByb2plY3RSZXBseSJJChZMaXN0UGl4YVZpc3VhbHNSZXF1ZXN0EhAKCGNhdGVnb3J5GAEgASgJEg0KBWxpbWl0GAIgASgFEg4KBm9mZnNldBgDIAEoBSJeChRMaXN0UGl4YVZpc3VhbHNSZXBseRIxCgVpdGVtcxgBIAMoCzIiLmt3X3BpeGFfc2VydmljZS52MS5QaXhhVmlzdWFsSXRlbRITCgt0b3RhbF9jb3VudBgCIAEoAyIqCg1QaXhhSW1hZ2VJdGVtEgsKA3VybBgBIAEoCRIMCgRyb2xlGAIgASgJIskCCg9QaXhhQ2hhdFJlcXVlc3QSFwoPY29udmVyc2F0aW9uX2lkGAIgASgDEg4KBnByb21wdBgDIAEoCRISCgptZWRpYV90eXBlGAQgASgJEg0KBW1vZGVsGAUgASgJEg0KBXJhdGlvGAYgASgJEhAKCGR1cmF0aW9uGAcgASgFEhYKDmR1cmF0aW9uX3BhcmFtGBAgASgJEg4KBmltYWdlcxgIIAMoCRINCgVjb3VudBgJIAEoBRISCgpyZXNvbHV0aW9uGAogASgJEg0KBXNvdW5kGAsgASgIEhMKC3NvdW5kX3BhcmFtGBEgASgJEjYKC2ltYWdlX2l0ZW1zGA0gAygLMiEua3dfcGl4YV9zZXJ2aWNlLnYxLlBpeGFJbWFnZUl0ZW0SDAoEbW9kZRgOIAEoCRIOCgZ2aWRlb3MYDyADKAlKBAgBEAIy5QYKEkt3UGl4YUFnZW50U2VydmljZRJQCgpDaGF0U3RyZWFtEiMua3dfcGl4YV9zZXJ2aWNlLnYxLlBpeGFDaGF0UmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESeAoSQ3JlYXRlQ29udmVyc2F0aW9uEjEua3dfcGl4YV9zZXJ2aWNlLnYxLlBpeGFDcmVhdGVDb252ZXJzYXRpb25SZXF1ZXN0Gi8ua3dfcGl4YV9zZXJ2aWNlLnYxLlBpeGFDcmVhdGVDb252ZXJzYXRpb25SZXBseRJ5ChVMaXN0UGl4YUNvbnZlcnNhdGlvbnMSMC5rd19waXhhX3NlcnZpY2UudjEuTGlzdFBpeGFDb252ZXJzYXRpb25zUmVxdWVzdBouLmt3X3BpeGFfc2VydmljZS52MS5MaXN0UGl4YUNvbnZlcnNhdGlvbnNSZXBseRJ5ChVEZWxldGVQaXhhQ2hhdFByb2plY3QSMC5rd19waXhhX3NlcnZpY2UudjEuRGVsZXRlUGl4YUNoYXRQcm9qZWN0UmVxdWVzdBouLmt3X3BpeGFfc2VydmljZS52MS5EZWxldGVQaXhhQ2hhdFByb2plY3RSZXBseRJ7ChZHZXRDb252ZXJzYXRpb25IaXN0b3J5Ei8ua3dfYWdlbnRfc2VydmljZS52MS5Db252ZXJzYXRpb25IaXN0b3J5UmVxdWVzdBowLmt3X2FnZW50X3NlcnZpY2UudjEuQ29udmVyc2F0aW9uSGlzdG9yeVJlc3BvbnNlElEKDFJlc3VtZVN0cmVhbRIiLmt3X2FnZW50X3NlcnZpY2UudjEuUmVzdW1lUmVxdWVzdBobLmNvbW1vbi52MS5BZ2VudFN0cmVhbUV2ZW50MAESVAoMQ2FuY2VsU3RyZWFtEiIua3dfYWdlbnRfc2VydmljZS52MS5DYW5jZWxSZXF1ZXN0GiAua3dfYWdlbnRfc2VydmljZS52MS5DYW5jZWxSZXBseRJnCg9MaXN0UGl4YVZpc3VhbHMSKi5rd19waXhhX3NlcnZpY2UudjEuTGlzdFBpeGFWaXN1YWxzUmVxdWVzdBooLmt3X3BpeGFfc2VydmljZS52MS5MaXN0UGl4YVZpc3VhbHNSZXBseUI6WjhhZ25lcy9wcm90by9nZW4vZ28va3dfcGl4YV9zZXJ2aWNlL3YxO2t3X3BpeGFfc2VydmljZV92MWIGcHJvdG8z", [file_common_v1_agent_stream, file_google_protobuf_timestamp, file_kw_agent_service_v1_kw_agent_service]);
+  fileDesc("Ch5rd19waXhhX3NlcnZpY2UvdjEvYWdlbnQucHJvdG8SEmt3X3BpeGFfc2VydmljZS52MSIfCh1QaXhhQ3JlYXRlQ29udmVyc2F0aW9uUmVxdWVzdCI2ChtQaXhhQ3JlYXRlQ29udmVyc2F0aW9uUmVwbHkSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDIj0KHExpc3RQaXhhQ29udmVyc2F0aW9uc1JlcXVlc3QSDQoFbGltaXQYASABKAUSDgoGb2Zmc2V0GAIgASgFIrYBCg5QaXhhVmlzdWFsSXRlbRIKCgJpZBgBIAEoAxIOCgZzb3VyY2UYAiABKAkSEwoLcmVzb3VyY2VfaWQYAyABKAMSEwoLdmlzdWFsX3R5cGUYBCABKAkSEAoIdHJhY2VfaWQYBSABKAkSHAoUdmlzdWFsX21ldGFkYXRhX2pzb24YBiABKAkSLgoKY3JlYXRlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAi1AEKE1BpeGFRdW90YUxvZ1N1bW1hcnkSFwoPcmVxdWlyZWRfYW1vdW50GAEgASgFEhcKD2F2YWlsYWJsZV90b3RhbBgCIAEoBRIZChFpbnN1ZmZpY2llbnRfaGludBgDIAEoCRISCgptb2RlbF9jb2RlGAQgASgJEg4KBnJlYXNvbhgFIAEoCRISCgpldmVudF90eXBlGAYgASgJEhAKCGRlZHVjdGVkGAcgASgIEhIKCnVzYWdlX2tpbmQYCCABKAkSEgoKdW5pdF9jb3VudBgJIAEoBSLrAgoXUGl4YUNvbnZlcnNhdGlvblN1bW1hcnkSFwoPY29udmVyc2F0aW9uX2lkGAEgASgDEg0KBXRpdGxlGAIgASgJEg8KB3N1bW1hcnkYAyABKAkSEAoIcGxhdGZvcm0YBCABKAkSEAoIbGFuZ3VhZ2UYBSABKAkSEgoKc29ydF9vcmRlchgGIAEoBRIuCgpjcmVhdGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIzCgd2aXN1YWxzGAkgAygLMiIua3dfcGl4YV9zZXJ2aWNlLnYxLlBpeGFWaXN1YWxJdGVtEg4KBnN0YXR1cxgKIAEoCRI6CglxdW90YV9sb2cYCyABKAsyJy5rd19waXhhX3NlcnZpY2UudjEuUGl4YVF1b3RhTG9nU3VtbWFyeSKzAwoZUGl4YUFpZ2NUZW1wbGF0ZURyYWZ0SXRlbRIKCgJpZBgBIAEoAxIPCgd0YXNrX2lkGAIgASgJEhMKC3RlbXBsYXRlX2lkGAMgASgJEg4KBnN0YXR1cxgEIAEoCRIZChFpbnB1dF9wYXJhbXNfanNvbhgFIAEoCRIaChJvdXRwdXRfcGFyYW1zX2pzb24YBiABKAkSGgoScmVzdWx0X3BhcmFtc19qc29uGAcgASgJEg8KB3VzZXJfaWQYCCABKAkSEAoIcGxhdGZvcm0YCSABKAkSDgoGYXBwX2lkGAogASgJEhAKCHRyYWNlX2lkGAsgASgJEi4KCmNyZWF0ZWRfYXQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjMKB3Zpc3VhbHMYDiADKAsyIi5rd19waXhhX3NlcnZpY2UudjEuUGl4YVZpc3VhbEl0ZW0SFQoNdGVtcGxhdGVfbmFtZRgPIAEoCRIQCghkcmFmdF9pZBgQIAEoCSK1AQoaTGlzdFBpeGFDb252ZXJzYXRpb25zUmVwbHkSOgoFaXRlbXMYASADKAsyKy5rd19waXhhX3NlcnZpY2UudjEuUGl4YUNvbnZlcnNhdGlvblN1bW1hcnkSEwoLdG90YWxfY291bnQYAiABKAMSRgoPdGVtcGxhdGVfZHJhZnRzGAMgAygLMi0ua3dfcGl4YV9zZXJ2aWNlLnYxLlBpeGFBaWdjVGVtcGxhdGVEcmFmdEl0ZW0iOAocRGVsZXRlUGl4YUNoYXRQcm9qZWN0UmVxdWVzdBIMCgRraW5kGAEgASgJEgoKAmlkGAIgASgDIhwKGkRlbGV0ZVBpeGFDaGF0UHJvamVjdFJlcGx5IkkKFkxpc3RQaXhhVmlzdWFsc1JlcXVlc3QSEAoIY2F0ZWdvcnkYASABKAkSDQoFbGltaXQYAiABKAUSDgoGb2Zmc2V0GAMgASgFIl4KFExpc3RQaXhhVmlzdWFsc1JlcGx5EjEKBWl0ZW1zGAEgAygLMiIua3dfcGl4YV9zZXJ2aWNlLnYxLlBpeGFWaXN1YWxJdGVtEhMKC3RvdGFsX2NvdW50GAIgASgDIioKDVBpeGFJbWFnZUl0ZW0SCwoDdXJsGAEgASgJEgwKBHJvbGUYAiABKAki8QMKD1BpeGFDaGF0UmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYAiABKAMSDgoGcHJvbXB0GAMgASgJEhIKCm1lZGlhX3R5cGUYBCABKAkSDQoFbW9kZWwYBSABKAkSDQoFcmF0aW8YBiABKAkSEAoIZHVyYXRpb24YByABKAUSFgoOZHVyYXRpb25fcGFyYW0YECABKAkSDgoGaW1hZ2VzGAggAygJEg0KBWNvdW50GAkgASgFEhIKCnJlc29sdXRpb24YCiABKAkSDQoFc291bmQYCyABKAgSEwoLc291bmRfcGFyYW0YESABKAkSNgoLaW1hZ2VfaXRlbXMYDSADKAsyIS5rd19waXhhX3NlcnZpY2UudjEuUGl4YUltYWdlSXRlbRIMCgRtb2RlGA4gASgJEg4KBnZpZGVvcxgPIAMoCRI+Cg90ZXh0X2VkaXRfaXRlbXMYEiADKAsyJS5rd19hZ2VudF9zZXJ2aWNlLnYxLlBpeGFUZXh0RWRpdEl0ZW0SRAoSZWxlbWVudF9lZGl0X2l0ZW1zGBMgAygLMigua3dfYWdlbnRfc2VydmljZS52MS5QaXhhRWxlbWVudEVkaXRJdGVtEiAKGGVsZW1lbnRfZWRpdF9wcm9tcHRfanNvbhgUIAEoCUoECAEQAjLlBgoSS3dQaXhhQWdlbnRTZXJ2aWNlElAKCkNoYXRTdHJlYW0SIy5rd19waXhhX3NlcnZpY2UudjEuUGl4YUNoYXRSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJ4ChJDcmVhdGVDb252ZXJzYXRpb24SMS5rd19waXhhX3NlcnZpY2UudjEuUGl4YUNyZWF0ZUNvbnZlcnNhdGlvblJlcXVlc3QaLy5rd19waXhhX3NlcnZpY2UudjEuUGl4YUNyZWF0ZUNvbnZlcnNhdGlvblJlcGx5EnkKFUxpc3RQaXhhQ29udmVyc2F0aW9ucxIwLmt3X3BpeGFfc2VydmljZS52MS5MaXN0UGl4YUNvbnZlcnNhdGlvbnNSZXF1ZXN0Gi4ua3dfcGl4YV9zZXJ2aWNlLnYxLkxpc3RQaXhhQ29udmVyc2F0aW9uc1JlcGx5EnkKFURlbGV0ZVBpeGFDaGF0UHJvamVjdBIwLmt3X3BpeGFfc2VydmljZS52MS5EZWxldGVQaXhhQ2hhdFByb2plY3RSZXF1ZXN0Gi4ua3dfcGl4YV9zZXJ2aWNlLnYxLkRlbGV0ZVBpeGFDaGF0UHJvamVjdFJlcGx5EnsKFkdldENvbnZlcnNhdGlvbkhpc3RvcnkSLy5rd19hZ2VudF9zZXJ2aWNlLnYxLkNvbnZlcnNhdGlvbkhpc3RvcnlSZXF1ZXN0GjAua3dfYWdlbnRfc2VydmljZS52MS5Db252ZXJzYXRpb25IaXN0b3J5UmVzcG9uc2USUQoMUmVzdW1lU3RyZWFtEiIua3dfYWdlbnRfc2VydmljZS52MS5SZXN1bWVSZXF1ZXN0GhsuY29tbW9uLnYxLkFnZW50U3RyZWFtRXZlbnQwARJUCgxDYW5jZWxTdHJlYW0SIi5rd19hZ2VudF9zZXJ2aWNlLnYxLkNhbmNlbFJlcXVlc3QaIC5rd19hZ2VudF9zZXJ2aWNlLnYxLkNhbmNlbFJlcGx5EmcKD0xpc3RQaXhhVmlzdWFscxIqLmt3X3BpeGFfc2VydmljZS52MS5MaXN0UGl4YVZpc3VhbHNSZXF1ZXN0Gigua3dfcGl4YV9zZXJ2aWNlLnYxLkxpc3RQaXhhVmlzdWFsc1JlcGx5QjpaOGFnbmVzL3Byb3RvL2dlbi9nby9rd19waXhhX3NlcnZpY2UvdjE7a3dfcGl4YV9zZXJ2aWNlX3YxYgZwcm90bzM", [file_common_v1_agent_stream, file_google_protobuf_timestamp, file_kw_agent_service_v1_kw_agent_service]);
 
 /**
  * @generated from message kw_pixa_service.v1.PixaCreateConversationRequest
@@ -128,6 +128,67 @@ export const PixaVisualItemSchema: GenMessage<PixaVisualItem> = /*@__PURE__*/
   messageDesc(file_kw_pixa_service_v1_agent, 3);
 
 /**
+ * 会话最近一次积分不足快照（pixa_quota_logs 最新一条）；无记录时不下发
+ *
+ * @generated from message kw_pixa_service.v1.PixaQuotaLogSummary
+ */
+export type PixaQuotaLogSummary = Message<"kw_pixa_service.v1.PixaQuotaLogSummary"> & {
+  /**
+   * @generated from field: int32 required_amount = 1;
+   */
+  requiredAmount: number;
+
+  /**
+   * @generated from field: int32 available_total = 2;
+   */
+  availableTotal: number;
+
+  /**
+   * @generated from field: string insufficient_hint = 3;
+   */
+  insufficientHint: string;
+
+  /**
+   * @generated from field: string model_code = 4;
+   */
+  modelCode: string;
+
+  /**
+   * @generated from field: string reason = 5;
+   */
+  reason: string;
+
+  /**
+   * 如 QuotaTryDeduct
+   *
+   * @generated from field: string event_type = 6;
+   */
+  eventType: string;
+
+  /**
+   * @generated from field: bool deducted = 7;
+   */
+  deducted: boolean;
+
+  /**
+   * @generated from field: string usage_kind = 8;
+   */
+  usageKind: string;
+
+  /**
+   * @generated from field: int32 unit_count = 9;
+   */
+  unitCount: number;
+};
+
+/**
+ * Describes the message kw_pixa_service.v1.PixaQuotaLogSummary.
+ * Use `create(PixaQuotaLogSummarySchema)` to create a new message.
+ */
+export const PixaQuotaLogSummarySchema: GenMessage<PixaQuotaLogSummary> = /*@__PURE__*/
+  messageDesc(file_kw_pixa_service_v1_agent, 4);
+
+/**
  * @generated from message kw_pixa_service.v1.PixaConversationSummary
  */
 export type PixaConversationSummary = Message<"kw_pixa_service.v1.PixaConversationSummary"> & {
@@ -177,11 +238,16 @@ export type PixaConversationSummary = Message<"kw_pixa_service.v1.PixaConversati
   visuals: PixaVisualItem[];
 
   /**
-   * pending | processing | completed | failed
+   * pending | processing | completed | failed | cancelled | quota_insufficient
    *
    * @generated from field: string status = 10;
    */
   status: string;
+
+  /**
+   * @generated from field: kw_pixa_service.v1.PixaQuotaLogSummary quota_log = 11;
+   */
+  quotaLog?: PixaQuotaLogSummary;
 };
 
 /**
@@ -189,7 +255,7 @@ export type PixaConversationSummary = Message<"kw_pixa_service.v1.PixaConversati
  * Use `create(PixaConversationSummarySchema)` to create a new message.
  */
 export const PixaConversationSummarySchema: GenMessage<PixaConversationSummary> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_agent, 4);
+  messageDesc(file_kw_pixa_service_v1_agent, 5);
 
 /**
  * 模板草稿摘要（pixa_aigc_template_drafts），与列表接口一并返回，最多 7 条
@@ -287,7 +353,7 @@ export type PixaAigcTemplateDraftItem = Message<"kw_pixa_service.v1.PixaAigcTemp
  * Use `create(PixaAigcTemplateDraftItemSchema)` to create a new message.
  */
 export const PixaAigcTemplateDraftItemSchema: GenMessage<PixaAigcTemplateDraftItem> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_agent, 5);
+  messageDesc(file_kw_pixa_service_v1_agent, 6);
 
 /**
  * @generated from message kw_pixa_service.v1.ListPixaConversationsReply
@@ -316,7 +382,7 @@ export type ListPixaConversationsReply = Message<"kw_pixa_service.v1.ListPixaCon
  * Use `create(ListPixaConversationsReplySchema)` to create a new message.
  */
 export const ListPixaConversationsReplySchema: GenMessage<ListPixaConversationsReply> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_agent, 6);
+  messageDesc(file_kw_pixa_service_v1_agent, 7);
 
 /**
  * kind 与列表接口 type 一致：ai_creation | template
@@ -342,7 +408,7 @@ export type DeletePixaChatProjectRequest = Message<"kw_pixa_service.v1.DeletePix
  * Use `create(DeletePixaChatProjectRequestSchema)` to create a new message.
  */
 export const DeletePixaChatProjectRequestSchema: GenMessage<DeletePixaChatProjectRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_agent, 7);
+  messageDesc(file_kw_pixa_service_v1_agent, 8);
 
 /**
  * @generated from message kw_pixa_service.v1.DeletePixaChatProjectReply
@@ -355,7 +421,7 @@ export type DeletePixaChatProjectReply = Message<"kw_pixa_service.v1.DeletePixaC
  * Use `create(DeletePixaChatProjectReplySchema)` to create a new message.
  */
 export const DeletePixaChatProjectReplySchema: GenMessage<DeletePixaChatProjectReply> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_agent, 8);
+  messageDesc(file_kw_pixa_service_v1_agent, 9);
 
 /**
  * category 筛选：all / effects / videos / images
@@ -390,7 +456,7 @@ export type ListPixaVisualsRequest = Message<"kw_pixa_service.v1.ListPixaVisuals
  * Use `create(ListPixaVisualsRequestSchema)` to create a new message.
  */
 export const ListPixaVisualsRequestSchema: GenMessage<ListPixaVisualsRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_agent, 9);
+  messageDesc(file_kw_pixa_service_v1_agent, 10);
 
 /**
  * @generated from message kw_pixa_service.v1.ListPixaVisualsReply
@@ -412,7 +478,7 @@ export type ListPixaVisualsReply = Message<"kw_pixa_service.v1.ListPixaVisualsRe
  * Use `create(ListPixaVisualsReplySchema)` to create a new message.
  */
 export const ListPixaVisualsReplySchema: GenMessage<ListPixaVisualsReply> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_agent, 10);
+  messageDesc(file_kw_pixa_service_v1_agent, 11);
 
 /**
  * 单张参考图：url 必填；role 可选，与 ImageRole 一致：reference / first_frame / last_frame
@@ -436,7 +502,7 @@ export type PixaImageItem = Message<"kw_pixa_service.v1.PixaImageItem"> & {
  * Use `create(PixaImageItemSchema)` to create a new message.
  */
 export const PixaImageItemSchema: GenMessage<PixaImageItem> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_agent, 11);
+  messageDesc(file_kw_pixa_service_v1_agent, 12);
 
 /**
  * @generated from message kw_pixa_service.v1.PixaChatRequest
@@ -534,7 +600,7 @@ export type PixaChatRequest = Message<"kw_pixa_service.v1.PixaChatRequest"> & {
   imageItems: PixaImageItem[];
 
   /**
-   * 必填创作模式：text_to_image / image_to_image / text_to_video / ref_image_to_video / 1st_frame_to_video / frames_to_video 等
+   * 必填创作模式：text_to_image / image_to_image / mask_edit_image / text_edit_image / text_to_video / ref_image_to_video / 1st_frame_to_video / frames_to_video 等
    *
    * @generated from field: string mode = 14;
    */
@@ -546,6 +612,27 @@ export type PixaChatRequest = Message<"kw_pixa_service.v1.PixaChatRequest"> & {
    * @generated from field: repeated string videos = 15;
    */
   videos: string[];
+
+  /**
+   * 图中改字结构化项（与旧版 items对齐）；非空时 agent 使用旧版固定英文模板拼 prompt
+   *
+   * @generated from field: repeated kw_agent_service.v1.PixaTextEditItem text_edit_items = 18;
+   */
+  textEditItems: PixaTextEditItem[];
+
+  /**
+   * 智能编辑：用户选定的元素项（来自 RecognizeImageElement）；与 mode=element_edit_image 联用
+   *
+   * @generated from field: repeated kw_agent_service.v1.PixaElementEditItem element_edit_items = 19;
+   */
+  elementEditItems: PixaElementEditItem[];
+
+  /**
+   * 智能编辑：前端发送的完整交错 JSON 字符串（对齐老 backend prompt 格式）；非空时 agent 直接使用，不再从 element_edit_items 拼接
+   *
+   * @generated from field: string element_edit_prompt_json = 20;
+   */
+  elementEditPromptJson: string;
 };
 
 /**
@@ -553,7 +640,7 @@ export type PixaChatRequest = Message<"kw_pixa_service.v1.PixaChatRequest"> & {
  * Use `create(PixaChatRequestSchema)` to create a new message.
  */
 export const PixaChatRequestSchema: GenMessage<PixaChatRequest> = /*@__PURE__*/
-  messageDesc(file_kw_pixa_service_v1_agent, 12);
+  messageDesc(file_kw_pixa_service_v1_agent, 13);
 
 /**
  * @generated from service kw_pixa_service.v1.KwPixaAgentService
