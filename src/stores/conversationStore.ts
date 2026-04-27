@@ -307,6 +307,14 @@ export interface MemoryUpdateData {
   content: string;
 }
 
+export interface PromptEnhancedData {
+  originalPrompt: string;
+  enhancedPrompt: string;
+  message?: string;
+  mediaType?: string;
+  style?: string;
+}
+
 export interface SheetArtifactData {
   artifactId: string;
   artifactType: string;            // CHART / TABLE / REPORT / DASHBOARD / EXPORT / TEXT / DATASET
@@ -344,6 +352,7 @@ export type ContentBlock =
   | { type: "SlideOutline"; data: SlideOutlineData }
   | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
   | { type: "MemoryUpdate"; data: MemoryUpdateData }
+  | { type: "PromptEnhanced"; data: PromptEnhancedData }
   | { type: "SheetArtifact"; data: SheetArtifactData }
   | { type: "SheetPlan"; data: SheetPlanData }
   | { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
@@ -973,6 +982,20 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
             data: { field: field as "soul" | "identity", content },
           });
         }
+        break;
+      }
+
+      if (custom.type === "PromptEnhanced") {
+        updated.blocks.push({
+          type: "PromptEnhanced",
+          data: {
+            originalPrompt: (payload.original_prompt as string) ?? "",
+            enhancedPrompt: (payload.enhanced_prompt as string) ?? "",
+            message: payload.message as string | undefined,
+            mediaType: payload.media_type as string | undefined,
+            style: payload.style as string | undefined,
+          },
+        });
         break;
       }
 

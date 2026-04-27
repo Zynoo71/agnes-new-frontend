@@ -300,6 +300,18 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[]; statu
             data: { field, content },
           });
         }
+      } else if (block.type === "PromptEnhanced") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        assistantBlocks.push({
+          type: "PromptEnhanced",
+          data: {
+            originalPrompt: (data.original_prompt as string) ?? "",
+            enhancedPrompt: (data.enhanced_prompt as string) ?? "",
+            message: data.message as string | undefined,
+            mediaType: data.media_type as string | undefined,
+            style: data.style as string | undefined,
+          },
+        });
       } else if (block.type === "ArtifactCreated") {
         const data = (block.data ?? {}) as Record<string, unknown>;
         const artifactId = (data.artifact_id as string) ?? "";
