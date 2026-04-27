@@ -10,6 +10,7 @@ import type {
   ToolCallData,
   FileData,
   MemoryUpdateData,
+  PromptEnhancedData,
   SlideOutlineData,
   SlideDesignSystemData,
 } from "@/stores/conversationStore";
@@ -495,6 +496,8 @@ const BlockRenderer = memo(function BlockRenderer({
       return <ContextCompactingBlock done={block.done || !isStreaming} />;
     case "MemoryUpdate":
       return <MemoryUpdateBlock data={block.data} />;
+    case "PromptEnhanced":
+      return <PromptEnhancedCard data={block.data} />;
     case "SlideOutline":
       return <SlideOutlineBlock data={block.data} />;
     case "SlideDesignSystem":
@@ -725,10 +728,56 @@ function MemoryUpdateBlock({ data }: { data: MemoryUpdateData }) {
   );
 }
 
+// ── Prompt enhanced (informational, no confirmation) ──
+
+function PromptEnhancedCard({ data }: { data: PromptEnhancedData }) {
+  const { originalPrompt, enhancedPrompt, message, mediaType, style } = data;
+  const styleLabel = style?.startsWith("custom:") ? style.slice(7) : style;
+
+  return (
+    <div className="my-3 rounded-xl border border-accent/20 bg-accent/[0.03] p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-5 h-5 rounded-md bg-accent/15 flex items-center justify-center shrink-0">
+          <svg className="w-3 h-3 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+          </svg>
+        </div>
+        <span className="text-sm font-semibold text-text-primary">Prompt Enhancement</span>
+      </div>
+      {message && (
+        <p className="text-xs text-text-secondary mb-3 leading-relaxed">{message}</p>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="rounded-lg bg-surface border border-border-light p-3">
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Original</div>
+          <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{originalPrompt}</p>
+        </div>
+        <div className="rounded-lg bg-accent/5 border border-accent/20 p-3">
+          <div className="text-[10px] font-medium text-accent uppercase tracking-wide mb-1.5">Enhanced</div>
+          <p className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap">{enhancedPrompt}</p>
+        </div>
+      </div>
+      {(mediaType || styleLabel) && (
+        <div className="flex items-center gap-2 flex-wrap mt-3">
+          {mediaType && (
+            <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+              {mediaType}
+            </span>
+          )}
+          {styleLabel && (
+            <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+              {styleLabel}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Review type display config ──
 const REVIEW_TYPE_CONFIG: Record<string, { title: string; description: string }> = {
   research_plan: { title: "Research Plan", description: "Review the proposed tasks before execution" },
-  prompt_enhancement: { title: "Prompt Enhancement", description: "Review the enhanced prompt before generation" },
   material_supplement: { title: "Material Confirmation", description: "Confirm materials to use for generation" },
   batch_generation_plan: { title: "Generation Plan", description: "Review the batch generation plan" },
 };
@@ -1024,44 +1073,6 @@ function ResearchPlanRenderer(data: Record<string, unknown>) {
   );
 }
 
-function PromptEnhancementRenderer(data: Record<string, unknown>) {
-  const original = (data.original_prompt as string) ?? "";
-  const enhanced = (data.enhanced_prompt as string) ?? "";
-  const mediaType = (data.media_type as string) ?? "image";
-  const style = (data.style as string) ?? "";
-  const message = (data.message as string) ?? "";
-
-  return (
-    <div className="space-y-3">
-      {message && (
-        <p className="text-xs text-text-secondary leading-relaxed">{message}</p>
-      )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <div className="rounded-lg bg-surface border border-border-light p-3">
-          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Original</div>
-          <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{original}</p>
-        </div>
-        <div className="rounded-lg bg-accent/5 border border-accent/20 p-3">
-          <div className="text-[10px] font-medium text-accent uppercase tracking-wide mb-1.5">Enhanced</div>
-          <p className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap">{enhanced}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        {mediaType && (
-          <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
-            {mediaType}
-          </span>
-        )}
-        {style && (
-          <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
-            {style.startsWith("custom:") ? style.slice(7) : style}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 interface MaterialCandidate {
   url: string;
   source: string;
@@ -1247,7 +1258,6 @@ function BatchGenerationPlanRenderer(data: Record<string, unknown>) {
 
 const REVIEW_RENDERERS: Record<string, ReviewRenderer> = {
   research_plan: ResearchPlanRenderer,
-  prompt_enhancement: PromptEnhancementRenderer,
   material_supplement: MaterialSupplementRenderer,
   batch_generation_plan: BatchGenerationPlanRenderer,
 };
