@@ -8,6 +8,7 @@ import { SkillDetailModal } from "@/pages/AgnesHub/SkillDetailModal";
 import {
   SkillEditorModal,
   type SkillEditorApi,
+  type SkillKind,
 } from "@/pages/AgnesHub/SkillEditorModal";
 import { AdminLayout } from "./AdminLayout";
 
@@ -182,8 +183,13 @@ function useAdminOfficialEditorApi(targetAppId: string): SkillEditorApi {
       const resp = await agentClient.adminGetOfficialSkillForEdit({ skillId });
       const sk = resp.skill;
       if (!sk) throw new Error("Official skill not found");
+      const st = (sk.skillType || "guide").trim().toLowerCase();
       return {
-        skill: { name: sk.name, summary: sk.summary },
+        skill: {
+          name: sk.name,
+          summary: sk.summary,
+          skillType: (st === "tool" ? "tool" : "guide") as SkillKind,
+        },
         files: resp.files.map((f) => ({ path: f.path, content: f.content })),
       };
     },
