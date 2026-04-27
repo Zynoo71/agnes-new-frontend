@@ -6,7 +6,7 @@ import { useConversationStore, type AgentTask, type ContentBlock, type Message, 
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
-import { useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
+import { PENDING_SKILLS_CONV_ID, useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
 import { hydrateConversationSkillsFromServer, persistConversationSkillSelections } from "@/lib/conversationSkillSync";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
@@ -475,6 +475,12 @@ export function useChat() {
     const id = await createAgnesConversation();
     getState().setConversationId(id);
     useConversationListStore.getState().add(id, getState().agentType, getState().systemPromptId ?? undefined);
+    const skillsStore = useChatSelectedSkillsStore.getState();
+    const pending = skillsStore.get(PENDING_SKILLS_CONV_ID);
+    if (pending.length > 0) {
+      skillsStore.setForConv(id, pending);
+      skillsStore.clear(PENDING_SKILLS_CONV_ID);
+    }
     return id;
   }, []);
 
@@ -627,6 +633,8 @@ export function useChat() {
   const selectConversation = useCallback(async (id: string) => {
     const s = getState();
     if (s.conversationId === id) return;
+
+    useChatSelectedSkillsStore.getState().clear(PENDING_SKILLS_CONV_ID);
 
     // Abort any existing resume stream for the target
     abortMap.get(id)?.abort();

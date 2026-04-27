@@ -844,7 +844,6 @@ export function ChatPanel() {
               {t}
             </button>
           ))}
-          <ChatSkillsPicker conversationId={conversationId} />
         </div>
         <SystemPromptSelector
           selectedId={systemPromptId}
@@ -971,6 +970,13 @@ export function ChatPanel() {
             : <span>Location</span>
           }
         </button>
+        {agentType === "super" && (
+          <ChatSkillsPicker
+            conversationId={conversationId}
+            disabled={isStreaming}
+            toolbar
+          />
+        )}
         {showLocation && (
           <LocationPopover
             city={(extraContext.city as string) ?? ""}

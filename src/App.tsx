@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from "react-router";
 import { useConversationStore } from "@/stores/conversationStore";
 import { useConversationListStore } from "@/stores/conversationListStore";
+import { PENDING_SKILLS_CONV_ID, useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
 import { useChat } from "@/hooks/useChat";
 import { Sidebar } from "@/components/Sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -61,6 +62,7 @@ function AppLayout() {
     const s = useConversationStore.getState();
     if (s.conversationId === id) {
       s.reset();
+      useChatSelectedSkillsStore.getState().clear(PENDING_SKILLS_CONV_ID);
       navigate("/chat");
     }
   };

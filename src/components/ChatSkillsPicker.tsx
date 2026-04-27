@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/shallow";
 import { agentClient } from "@/grpc/client";
 import {
+  PENDING_SKILLS_CONV_ID,
   useChatSelectedSkillsStore,
   type ChatSkillSelection,
 } from "@/stores/chatSelectedSkillsStore";
@@ -58,52 +59,63 @@ const versionCache = new Map<
 interface ChatSkillsPickerProps {
   conversationId: string | null;
   disabled?: boolean;
+  /** 与输入框底部 Attach / Location 同排时使用，统一样式（text-[11px]、rounded-full 等） */
+  toolbar?: boolean;
 }
 
 /**
- * 对话框输入区 agent tab 旁的 Skills 选择入口（任意 agent 类型均显示）。
+ * 对话框输入区的 Skills 选择入口（由父级决定何时展示，例如仅 super 模式）。
  *
- * - Trigger：pill 按钮；有选用时高亮，右上角角标为已选数量。
+ * - Trigger：pill 按钮；有选用时高亮，角标为已选数量。
  * - 弹窗：顶部汇总当前会话已选（名称 + 版本）；下方为「我的 Skills」网格，卡片上回显勾选状态与版本。
  * - 最多同时选 3 个；超出后未选卡片的 Add 按钮 disable。
  *
- * conversationId 为空（新对话尚未创建）时按钮 disable。
+ * `conversationId` 为空时（例如删光会话后停在 `/chat`）选用暂存在 {@link PENDING_SKILLS_CONV_ID}，创建会话后自动迁入真实 id。
  */
-export function ChatSkillsPicker({ conversationId, disabled }: ChatSkillsPickerProps) {
+export function ChatSkillsPicker({ conversationId, disabled, toolbar = false }: ChatSkillsPickerProps) {
   const [open, setOpen] = useState(false);
 
-  const selected = useChatSelectedSkillsStore((s) =>
-    conversationId
-      ? s.byConv[conversationId] ?? EMPTY_SELECTED
-      : EMPTY_SELECTED,
-  );
+  const skillsConvId = conversationId ?? PENDING_SKILLS_CONV_ID;
+  const selected = useChatSelectedSkillsStore((s) => s.byConv[skillsConvId] ?? EMPTY_SELECTED);
 
-  const triggerDisabled = !!disabled || !conversationId;
+  const triggerDisabled = !!disabled;
   const selectedCount = selected.length;
+
+  const baseToolbar =
+    "flex items-center gap-1 px-2 py-1 text-[11px] rounded-full transition-all font-normal";
+  const stateToolbar = triggerDisabled
+    ? "text-text-tertiary/40 cursor-not-allowed opacity-40"
+    : selectedCount > 0
+      ? "bg-accent/10 text-accent"
+      : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover";
 
   return (
     <>
       <button
+        type="button"
         onClick={() => !triggerDisabled && setOpen(true)}
         disabled={triggerDisabled}
-        className={`relative px-2.5 py-1 text-xs font-medium rounded-full transition-all
-                    inline-flex items-center gap-1 ${
-                      triggerDisabled
-                        ? "text-text-tertiary/40 cursor-not-allowed"
-                        : selectedCount > 0
-                          ? "bg-accent/10 text-accent"
-                          : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
-                    }`}
+        className={
+          toolbar
+            ? `relative ${baseToolbar} ${stateToolbar}`
+            : `relative px-2.5 py-1 text-xs font-medium rounded-full transition-all inline-flex items-center gap-1 ${
+                triggerDisabled
+                  ? "text-text-tertiary/40 cursor-not-allowed"
+                  : selectedCount > 0
+                    ? "bg-accent/10 text-accent"
+                    : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
+              }`
+        }
         title={
           triggerDisabled
-            ? "Start a conversation first"
+            ? "Not available while streaming"
             : selectedCount > 0
               ? `${selectedCount} skill${selectedCount === 1 ? "" : "s"} selected`
               : "Select skills for this conversation"
         }
       >
         <svg
-          className="w-3.5 h-3.5"
+          className="w-3.5 h-3.5 shrink-0"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -117,16 +129,21 @@ export function ChatSkillsPicker({ conversationId, disabled }: ChatSkillsPickerP
         </svg>
         <span>Skills</span>
         {selectedCount > 0 && (
-          <span className="ml-0.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full
-                           bg-accent text-white text-[10px] font-semibold leading-none">
+          <span
+            className={
+              toolbar
+                ? "ml-0.5 inline-flex min-h-[1rem] min-w-[1rem] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-none text-white"
+                : "ml-0.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-accent text-white text-[10px] font-semibold leading-none"
+            }
+          >
             {selectedCount}
           </span>
         )}
       </button>
 
-      {open && conversationId && (
+      {open && (
         <SkillsPickerModal
-          conversationId={conversationId}
+          conversationId={skillsConvId}
           onClose={() => setOpen(false)}
         />
       )}

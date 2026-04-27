@@ -3,7 +3,7 @@ import {
   bumpConversationSkillHydrateEpoch,
   getConversationSkillHydrateEpoch,
 } from "@/lib/conversationSkillHydrateEpoch";
-import { useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
+import { PENDING_SKILLS_CONV_ID, useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
 import { useConversationStore } from "@/stores/conversationStore";
 
 /** 避免 listConversationSkillSelections 慢请求覆盖用户刚点 Done / Remove 持久化后的本地选用。 */
@@ -28,7 +28,7 @@ const hydrateInflight = new Map<string, Promise<void>>();
  * - 返回后若用户已切到其它会话则丢弃结果。
  */
 export function hydrateConversationSkillsFromServer(convId: string): Promise<void> {
-  if (!convId) return Promise.resolve();
+  if (!convId || convId === PENDING_SKILLS_CONV_ID) return Promise.resolve();
 
   let pending = hydrateInflight.get(convId);
   if (!pending) {
@@ -87,7 +87,7 @@ export function hydrateConversationSkillsFromServer(convId: string): Promise<voi
  * 将当前 store 中的会话选用全量写入服务端（与 Skills 弹窗 Done / 移除后一致）。
  */
 export async function persistConversationSkillSelections(convId: string): Promise<void> {
-  if (!convId) return;
+  if (!convId || convId === PENDING_SKILLS_CONV_ID) return;
   const list = useChatSelectedSkillsStore.getState().get(convId);
   await agentClient.setConversationSkillSelections({
     conversationId: BigInt(convId),

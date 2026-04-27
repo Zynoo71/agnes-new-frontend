@@ -2,6 +2,12 @@ import { create } from "zustand";
 import { bumpConversationSkillHydrateEpoch } from "@/lib/conversationSkillHydrateEpoch";
 
 /**
+ * 尚未有后端 `conversationId` 时（例如路由 `/chat` 且未发首条消息）选用 skills 的暂存键。
+ * `createConversation()` 或首次发送前建会话时会把本键下的列表迁到真实 conv id。
+ */
+export const PENDING_SKILLS_CONV_ID = "__pending_skills__";
+
+/**
  * 用户在对话页面显式选用的 hub skill。
  *
  * 对应后端 ``proto/kw_agent_service/v1/kw_agent_service.proto`` 的 ``SelectedSkill``：
