@@ -44,7 +44,8 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
   const [selectedCode, setSelectedCode] = useState<string>("");
   const [url, setUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string>("");
+  /** 应用内提示层（非浏览器 alert / window.open） */
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string>("");
 
   // 默认选第一个 enabled 来源
@@ -54,18 +55,32 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     if (firstEnabled) setSelectedCode(firstEnabled.code);
   }, [sources, selectedCode]);
 
+  useEffect(() => {
+    if (!errorDialog) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") {
+        ev.stopPropagation();
+        setErrorDialog(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [errorDialog]);
+
   const selected = sources.find((s) => s.code === selectedCode);
   const canSubmit =
     !!selected && selected.enabled && url.trim().length > 0 && !submitting;
 
   const handleSubmit = async () => {
     if (!canSubmit || !selected) return;
-    setError("");
+    setErrorDialog(null);
     setOkMsg("");
     setSubmitting(true);
     try {
       if (selected.code !== "github") {
-        setError(`Importing from "${selected.name}" is not yet supported.`);
+        setErrorDialog(
+          `Importing from "${selected.name}" is not yet supported.`,
+        );
         return;
       }
       const resp = await agentClient.importSkillFromGithub({ url: url.trim() });
@@ -82,7 +97,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       // grpc-web ConnectError 形如 "[invalid_argument] xxx"，截掉前缀更友好
-      setError(msg.replace(/^\[\w+\]\s*/, ""));
+      setErrorDialog(msg.replace(/^\[\w_]+\]\s*/i, ""));
     } finally {
       setSubmitting(false);
     }
@@ -90,8 +105,11 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-surface rounded-2xl shadow-xl w-full max-w-lg mx-4 flex flex-col">
+      <div
+        className="absolute inset-0 bg-black/40"
+        onClick={() => !errorDialog && onClose()}
+      />
+      <div className="relative bg-surface rounded-2xl shadow-xl w-full max-w-lg mx-4 flex flex-col overflow-hidden">
         <div className="px-6 pt-5 pb-3 flex items-start justify-between">
           <div>
             <h3 className="text-base font-semibold text-text-primary">Import skill</h3>
@@ -170,11 +188,6 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {error && (
-            <div className="text-xs text-red-500 bg-red-500/10 border border-red-500/30 rounded-md px-3 py-2">
-              {error}
-            </div>
-          )}
           {okMsg && (
             <div className="text-xs text-green-700 bg-green-500/10 border border-green-500/30 rounded-md px-3 py-2">
               {okMsg}
@@ -194,7 +207,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
           {!okMsg && (
             <button
               onClick={handleSubmit}
-              disabled={!canSubmit}
+              disabled={!canSubmit || Boolean(errorDialog)}
               className="px-4 py-1.5 text-sm font-medium text-white bg-accent rounded-lg
                          hover:bg-accent-hover transition-colors disabled:opacity-50
                          flex items-center gap-1.5"
@@ -206,6 +219,41 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
             </button>
           )}
         </div>
+
+        {errorDialog && (
+          <div
+            className="absolute inset-0 z-[60] flex items-center justify-center bg-black/40 px-4"
+            onClick={() => setErrorDialog(null)}
+          >
+            <div
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="import-skill-error-title"
+              className="w-full max-w-sm rounded-xl border border-border bg-surface p-5 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h4
+                id="import-skill-error-title"
+                className="text-sm font-semibold text-text-primary"
+              >
+                Could not import
+              </h4>
+              <p className="mt-2.5 text-sm text-text-secondary leading-relaxed break-words">
+                {errorDialog}
+              </p>
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  className="px-4 py-1.5 text-sm font-medium text-white bg-accent rounded-lg
+                    hover:bg-accent-hover transition-colors"
+                  onClick={() => setErrorDialog(null)}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

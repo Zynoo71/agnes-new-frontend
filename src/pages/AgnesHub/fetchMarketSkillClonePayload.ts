@@ -5,6 +5,8 @@ export type SkillCreatePrefill = {
   name: string;
   summary: string;
   files: Record<string, string>;
+  /** 克隆源在市场上的类型，用于编辑器「新增文件」白名单与提交 skillType 默认 */
+  skillType?: "guide" | "tool";
 };
 
 function stripRpcPrefix(msg: string): string {
@@ -56,7 +58,10 @@ export async function fetchMarketSkillClonePayload(skill: SkillInfo): Promise<Sk
     throw new Error("No files found for this published version.");
   }
 
-  return { name, summary, files };
+  const st = (skill.skillType || "guide").trim().toLowerCase();
+  const skillType: "guide" | "tool" = st === "tool" ? "tool" : "guide";
+
+  return { name, summary, files, skillType };
 }
 
 export async function fetchMarketSkillClonePayloadSafe(

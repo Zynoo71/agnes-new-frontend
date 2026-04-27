@@ -14,6 +14,58 @@ const ALLOWED_GENERATED_FILES = new Set<string>([
   "references/reference.md",
 ]);
 
+/** 与 agnes_core skill_hub 中 toolkit 白名单对齐（新增文件名校验，非穷举时以后端为准） */
+const TOOL_NEW_FILE_BARE = new Set([
+  "license",
+  "dockerfile",
+  "makefile",
+  "procfile",
+]);
+const TOOL_NEW_FILE_EXTS = new Set([
+  ".md",
+  ".py",
+  ".pyi",
+  ".sh",
+  ".bash",
+  ".zsh",
+  ".ps1",
+  ".ts",
+  ".tsx",
+  ".mjs",
+  ".cjs",
+  ".js",
+  ".jsx",
+  ".json",
+  ".jsonc",
+  ".yaml",
+  ".yml",
+  ".toml",
+  ".ini",
+  ".cfg",
+  ".conf",
+  ".txt",
+  ".html",
+  ".htm",
+  ".css",
+  ".sql",
+  ".rs",
+  ".go",
+  ".mod",
+  ".sum",
+  ".vue",
+  ".svelte",
+]);
+
+function isToolkitNewFileNameOk(seg: string): boolean {
+  const base = seg.trim();
+  if (!base) return false;
+  const b = base.toLowerCase();
+  if (TOOL_NEW_FILE_BARE.has(b)) return true;
+  if (!b.includes(".")) return false;
+  const ext = b.slice(b.lastIndexOf(".")).toLowerCase();
+  return TOOL_NEW_FILE_EXTS.has(ext);
+}
+
 const PLACEHOLDER_README = `# My Skill
 
 A short description of what this skill is for and when it's useful.
@@ -687,7 +739,13 @@ function AgnesHelpModal({ skillType, onClose, onAccepted }: AgnesHelpModalProps)
 // Step1：类型选择（仅 create 用）
 // ---------------------------------------------------------------------------
 
-function Step1({ onPickGuide }: { onPickGuide: () => void }) {
+function Step1({
+  onPickGuide,
+  onPickTool,
+}: {
+  onPickGuide: () => void;
+  onPickTool: () => void;
+}) {
   return (
     <div className="px-6 py-6 grid grid-cols-2 gap-3">
       <button
@@ -702,22 +760,24 @@ function Step1({ onPickGuide }: { onPickGuide: () => void }) {
         </div>
         <div className="text-sm font-semibold text-text-primary">Guide</div>
         <div className="text-xs text-text-tertiary leading-relaxed">
-          Markdown-only skill. Works with the agent via SKILL.md instructions and reference docs.
+          Markdown-only skill. New files must be <span className="text-text-secondary">.md</span> (plus README, SKILL, LICENSE). Best for playbooks and reference docs.
         </div>
       </button>
-      <div
-        className="flex flex-col items-start gap-2 p-5 rounded-xl border border-border bg-surface
-                   opacity-50 cursor-not-allowed"
+      <button
+        onClick={onPickTool}
+        className="flex flex-col items-start gap-2 p-5 rounded-xl border border-border
+                   hover:border-accent/40 hover:bg-accent/5 transition-all text-left"
       >
-        <div className="w-9 h-9 rounded-lg bg-text-tertiary/15 text-text-tertiary flex items-center justify-center">
+        <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.224 5.183a2.25 2.25 0 01-3.182 0L1.93 17.94a2.25 2.25 0 010-3.182l5.183-4.224m6.857-3.95l1.527-1.527M11.42 15.17a6 6 0 01-8.25-8.25l4.5 4.5m3.75 3.75L19.5 12m0 0l-3.75-3.75M19.5 12H8.25" />
           </svg>
         </div>
         <div className="text-sm font-semibold text-text-primary">Toolkit</div>
-        <div className="text-xs text-text-tertiary leading-relaxed">Code + tools skill. Coming soon.</div>
-        <span className="text-[9px] uppercase tracking-wider text-text-tertiary mt-1">Soon</span>
-      </div>
+        <div className="text-xs text-text-tertiary leading-relaxed">
+          Scripts and config allowed (e.g. <span className="text-text-secondary">.py</span>, <span className="text-text-secondary">.sh</span>, <span className="text-text-secondary">.json</span>). The package is reviewed on save.
+        </div>
+      </button>
     </div>
   );
 }
@@ -739,6 +799,8 @@ function defaultFiles(): FileMap {
  *   useMySkillsStore；admin 走 AdminOfficial store）
  * - ``loadForEdit`` 拉编辑预填的 skill + 全量文件
  */
+export type SkillKind = "guide" | "tool";
+
 export interface SkillEditorApi {
   loading: boolean;
   create: (input: {
@@ -758,7 +820,7 @@ export interface SkillEditorApi {
     skill?: { name?: string };
   }>;
   loadForEdit: (skillId: string) => Promise<{
-    skill: { name: string; summary: string };
+    skill: { name: string; summary: string; skillType: SkillKind };
     files: { path: string; content: string }[];
   }>;
 }
@@ -791,8 +853,13 @@ function useDefaultMineApi(): SkillEditorApi {
       const resp = await agentClient.getSkillForEdit({ skillId });
       const sk = resp.skill;
       if (!sk) throw new Error("Skill not found");
+      const st = (sk.skillType || "guide").trim().toLowerCase();
       return {
-        skill: { name: sk.name, summary: sk.summary },
+        skill: {
+          name: sk.name,
+          summary: sk.summary,
+          skillType: st === "tool" ? "tool" : "guide",
+        },
         files: resp.files.map((f) => ({ path: f.path, content: f.content })),
       };
     },
@@ -828,10 +895,20 @@ interface EditorProps {
   flavor?: "user" | "admin-official";
   /** create 模式：从市场克隆等场景预填包内容（仍走新建 skill）。 */
   createPrefill?: SkillCreatePrefill;
+  /** create：Step1 选择的类型；若带 createPrefill.skillType 则预填优先生效。 */
+  initialSkillKind: SkillKind;
   onClose: () => void;
 }
 
-function Editor({ mode, skillId, api, flavor: _flavor = "user", createPrefill, onClose }: EditorProps) {
+function Editor({
+  mode,
+  skillId,
+  api,
+  flavor: _flavor = "user",
+  createPrefill,
+  initialSkillKind,
+  onClose,
+}: EditorProps) {
   // 编辑器只负责"保存草稿"。发布的入口收敛在卡片列表的 Publish 按钮上 ——
   // 让"编辑 → 保存 → 在列表里再决定要不要发布"成为单一明确流程，避免编辑中误发布。
   const { loading: creating, create, update, loadForEdit } = api;
@@ -877,6 +954,12 @@ function Editor({ mode, skillId, api, flavor: _flavor = "user", createPrefill, o
   const [okMsg, setOkMsg] = useState<string>("");
   const [loadingDetail, setLoadingDetail] = useState(mode === "edit");
   const [submitting, setSubmitting] = useState(false);
+  // 指导型 = 仅可新增 .md；工具型 = 可新增代码/配置等（与后端白名单一致）
+  const [skillKind, setSkillKind] = useState<SkillKind>(() => {
+    if (mode === "create" && createPrefill?.skillType) return createPrefill.skillType;
+    if (mode === "create") return initialSkillKind;
+    return "guide";
+  });
   // AgnesHelp 弹窗 —— 仅在 create 模式下可触发
   const [agnesHelpOpen, setAgnesHelpOpen] = useState(false);
 
@@ -929,6 +1012,7 @@ function Editor({ mode, skillId, api, flavor: _flavor = "user", createPrefill, o
         setName(sk.name);
         initialNameRef.current = sk.name;
         setSummary(sk.summary);
+        setSkillKind(resp.skill.skillType);
         setFiles(m);
         // 把已有文件路径里的目录都展开
         const open = new Set<string>(["examples", "references"]);
@@ -979,7 +1063,27 @@ function Editor({ mode, skillId, api, flavor: _flavor = "user", createPrefill, o
       setExplicitDirs((prev) => new Set(prev).add(full));
       setExpanded((prev) => new Set(prev).add(full));
     } else {
-      const finalName = cleaned.toLowerCase().endsWith(".md") ? cleaned : `${cleaned}.md`;
+      let finalName: string;
+      if (skillKind === "guide") {
+        finalName = cleaned.toLowerCase().endsWith(".md") ? cleaned : `${cleaned}.md`;
+      } else {
+        const c = cleaned.trim();
+        const cLow = c.toLowerCase();
+        if (!c.includes(".") && TOOL_NEW_FILE_BARE.has(cLow)) {
+          // Dockerfile / Makefile 等
+          finalName = c;
+        } else if (!c.includes(".")) {
+          finalName = `${c}.md`;
+        } else if (!isToolkitNewFileNameOk(c)) {
+          setError(
+            "For toolkit skills, new files must be .md, LICENSE, Dockerfile, Makefile, or a supported code/config extension.",
+          );
+          setNewRow(null);
+          return;
+        } else {
+          finalName = c;
+        }
+      }
       const full = joinPath(parent, finalName);
       if (files[full] !== undefined) {
         setError(`File already exists: ${full}`);
@@ -1036,7 +1140,7 @@ function Editor({ mode, skillId, api, flavor: _flavor = "user", createPrefill, o
         const skill = await create({
           name: trimmedName,
           summary: summary.trim(),
-          skillType: "guide",
+          skillType: skillKind,
           files: payload,
         });
         setOkMsg(`Created "${skill.name}". Saved as draft — Publish from the card list when you're ready.`);
@@ -1200,7 +1304,7 @@ function Editor({ mode, skillId, api, flavor: _flavor = "user", createPrefill, o
 
       <div className="px-6 py-3 flex items-center justify-between border-t border-border-light gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          {!okMsg && mode === "create" && (
+          {!okMsg && mode === "create" && skillKind === "guide" && (
             <AgnesHelpButton
               disabled={submitting}
               onClick={() => setAgnesHelpOpen(true)}
@@ -1275,10 +1379,12 @@ export function SkillEditorModal({
   onClose,
 }: SkillEditorModalProps) {
   const [step, setStep] = useState<1 | 2>(mode === "edit" ? 2 : createPrefill ? 2 : 1);
+  const [createSkillType, setCreateSkillType] = useState<SkillKind>("guide");
   const defaultApi = useDefaultMineApi();
   const effectiveApi = api ?? defaultApi;
   const isAdmin = flavor === "admin-official";
   const titlePrefix = isAdmin ? "official skill" : "skill";
+  const createKindForEditor: SkillKind = createPrefill?.skillType ?? createSkillType;
 
   // Step1（仅类型选择）只是两张卡片，按内容自适应高度即可，
   // 不要再被 editor 的 720px 撑出一大片空白。
@@ -1298,7 +1404,9 @@ export function SkillEditorModal({
                 ? `Edit ${titlePrefix}${initialSkillName ? ` · ${initialSkillName}` : ""}`
                 : step === 1
                   ? `Create ${titlePrefix}`
-                  : `New ${isAdmin ? "official " : ""}guide skill`}
+                  : `New ${isAdmin ? "official " : ""}${
+                      createKindForEditor === "tool" ? "toolkit" : "guide"
+                    } skill`}
             </h3>
             <p className="text-xs text-text-tertiary mt-0.5">
               {mode === "edit"
@@ -1326,17 +1434,29 @@ export function SkillEditorModal({
 
         <div className="flex-1 min-h-0 flex flex-col">
           {step === 1
-            ? <Step1 onPickGuide={() => setStep(2)} />
+            ? (
+                <Step1
+                  onPickGuide={() => {
+                    setCreateSkillType("guide");
+                    setStep(2);
+                  }}
+                  onPickTool={() => {
+                    setCreateSkillType("tool");
+                    setStep(2);
+                  }}
+                />
+              )
             : (
-              <Editor
-                mode={mode}
-                skillId={skillId}
-                api={effectiveApi}
-                flavor={flavor}
-                createPrefill={createPrefill}
-                onClose={onClose}
-              />
-            )
+                <Editor
+                  mode={mode}
+                  skillId={skillId}
+                  api={effectiveApi}
+                  flavor={flavor}
+                  createPrefill={createPrefill}
+                  initialSkillKind={createKindForEditor}
+                  onClose={onClose}
+                />
+              )
           }
         </div>
       </div>
