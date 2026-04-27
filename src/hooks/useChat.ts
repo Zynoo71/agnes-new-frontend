@@ -6,9 +6,21 @@ import { useConversationStore, type AgentTask, type ContentBlock, type Message, 
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
+import { PENDING_SKILLS_CONV_ID, useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
+import { hydrateConversationSkillsFromServer, persistConversationSkillSelections } from "@/lib/conversationSkillSync";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
 const getState = () => useConversationStore.getState();
+
+/**
+ * 当前 conversation 在 chatSelectedSkillsStore 中的选用 → proto SelectedSkill。
+ * 后端会校验/过滤，此处全量上送，不在前端做权限判断。
+ */
+function pickSelectedSkillsForRequest(convId: string): { skillId: string; version: string }[] {
+  const list = useChatSelectedSkillsStore.getState().get(convId);
+  return list.filter((it) => it.skillId).map((it) => ({ skillId: it.skillId, version: it.version || "" }));
+}
+
 // ── Module-level singleton abort management ──
 // Shared across all useChat() call sites — fixes the multi-instance bug.
 
@@ -463,6 +475,12 @@ export function useChat() {
     const id = await createAgnesConversation();
     getState().setConversationId(id);
     useConversationListStore.getState().add(id, getState().agentType, getState().systemPromptId ?? undefined);
+    const skillsStore = useChatSelectedSkillsStore.getState();
+    const pending = skillsStore.get(PENDING_SKILLS_CONV_ID);
+    if (pending.length > 0) {
+      skillsStore.setForConv(id, pending);
+      skillsStore.clear(PENDING_SKILLS_CONV_ID);
+    }
     return id;
   }, []);
 
@@ -488,6 +506,12 @@ export function useChat() {
       useConversationListStore.getState().update(convId, { title });
     }
 
+    try {
+      await persistConversationSkillSelections(convId);
+    } catch (e) {
+      console.warn("[useChat] persist conversation skills before ChatStream failed", e);
+    }
+
     const extraContext = Object.keys(s.extraContext).length > 0 ? s.extraContext : undefined;
     const stream = agentClient.chatStream(
       {
@@ -502,6 +526,7 @@ export function useChat() {
         })),
         systemPromptId: s.systemPromptId ? BigInt(s.systemPromptId) : 0n,
         extraContext,
+        selectedSkills: pickSelectedSkillsForRequest(convId),
       },
       { signal },
     );
@@ -548,8 +573,18 @@ export function useChat() {
     s.startAssistantMessage(requestStartedAt);
     const signal = beginNewTurn(convId);
 
+    try {
+      await persistConversationSkillSelections(convId);
+    } catch (e) {
+      console.warn("[useChat] persist conversation skills before EditResend failed", e);
+    }
+
     const stream = agentClient.editResendStream(
-      { conversationId: BigInt(convId), query: newQuery },
+      {
+        conversationId: BigInt(convId),
+        query: newQuery,
+        selectedSkills: pickSelectedSkillsForRequest(convId),
+      },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -565,8 +600,17 @@ export function useChat() {
     s.startAssistantMessage(requestStartedAt);
     const signal = beginNewTurn(convId);
 
+    try {
+      await persistConversationSkillSelections(convId);
+    } catch (e) {
+      console.warn("[useChat] persist conversation skills before Regenerate failed", e);
+    }
+
     const stream = agentClient.regenerateStream(
-      { conversationId: BigInt(convId) },
+      {
+        conversationId: BigInt(convId),
+        selectedSkills: pickSelectedSkillsForRequest(convId),
+      },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -589,6 +633,8 @@ export function useChat() {
   const selectConversation = useCallback(async (id: string) => {
     const s = getState();
     if (s.conversationId === id) return;
+
+    useChatSelectedSkillsStore.getState().clear(PENDING_SKILLS_CONV_ID);
 
     // Abort any existing resume stream for the target
     abortMap.get(id)?.abort();
@@ -616,6 +662,7 @@ export function useChat() {
     }
 
     getState().setLoadingHistory(false);
+    void hydrateConversationSkillsFromServer(id);
 
     const shouldResume = s.streamingConvIds.has(id) || resp.isRunning;
 

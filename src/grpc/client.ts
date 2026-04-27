@@ -4,11 +4,26 @@ import { KwAgentServiceService } from "@/gen/kw_agent_service/v1/kw_agent_servic
 import { useUserStore } from "@/stores/userStore";
 
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
+/** 与 `agnesConversation.ts` 一致；未传时后端会拒掉 Skill Hub 等 RPC（需 x-app-id）。 */
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
+
+const API_BASE_URL =
+  (typeof import.meta.env.VITE_API_BASE_URL === "string" && import.meta.env.VITE_API_BASE_URL.trim()) ||
+  "https://agnesx-dev-sg.kiwiar.com";
 
 function generateTraceId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export const ADMIN_TOKEN_STORAGE_KEY = "agnes.admin.token";
+
+function getAdminToken(): string {
+  try {
+    return localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
 }
 
 const injectHeadersInterceptor: Interceptor = (next) => (req) => {
@@ -23,11 +38,16 @@ const injectHeadersInterceptor: Interceptor = (next) => (req) => {
   if (APP_ID) {
     req.header.set("x-app-id", APP_ID);
   }
+  // Admin RPC 用，普通 RPC 后端会忽略；登录前/登出后 localStorage 为空也无害。
+  const adminToken = getAdminToken();
+  if (adminToken) {
+    req.header.set("x-admin-token", adminToken);
+  }
   return next(req);
 };
 
 const transport = createGrpcWebTransport({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || "",
+  baseUrl: API_BASE_URL,
   interceptors: [injectHeadersInterceptor],
 });
 
