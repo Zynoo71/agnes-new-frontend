@@ -310,6 +310,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
             if (b.data.kind === "report") supersededTools.add("write_report");
             else if (b.data.kind === "image") supersededTools.add("generate_image");
             else if (b.data.kind === "video") supersededTools.add("generate_video");
+            else if (b.data.kind === "slide") supersededTools.add("delegate_to_slide_agent");
           }
 
           const rendered = message.blocks.map((block, i) => {

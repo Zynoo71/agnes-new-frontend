@@ -343,7 +343,7 @@ export type FileData = ChatAttachment;
 // GenerationArtifact: spec §"write_report 工具 → 报告卡片". Single wire type
 // "GenerationArtifact" with `kind` discriminator (report | image | video).
 // Decoupled from tool_call_id — front-end pairs by toolName + temporal locality.
-export type ArtifactKind = "report" | "image" | "video";
+export type ArtifactKind = "report" | "image" | "video" | "slide";
 
 export interface ImageArtifactResult {
   url: string;
@@ -370,6 +370,18 @@ export interface VideoArtifactResult {
   webpDuration?: number;
 }
 
+export interface SlideArtifactData {
+  eventId: string;
+  kind: "slide";
+  title: string;
+  html: string;
+  cover: string;
+  pageCount: number;
+  slideUrls: string[];
+  outlinePath: string;
+  previewPath: string;
+}
+
 export type GenerationArtifactData =
   | { eventId: string; kind: "report"; title: string; content: string; durationMs: number }
   | {
@@ -391,7 +403,8 @@ export type GenerationArtifactData =
       results: VideoArtifactResult[];
       taskId: string;
       traceId: string;
-    };
+    }
+  | SlideArtifactData;
 
 // kind → ToolCallStart.toolName that emits this artifact. Used to find the
 // matching skeleton in `updated.blocks` for in-place replacement.
@@ -399,6 +412,7 @@ const KIND_TO_TOOL_NAME: Record<ArtifactKind, string> = {
   report: "write_report",
   image: "generate_image",
   video: "generate_video",
+  slide: "delegate_to_slide_agent",
 };
 
 function parseGenerationArtifact(
@@ -415,6 +429,19 @@ function parseGenerationArtifact(
       title,
       content: (payload.content as string) ?? "",
       durationMs: typeof payload.duration_ms === "number" ? payload.duration_ms : 0,
+    };
+  }
+  if (kind === "slide") {
+    return {
+      eventId,
+      kind: "slide",
+      title,
+      html: (payload.html as string) ?? "",
+      cover: (payload.cover as string) ?? "",
+      pageCount: typeof payload.page_count === "number" ? payload.page_count : 0,
+      slideUrls: Array.isArray(payload.slide_urls) ? (payload.slide_urls as string[]) : [],
+      outlinePath: (payload.outline_path as string) ?? "",
+      previewPath: (payload.preview_path as string) ?? "",
     };
   }
   if (kind === "image" || kind === "video") {
