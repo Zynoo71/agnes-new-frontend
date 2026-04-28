@@ -22,7 +22,7 @@ function buildPageList(current: number, totalPages: number): (number | "...")[] 
 }
 
 /**
- * AgnesHub 列表分页（§7）：右下角，页码可点 + 总条数（灰色）。
+ * SkillsHub 列表分页：右下角，页码可点 + 总条数（灰色）。
  *
  * - 当 ``total <= pageSize`` 仍渲染（仅显示总条数 + 单页 1），避免列表底部突然没尾。
  * - ``loading`` 期间禁用按钮，避免双击连发。

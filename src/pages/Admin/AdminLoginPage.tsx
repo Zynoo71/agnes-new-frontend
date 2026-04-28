@@ -59,7 +59,7 @@ export function AdminLoginPage() {
               />
             </svg>
           </div>
-          <h1 className="text-base font-semibold text-text-primary">AgnesHub Admin</h1>
+          <h1 className="text-base font-semibold text-text-primary">SkillsHub Admin</h1>
           <p className="text-xs text-text-tertiary">Sign in to review and manage skills.</p>
         </div>
 

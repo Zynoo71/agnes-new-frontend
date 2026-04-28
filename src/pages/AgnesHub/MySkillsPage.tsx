@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { useShallow } from "zustand/shallow";
 import { useMySkillsStore } from "@/stores/mySkillsStore";
 import type { SkillInfo } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
+import { SourceBadge } from "@/components/SourceBadge";
+import { SkillTypeBadge } from "@/components/SkillTypeBadge";
 import { AgnesHubLayout } from "./AgnesHubLayout";
 import { Pagination } from "./Pagination";
 import { SkillDetailModal } from "./SkillDetailModal";
@@ -20,16 +22,6 @@ function formatRelative(ms: bigint | number): string {
   const d = Math.floor(h / 24);
   if (d < 30) return `${d}d ago`;
   return new Date(n).toLocaleDateString();
-}
-
-function SourceBadge({ source }: { source: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    agnes: { label: "Official", cls: "bg-accent/10 text-accent" },
-    github: { label: "GitHub", cls: "bg-text-tertiary/15 text-text-secondary" },
-    user: { label: "Community", cls: "bg-text-tertiary/15 text-text-secondary" },
-  };
-  const v = map[source] ?? { label: source || "Unknown", cls: "bg-text-tertiary/15 text-text-secondary" };
-  return <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${v.cls}`}>{v.label}</span>;
 }
 
 const RELATION_FILTERS = [
@@ -127,9 +119,11 @@ function SkillCard({
     >
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-text-primary truncate">{skill.name}</span>
+          {/* 标题单独一行并 truncate；来源/类型固定下一行，避免短标题时标签跟在名称后面、长标题时又换行导致不一致 */}
+          <div className="text-sm font-semibold text-text-primary truncate pr-1">{skill.name}</div>
+          <div className="flex items-center gap-1.5 flex-wrap mt-1">
             <SourceBadge source={skill.source} />
+            <SkillTypeBadge skillType={skill.skillType} />
           </div>
           <div className="text-[10px] text-text-tertiary mt-0.5">
             {skill.likeCount.toString()} uses

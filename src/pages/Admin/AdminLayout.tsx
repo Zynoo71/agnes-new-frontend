@@ -62,7 +62,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 />
               </svg>
             </div>
-            <h2 className="text-base font-semibold text-text-primary">AgnesHub Admin</h2>
+            <h2 className="text-base font-semibold text-text-primary">SkillsHub Admin</h2>
           </div>
           <nav className="flex items-center gap-1">
             {TABS.map((tab) => {

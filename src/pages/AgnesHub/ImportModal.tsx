@@ -83,7 +83,9 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
         );
         return;
       }
-      const resp = await agentClient.importSkillFromGithub({ url: url.trim() });
+      const resp = await agentClient.importSkillFromGithub({
+        url: url.trim(),
+      });
       const skill = resp.skill;
       const needsApproval = resp.needsApproval;
       setOkMsg(
@@ -114,7 +116,8 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
           <div>
             <h3 className="text-base font-semibold text-text-primary">Import skill</h3>
             <p className="text-xs text-text-tertiary mt-0.5">
-              Import a skill from a public source. SKILL.md required at the repo root.
+              Import a skill from a public source. The repository must contain exactly one SKILL.md file
+              (anywhere in the tree).
             </p>
           </div>
           <button
@@ -182,8 +185,8 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                            focus:outline-none focus:border-accent transition-colors disabled:opacity-60"
               />
               <p className="text-[11px] text-text-tertiary mt-1.5 leading-relaxed">
-                Public repos only for now. The repo root must contain a <code>SKILL.md</code> file.
-                The first H1 in SKILL.md becomes the skill name.
+                Public repos only. If the repo has more than one SKILL.md (e.g. monorepo), split them or keep a
+                single file before importing.
               </p>
             </div>
           )}

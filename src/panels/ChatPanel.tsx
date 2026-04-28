@@ -10,6 +10,7 @@ import { EventStream } from "@/components/EventStream";
 import { SystemPromptSelector } from "@/components/SystemPromptSelector";
 import { ChatSkillsPicker } from "@/components/ChatSkillsPicker";
 import { hydrateConversationSkillsFromServer } from "@/lib/conversationSkillSync";
+import { syncExtraContextDisallowedSkills } from "@/config/agentAdditionalDisallowedSkills";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import type { AgentTask, ContentBlock, Message, SourceCitation, WorkerState } from "@/stores/conversationStore";
 
@@ -834,6 +835,8 @@ export function ChatPanel() {
               key={t}
               onClick={() => {
                 setAgentType(t);
+                const prevEc = useConversationStore.getState().extraContext;
+                useConversationStore.getState().setExtraContext(syncExtraContextDisallowedSkills(prevEc, t));
                 if (conversationId) useConversationListStore.getState().update(conversationId, { agentType: t });
               }}
               className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all capitalize ${

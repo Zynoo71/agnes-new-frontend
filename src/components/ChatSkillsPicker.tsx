@@ -10,6 +10,8 @@ import {
   hydrateConversationSkillsFromServer,
   persistConversationSkillSelections,
 } from "@/lib/conversationSkillSync";
+import { SourceBadge } from "@/components/SourceBadge";
+import { SkillTypeBadge } from "@/components/SkillTypeBadge";
 import { useMySkillsStore } from "@/stores/mySkillsStore";
 import { create } from "@bufbuild/protobuf";
 import {
@@ -49,7 +51,7 @@ function skillInfoFromSessionSelection(sel: ChatSkillSelection): SkillInfo {
 }
 
 // 模块级缓存：避免 Modal 每次开关都重拉同一个 skill 的 version 列表。
-// 弹窗关闭后保留，下次打开瞬时呈现；若上游真的有变更（比如用户在 AgnesHub
+// 弹窗关闭后保留，下次打开瞬时呈现；若上游真的有变更（比如用户在 SkillsHub
 // 发布了新版本），等下次手动刷新页面也能接受。
 const versionCache = new Map<
   string,
@@ -293,6 +295,14 @@ function SkillsPickerModal({ conversationId, onClose }: ModalProps) {
     return [...mySkills, ...extras];
   }, [mySkills, selected]);
 
+  const skillMetaById = useMemo(() => {
+    const m = new Map<string, SkillInfo>();
+    for (const sk of mergedGridSkills) {
+      m.set(sk.id, sk);
+    }
+    return m;
+  }, [mergedGridSkills]);
+
   const filtered = useMemo(() => {
     const k = keyword.trim().toLowerCase();
     if (!k) return mergedGridSkills;
@@ -409,9 +419,12 @@ function SkillsPickerModal({ conversationId, onClose }: ModalProps) {
                   key={s.skillId}
                   className="flex items-start justify-between gap-3 text-xs"
                 >
-                  <span className="text-text-primary font-medium min-w-0 break-words">
-                    {s.name?.trim() || s.skillId}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                    <span className="text-text-primary font-medium min-w-0 break-words">
+                      {s.name?.trim() || s.skillId}
+                    </span>
+                    <SkillTypeBadge skillType={skillMetaById.get(s.skillId)?.skillType} />
+                  </div>
                   <span
                     className="shrink-0 font-mono text-[11px] text-text-tertiary tabular-nums"
                     title="Version"
@@ -465,7 +478,7 @@ function SkillsPickerModal({ conversationId, onClose }: ModalProps) {
           ) : filtered.length === 0 ? (
             <div className="text-sm text-text-tertiary text-center py-12">
               {mergedGridSkills.length === 0
-                ? "No skills in My Skills yet — add some from AgnesHub first."
+                ? "No skills in My Skills yet — add some from SkillsHub first."
                 : "No skills match your search."}
             </div>
           ) : (
@@ -542,17 +555,6 @@ interface CardProps {
   addDisabled: boolean;
   onToggle: () => void;
   onVersionChange: (version: string) => void;
-}
-
-function SourceBadge({ source }: { source: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    agnes: { label: "Official", cls: "bg-accent/10 text-accent" },
-    github: { label: "GitHub", cls: "bg-text-tertiary/15 text-text-secondary" },
-    user: { label: "Community", cls: "bg-text-tertiary/15 text-text-secondary" },
-    session: { label: "会话已选", cls: "bg-text-tertiary/15 text-text-secondary" },
-  };
-  const v = map[source] ?? { label: source || "Unknown", cls: "bg-text-tertiary/15 text-text-secondary" };
-  return <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${v.cls}`}>{v.label}</span>;
 }
 
 function PickerSkillCard({
@@ -632,6 +634,7 @@ function PickerSkillCard({
               {skill.name}
             </span>
             <SourceBadge source={skill.source} />
+            <SkillTypeBadge skillType={skill.skillType} />
           </div>
           <div className="text-[10px] text-text-tertiary mt-0.5">
             {skill.likeCount.toString()} uses

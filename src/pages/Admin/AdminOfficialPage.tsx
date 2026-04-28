@@ -3,6 +3,8 @@ import { useShallow } from "zustand/shallow";
 import { useAdminOfficialStore } from "@/stores/adminOfficialStore";
 import type { SkillInfo } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
 import { agentClient } from "@/grpc/client";
+import { SourceBadge } from "@/components/SourceBadge";
+import { SkillTypeBadge } from "@/components/SkillTypeBadge";
 import { Pagination } from "@/pages/AgnesHub/Pagination";
 import { SkillDetailModal } from "@/pages/AgnesHub/SkillDetailModal";
 import {
@@ -78,11 +80,10 @@ function OfficialCard({ skill, busy, onOpenDetail, onEdit, onPublish, onDelete }
     >
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-text-primary truncate">{skill.name}</span>
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/10 text-accent shrink-0">
-              Official
-            </span>
+            <SourceBadge source="agnes" />
+            <SkillTypeBadge skillType={skill.skillType} />
             {hasNewDraft && (
               <span
                 className="text-[10px] text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0"

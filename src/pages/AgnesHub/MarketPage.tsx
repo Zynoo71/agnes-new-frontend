@@ -2,22 +2,12 @@ import { useEffect, useState } from "react";
 import { useShallow } from "zustand/shallow";
 import { useMarketSkillsStore } from "@/stores/marketSkillsStore";
 import type { SkillInfo } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
+import { SourceBadge } from "@/components/SourceBadge";
+import { SkillTypeBadge } from "@/components/SkillTypeBadge";
 import { AgnesHubLayout } from "./AgnesHubLayout";
 import { ImportModal } from "./ImportModal";
 import { Pagination } from "./Pagination";
 import { SkillDetailModal } from "./SkillDetailModal";
-
-function SourceBadge({ source }: { source: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    agnes: { label: "Official", cls: "bg-accent/10 text-accent" },
-    github: { label: "GitHub", cls: "bg-text-tertiary/15 text-text-secondary" },
-    user: { label: "Community", cls: "bg-text-tertiary/15 text-text-secondary" },
-  };
-  const v = map[source] ?? { label: source || "Unknown", cls: "bg-text-tertiary/15 text-text-secondary" };
-  return (
-    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${v.cls}`}>{v.label}</span>
-  );
-}
 
 function SkillCard({
   skill,
@@ -54,8 +44,9 @@ function SkillCard({
         <div className="flex-1 min-w-0 pr-16">
           <div className="text-sm font-semibold text-text-primary truncate">{skill.name}</div>
           {/* SourceBadge 移到 meta 行，避免与右上角 Added pill 重叠 */}
-          <div className="flex items-center gap-1.5 text-[10px] text-text-tertiary mt-0.5">
+          <div className="flex items-center gap-1.5 text-[10px] text-text-tertiary mt-0.5 flex-wrap">
             <SourceBadge source={skill.source} />
+            <SkillTypeBadge skillType={skill.skillType} />
             <span>
               {skill.likeCount.toString()} uses
               {skill.latestPublishedVersion && ` · ${skill.latestPublishedVersion}`}
@@ -187,7 +178,7 @@ export function MarketPage() {
         <input
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search by name or description..."
+          placeholder="Search by name..."
           className="pl-8 pr-8 py-1.5 text-sm border border-border rounded-lg bg-surface w-72
                      focus:outline-none focus:border-accent transition-colors"
         />

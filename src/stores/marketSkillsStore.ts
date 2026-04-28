@@ -36,6 +36,9 @@ interface MarketSkillsStore {
 
 const DEFAULT_PAGE_SIZE = 20;
 
+/** Monotonic counter so overlapping listMarketSkills responses cannot overwrite newer results (debounced search). */
+let loadSeq = 0;
+
 export const useMarketSkillsStore = create<MarketSkillsStore>((set, get) => ({
   items: [],
   total: 0,
@@ -49,7 +52,7 @@ export const useMarketSkillsStore = create<MarketSkillsStore>((set, get) => ({
   addingId: null,
 
   load: async (opts) => {
-    if (get().loading) return;
+    const seq = ++loadSeq;
     const page = opts?.page ?? 1;
     const pageSize = opts?.pageSize ?? get().pageSize;
     const keyword = opts?.keyword ?? get().keyword;
@@ -62,6 +65,7 @@ export const useMarketSkillsStore = create<MarketSkillsStore>((set, get) => ({
         keyword,
         source,
       });
+      if (seq !== loadSeq) return;
       set({
         items: resp.items,
         total: resp.total,
@@ -73,9 +77,10 @@ export const useMarketSkillsStore = create<MarketSkillsStore>((set, get) => ({
         loadError: null,
       });
     } catch (e) {
+      if (seq !== loadSeq) return;
       set({ loadError: formatRpcError(e), items: [], total: 0, loaded: false });
     } finally {
-      set({ loading: false });
+      if (seq === loadSeq) set({ loading: false });
     }
   },
 
