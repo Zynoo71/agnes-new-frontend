@@ -20,6 +20,7 @@ import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { TaskListPanel } from "./TaskListPanel";
 import { SheetArtifactCard } from "./SheetArtifactCard";
+import { GenerationArtifactCard } from "./GenerationArtifactCard";
 // R21: SheetPlanPanel 已下线（Agent Swarm 卡片完整覆盖其信息）
 // import { SheetPlanPanel } from "./SheetPlanPanel";
 import { CodeBlock } from "./CodeBlock";
@@ -299,6 +300,18 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
             (b) => b.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(b.data.toolName),
           );
 
+          // GenerationArtifact: when a kind's artifact is present in this
+          // message, suppress the matching tool's ToolCallStart skeleton so
+          // we don't double-render skeleton + final card. Covers live (race),
+          // history replay (both blocks persist), and reload edge cases.
+          const supersededTools = new Set<string>();
+          for (const b of message.blocks) {
+            if (b.type !== "GenerationArtifact") continue;
+            if (b.data.kind === "report") supersededTools.add("write_report");
+            else if (b.data.kind === "image") supersededTools.add("generate_image");
+            else if (b.data.kind === "video") supersededTools.add("generate_video");
+          }
+
           const rendered = message.blocks.map((block, i) => {
             const isSwarm = block.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(block.data.toolName);
 
@@ -315,6 +328,11 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
 
             // Planning tools & cite_sources → filter out
             if (block.type === "ToolCallStart" && (PLANNING_TOOL_NAMES.has(block.data.toolName) || block.data.toolName === "cite_sources")) {
+              return null;
+            }
+
+            // Tool skeleton superseded by its GenerationArtifact card.
+            if (block.type === "ToolCallStart" && supersededTools.has(block.data.toolName)) {
               return null;
             }
 
@@ -498,6 +516,8 @@ const BlockRenderer = memo(function BlockRenderer({
       return <MemoryUpdateBlock data={block.data} />;
     case "PromptEnhanced":
       return <PromptEnhancedCard data={block.data} />;
+    case "GenerationArtifact":
+      return <div className="my-3"><GenerationArtifactCard data={block.data} /></div>;
     case "SlideOutline":
       return <SlideOutlineBlock data={block.data} />;
     case "SlideDesignSystem":
