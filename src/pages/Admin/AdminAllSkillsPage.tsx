@@ -10,6 +10,10 @@ import { AdminLayout } from "./AdminLayout";
 
 const HARD_DELETE_ALLOWED = new Set(["agnes", "github", "gitee", "user"]);
 
+/** 与 SkillsHub 卡片一致：右上角状态中性样式 */
+const ADMIN_STATUS_BADGE =
+  "border border-border bg-surface-hover text-text-secondary rounded px-1.5 py-0.5";
+
 const SOURCE_FILTERS: { value: string; label: string }[] = [
   { value: "", label: "All sources" },
   { value: "agnes", label: "Official (agnes)" },
@@ -21,18 +25,18 @@ const SOURCE_FILTERS: { value: string; label: string }[] = [
 function pickStatus(skill: SkillInfo): { text: string; cls: string } {
   const status = skill.marketApprovalStatus;
   if (skill.marketDelisted) {
-    return { text: "Delisted", cls: "bg-text-tertiary/15 text-text-secondary" };
+    return { text: "Delisted", cls: ADMIN_STATUS_BADGE };
   }
   if (status === "pending") {
-    return { text: "Pending", cls: "bg-amber-500/10 text-amber-600" };
+    return { text: "Pending", cls: ADMIN_STATUS_BADGE };
   }
   if (status === "rejected") {
-    return { text: "Rejected", cls: "bg-red-500/10 text-red-600" };
+    return { text: "Rejected", cls: ADMIN_STATUS_BADGE };
   }
   if (skill.latestPublishedVersion && skill.marketVisible) {
-    return { text: "Published", cls: "bg-emerald-500/10 text-emerald-600" };
+    return { text: "Published", cls: ADMIN_STATUS_BADGE };
   }
-  return { text: "Draft", cls: "bg-text-tertiary/15 text-text-secondary" };
+  return { text: "Draft", cls: ADMIN_STATUS_BADGE };
 }
 
 function fmtDate(ms: bigint | number): string {

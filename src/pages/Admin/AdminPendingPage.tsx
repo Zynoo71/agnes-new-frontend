@@ -7,6 +7,9 @@ import { SkillTypeBadge } from "@/components/SkillTypeBadge";
 import { Pagination } from "@/pages/AgnesHub/Pagination";
 import { AdminLayout } from "./AdminLayout";
 
+const PENDING_CORNER_BADGE =
+  "border border-border bg-surface-hover text-text-secondary rounded px-1.5 py-0.5";
+
 function fmtDate(ms: bigint | number): string {
   const n = Number(ms);
   if (!n) return "—";
@@ -54,7 +57,7 @@ function PendingCard({
             {` · ${fmtDate(skill.createdAt)}`}
           </div>
         </div>
-        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 bg-amber-500/10 text-amber-600">
+        <span className={`text-[10px] font-medium shrink-0 ${PENDING_CORNER_BADGE}`}>
           Pending
         </span>
       </div>

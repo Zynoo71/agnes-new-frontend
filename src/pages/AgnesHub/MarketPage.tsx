@@ -63,9 +63,10 @@ function SkillCard({
       <div className="absolute top-3 right-3">
         {inMineLabel ? (
           <span
-            className="inline-flex items-center gap-1 text-[10px] font-medium
-                       text-emerald-600 bg-emerald-500/10 border border-emerald-500/20
-                       px-1.5 py-0.5 rounded"
+            className="inline-flex items-center gap-1 text-[10px] font-medium leading-tight
+                       text-emerald-600 bg-emerald-500/10 border border-emerald-500/25
+                       px-1.5 py-0.5 rounded-[4px]
+                       shadow-[inset_0_1px_0_0_rgba(255,255,255,0.55)]"
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

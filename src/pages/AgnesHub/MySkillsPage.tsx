@@ -41,30 +41,34 @@ const RELATION_FILTERS = [
  * 原则：与 market 风格一致，corner 只展示「状态文案」，按钮不在 corner，
  * 按钮统一在 hover 时浮现于卡片右下角。
  */
+/** 我的 Skills 卡片右上角状态：统一中性样式，避免彩虹标签分散注意力（与市场 Added/Yours 翠绿 pill 区分） */
+const CORNER_META =
+  "border border-border bg-surface-hover text-text-secondary";
+
 function pickCornerLabel(skill: SkillInfo): { text: string; cls: string } | null {
   if (skill.mineRelation === "owner" && skill.source !== "github") {
     if (skill.marketDelisted) {
-      return { text: "Delisted", cls: "bg-text-tertiary/15 text-text-secondary" };
+      return { text: "Delisted", cls: CORNER_META };
     }
     if (skill.marketApprovalStatus === "pending") {
-      return { text: "Pending", cls: "bg-amber-500/10 text-amber-600" };
+      return { text: "Pending", cls: CORNER_META };
     }
     if (skill.marketApprovalStatus === "rejected") {
-      return { text: "Rejected", cls: "bg-red-500/10 text-red-600" };
+      return { text: "Rejected", cls: CORNER_META };
     }
     if (skill.latestPublishedVersion && skill.marketVisible) {
-      return { text: "Published", cls: "bg-emerald-500/10 text-emerald-600" };
+      return { text: "Published", cls: CORNER_META };
     }
-    return { text: "Draft", cls: "bg-text-tertiary/15 text-text-secondary" };
+    return { text: "Draft", cls: CORNER_META };
   }
   if (skill.mineRelation === "added_from_market") {
-    return { text: "Added", cls: "bg-text-tertiary/15 text-text-secondary" };
+    return { text: "Added", cls: CORNER_META };
   }
   if (skill.mineRelation === "cloned") {
-    return { text: "Cloned", cls: "bg-purple-500/10 text-purple-600" };
+    return { text: "Cloned", cls: CORNER_META };
   }
   if (skill.source === "github") {
-    return { text: "Imported", cls: "bg-text-tertiary/15 text-text-secondary" };
+    return { text: "Imported", cls: CORNER_META };
   }
   return null;
 }
