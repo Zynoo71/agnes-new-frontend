@@ -1,11 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkCjkFriendly from "remark-cjk-friendly";
+import { useEffect, useRef, useState } from "react";
 import type { ToolRenderProps } from "../registry";
-import { useReportPreviewStore } from "@/stores/reportPreviewStore";
-
-const REMARK_PLUGINS = [remarkGfm, remarkCjkFriendly];
 
 const WAITING_PHRASES = [
   "Pondering deep thoughts",
@@ -102,31 +96,14 @@ function WaitingIndicator({ contentLen }: { contentLen: number }) {
   );
 }
 
-export function ReportCardRenderer({ toolInput, toolResult }: ToolRenderProps) {
-  const title = (toolResult?.title as string | undefined) ?? (toolInput.title as string | undefined) ?? "";
+// Skeleton-only renderer for `write_report` ToolCallStart. Spec
+// §write_report: the final card now arrives as a separate
+// `GenerationArtifact{kind=report}` event; this component only fills the
+// gap during the silent writer-LLM phase and is replaced in-place once the
+// GenerationArtifact lands (see conversationStore handler).
+export function ReportCardRenderer({ toolInput }: ToolRenderProps) {
+  const title = (toolInput.title as string | undefined) ?? "";
   const streamingContent = (toolInput.content as string | undefined) ?? "";
-  const finalContent = (toolResult?.content as string | undefined) ?? streamingContent;
-  const reportId = toolResult?.report_id as string | number | undefined;
-  const durationMs = typeof toolResult?.duration_ms === "number" ? toolResult.duration_ms : undefined;
-  const errorMsg = typeof toolResult?.error === "string" ? toolResult.error : undefined;
-
-  const isDone = !!toolResult && !errorMsg;
-  const streamingCount = streamingContent.length;
-  const finalCount = useMemo(() => finalContent.length, [finalContent]);
-
-  const [expanded, setExpanded] = useState(false);
-  const openPreview = useReportPreviewStore((s) => s.open);
-
-  const handleOpenPreview = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    openPreview({
-      title: title || "Untitled report",
-      content: finalContent,
-      reportId: reportId != null ? String(reportId) : undefined,
-      durationMs,
-    });
-  };
-
   return (
     <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 shadow-sm">
       <div className="flex items-center gap-2 mb-2">
@@ -136,75 +113,11 @@ export function ReportCardRenderer({ toolInput, toolResult }: ToolRenderProps) {
           </svg>
         </div>
         <span className="text-xs font-semibold text-text-primary">Research Report</span>
-        {isDone && (
-          <span className="text-[10px] text-success ml-auto">Done</span>
-        )}
-        {errorMsg && (
-          <span className="text-[10px] text-error ml-auto">Error</span>
+        {title && (
+          <span className="text-[11px] text-text-secondary truncate min-w-0 flex-1">&ldquo;{title}&rdquo;</span>
         )}
       </div>
-
-      {!isDone && !errorMsg && <WaitingIndicator contentLen={streamingCount} />}
-
-      {errorMsg && (
-        <p className="text-[12px] text-error whitespace-pre-wrap">{errorMsg}</p>
-      )}
-
-      {isDone && (
-        <>
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => setExpanded((v) => !v)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setExpanded((v) => !v);
-              }
-            }}
-            className="w-full flex items-center gap-2 text-left group cursor-pointer"
-          >
-            <svg
-              className={`w-3 h-3 text-text-tertiary transition-transform ${expanded ? "rotate-90" : ""}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-            <span className="text-[13px] font-medium text-text-primary truncate group-hover:text-accent transition-colors">
-              {title || "Untitled report"}
-            </span>
-            <span className="ml-auto text-[10px] text-text-tertiary tabular-nums shrink-0">
-              {finalCount > 0 && <span>{finalCount.toLocaleString()} chars</span>}
-              {durationMs != null && durationMs > 0 && (
-                <span className="ml-2">· {formatDuration(durationMs)}</span>
-              )}
-              {reportId != null && (
-                <span className="ml-2 font-mono">#{String(reportId)}</span>
-              )}
-            </span>
-            {finalContent && (
-              <button
-                onClick={handleOpenPreview}
-                className="p-1 rounded text-text-tertiary hover:text-accent hover:bg-surface-hover transition-colors shrink-0"
-                aria-label="Open full-screen preview"
-                title="Open full-screen preview"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                </svg>
-              </button>
-            )}
-          </div>
-
-          {expanded && finalContent && (
-            <div className="mt-3 pt-3 border-t border-border-light">
-              <div className="prose-agent text-[13px] leading-[1.7] text-text-primary max-h-[60vh] overflow-y-auto">
-                <Markdown remarkPlugins={REMARK_PLUGINS}>{finalContent}</Markdown>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <WaitingIndicator contentLen={streamingContent.length} />
     </div>
   );
 }

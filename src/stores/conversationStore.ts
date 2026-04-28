@@ -340,6 +340,134 @@ export interface SheetPlanData {
 
 export type FileData = ChatAttachment;
 
+// GenerationArtifact: spec §"write_report 工具 → 报告卡片". Single wire type
+// "GenerationArtifact" with `kind` discriminator (report | image | video).
+// Decoupled from tool_call_id — front-end pairs by toolName + temporal locality.
+export type ArtifactKind = "report" | "image" | "video";
+
+export interface ImageArtifactResult {
+  url: string;
+  originalUrl?: string;
+  thumbnailUrl?: string;
+  ratio?: string;
+  mimetype?: string;
+  width?: number;
+  height?: number;
+}
+
+export interface VideoArtifactResult {
+  url: string;
+  originalUrl?: string;
+  firstFrameUrl?: string;
+  coverUrl?: string;
+  webpUrl?: string;
+  ratio?: string;
+  resolution?: string;
+  duration?: number; // seconds
+  width?: number;
+  height?: number;
+  fps?: number;
+  webpDuration?: number;
+}
+
+export type GenerationArtifactData =
+  | { eventId: string; kind: "report"; title: string; content: string; durationMs: number }
+  | {
+      eventId: string;
+      kind: "image";
+      title: string;
+      prompt: string;
+      modelCode: string;
+      results: ImageArtifactResult[];
+      taskId: string;
+      traceId: string;
+    }
+  | {
+      eventId: string;
+      kind: "video";
+      title: string;
+      prompt: string;
+      modelCode: string;
+      results: VideoArtifactResult[];
+      taskId: string;
+      traceId: string;
+    };
+
+// kind → ToolCallStart.toolName that emits this artifact. Used to find the
+// matching skeleton in `updated.blocks` for in-place replacement.
+const KIND_TO_TOOL_NAME: Record<ArtifactKind, string> = {
+  report: "write_report",
+  image: "generate_image",
+  video: "generate_video",
+};
+
+function parseGenerationArtifact(
+  rawPayload: Record<string, unknown>,
+  payload: Record<string, unknown>,
+): GenerationArtifactData | null {
+  const eventId = typeof rawPayload.event_id === "string" ? rawPayload.event_id : "";
+  const kind = (payload.kind as string) ?? "";
+  const title = (payload.title as string) ?? "";
+  if (kind === "report") {
+    return {
+      eventId,
+      kind: "report",
+      title,
+      content: (payload.content as string) ?? "",
+      durationMs: typeof payload.duration_ms === "number" ? payload.duration_ms : 0,
+    };
+  }
+  if (kind === "image" || kind === "video") {
+    const rawResults = Array.isArray(payload.results) ? (payload.results as Record<string, unknown>[]) : [];
+    const prompt = (payload.prompt as string) ?? "";
+    const modelCode = (payload.model_code as string) ?? "";
+    const taskId = (payload.task_id as string) ?? "";
+    const traceId = (payload.trace_id as string) ?? "";
+    if (kind === "image") {
+      const results: ImageArtifactResult[] = rawResults
+        .map((r): ImageArtifactResult | null => {
+          const url = typeof r.url === "string" ? r.url : "";
+          if (!url) return null;
+          return {
+            url,
+            originalUrl: typeof r.original_url === "string" ? r.original_url : undefined,
+            thumbnailUrl: typeof r.thumbnail_url === "string" ? r.thumbnail_url : undefined,
+            ratio: typeof r.ratio === "string" ? r.ratio : undefined,
+            mimetype: typeof r.mimetype === "string" ? r.mimetype : undefined,
+            width: typeof r.width === "number" ? r.width : undefined,
+            height: typeof r.height === "number" ? r.height : undefined,
+          };
+        })
+        .filter((r): r is ImageArtifactResult => r !== null);
+      return { eventId, kind: "image", title, prompt, modelCode, results, taskId, traceId };
+    }
+    const results: VideoArtifactResult[] = rawResults
+      .map((r): VideoArtifactResult | null => {
+        const url = typeof r.url === "string" ? r.url : "";
+        if (!url) return null;
+        return {
+          url,
+          originalUrl: typeof r.original_url === "string" ? r.original_url : undefined,
+          firstFrameUrl: typeof r.first_frame_url === "string" ? r.first_frame_url : undefined,
+          coverUrl: typeof r.cover_url === "string" ? r.cover_url : undefined,
+          webpUrl: typeof r.webp_url === "string" ? r.webp_url : undefined,
+          ratio: typeof r.ratio === "string" ? r.ratio : undefined,
+          resolution: typeof r.resolution === "string" ? r.resolution : undefined,
+          duration: typeof r.duration === "number" ? r.duration : undefined,
+          width: typeof r.width === "number" ? r.width : undefined,
+          height: typeof r.height === "number" ? r.height : undefined,
+          fps: typeof r.fps === "number" ? r.fps : undefined,
+          webpDuration: typeof r.webp_duration === "number" ? r.webp_duration : undefined,
+        };
+      })
+      .filter((r): r is VideoArtifactResult => r !== null);
+    return { eventId, kind: "video", title, prompt, modelCode, results, taskId, traceId };
+  }
+  return null;
+}
+
+export { parseGenerationArtifact, KIND_TO_TOOL_NAME };
+
 export type ContentBlock =
   | { type: "Message"; content: string }
   | { type: "File"; data: FileData }
@@ -353,6 +481,7 @@ export type ContentBlock =
   | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
   | { type: "MemoryUpdate"; data: MemoryUpdateData }
   | { type: "PromptEnhanced"; data: PromptEnhancedData }
+  | { type: "GenerationArtifact"; data: GenerationArtifactData }
   | { type: "SheetArtifact"; data: SheetArtifactData }
   | { type: "SheetPlan"; data: SheetPlanData }
   | { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
@@ -996,6 +1125,33 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
             style: payload.style as string | undefined,
           },
         });
+        break;
+      }
+
+      // GenerationArtifact carries the final card payload; envelope event_id is
+      // the global handle. wire_type fixed to "GenerationArtifact"; `kind`
+      // discriminates report/image/video. We replace the matching tool's
+      // ToolCallStart skeleton in-place so the chat shows one card, not
+      // skeleton + final.
+      if (custom.type === "GenerationArtifact") {
+        const data = parseGenerationArtifact(rawPayload, payload);
+        if (!data) break;
+        const block: ContentBlock = { type: "GenerationArtifact", data };
+        const targetToolName = KIND_TO_TOOL_NAME[data.kind];
+        let replaced = false;
+        for (let i = updated.blocks.length - 1; i >= 0; i--) {
+          const b = updated.blocks[i];
+          if (b.type === "ToolCallStart" && b.data.toolName === targetToolName) {
+            updated.blocks = [
+              ...updated.blocks.slice(0, i),
+              block,
+              ...updated.blocks.slice(i + 1),
+            ];
+            replaced = true;
+            break;
+          }
+        }
+        if (!replaced) updated.blocks.push(block);
         break;
       }
 

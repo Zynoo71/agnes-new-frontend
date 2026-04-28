@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { agentClient } from "@/grpc/client";
 import { createAgnesConversation } from "@/api/agnesConversation";
-import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, type ReviewState, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend, parseHitlResumeBlock, resolveReviewsByHitlBlocks } from "@/stores/conversationStore";
+import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, type ReviewState, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend, parseHitlResumeBlock, resolveReviewsByHitlBlocks, parseGenerationArtifact } from "@/stores/conversationStore";
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
@@ -312,6 +312,18 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[]; statu
             style: data.style as string | undefined,
           },
         });
+      } else if (block.type === "GenerationArtifact") {
+        // History replay — agent_artifact rows are union'd back into the turn
+        // stream and surface as the same wire shape as live SSE.
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const blockRec = block as Record<string, unknown>;
+        // history blocks carry event_id at the envelope level; rebuild a
+        // synthetic envelope so parseGenerationArtifact can read it uniformly.
+        const eventId = typeof blockRec.event_id === "string" ? blockRec.event_id
+          : typeof blockRec.eventId === "string" ? blockRec.eventId
+          : "";
+        const parsed = parseGenerationArtifact({ event_id: eventId }, data);
+        if (parsed) assistantBlocks.push({ type: "GenerationArtifact", data: parsed });
       } else if (block.type === "ArtifactCreated") {
         const data = (block.data ?? {}) as Record<string, unknown>;
         const artifactId = (data.artifact_id as string) ?? "";

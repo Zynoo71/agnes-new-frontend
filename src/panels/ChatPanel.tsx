@@ -5,6 +5,7 @@ import { useChat } from "@/hooks/useChat";
 import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
 import { uploadChatAttachment } from "@/api/chatAttachment";
 import { MessageBubble } from "@/components/MessageBubble";
+import { ArtifactsBar } from "@/components/ArtifactsBar";
 import { EventStream } from "@/components/EventStream";
 import { SystemPromptSelector } from "@/components/SystemPromptSelector";
 import { ChatSkillsPicker } from "@/components/ChatSkillsPicker";
@@ -1116,6 +1117,7 @@ export function ChatPanel() {
 
         <div className="shrink-0 px-5 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
           <div className="max-w-2xl mx-auto">
+            <ArtifactsBar />
             {inputArea}
           </div>
         </div>

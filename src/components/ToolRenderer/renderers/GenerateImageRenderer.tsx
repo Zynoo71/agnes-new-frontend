@@ -1,14 +1,11 @@
-import { useState } from "react";
-import { useImagePreviewStore } from "@/stores/imagePreviewStore";
 import type { ToolRenderProps } from "../registry";
 
-export function GenerateImageRenderer({ toolInput, toolResult }: ToolRenderProps) {
+// Skeleton-only renderer for `generate_image` ToolCallStart. The final card now
+// arrives as a separate `GenerationArtifact{kind=image}` event; this component
+// only fills the gap during the AIGC task wait and is hidden in MessageBubble
+// once the GenerationArtifact lands (see render-time guard).
+export function GenerateImageRenderer({ toolInput }: ToolRenderProps) {
   const prompt = (toolInput.prompt as string) ?? "";
-  const urls = toolResult && Array.isArray(toolResult.urls) ? (toolResult.urls as string[]) : [];
-  const openPreview = useImagePreviewStore((s) => s.open);
-  const [failedUrls, setFailedUrls] = useState<Set<string>>(() => new Set());
-  const visible = urls.filter((u) => !failedUrls.has(u));
-
   return (
     <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 text-sm shadow-sm">
       <div className="flex items-center gap-2 mb-2">
@@ -18,38 +15,10 @@ export function GenerateImageRenderer({ toolInput, toolResult }: ToolRenderProps
           </svg>
         </div>
         <span className="text-xs font-semibold text-text-primary tracking-tight shrink-0">Image Generation</span>
-        {!toolResult && (
-          <span className="text-[10px] text-text-tertiary animate-gentle-pulse ml-auto shrink-0">Generating...</span>
-        )}
-        {toolResult && visible.length > 0 && (
-          <span className="text-[10px] text-text-tertiary ml-auto shrink-0">
-            {visible.length} {visible.length === 1 ? "image" : "images"}
-          </span>
-        )}
+        <span className="text-[10px] text-text-tertiary animate-gentle-pulse ml-auto shrink-0">Generating...</span>
       </div>
       {prompt && (
-        <p className="text-[11px] text-text-secondary mb-2 line-clamp-2">{prompt}</p>
-      )}
-      {visible.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {visible.map((url, i) => (
-            <button
-              key={url}
-              onClick={() => openPreview(url, prompt || `Generated image ${i + 1}`)}
-              className="group relative overflow-hidden rounded-lg bg-background hover:opacity-80 transition-all cursor-zoom-in"
-            >
-              <img
-                src={url}
-                alt={`Generated image ${i + 1}`}
-                className="max-w-60 max-h-60 object-contain"
-                onError={() => setFailedUrls((s) => new Set(s).add(url))}
-              />
-            </button>
-          ))}
-        </div>
-      )}
-      {toolResult && visible.length === 0 && (
-        <p className="text-[11px] text-text-tertiary">No images returned.</p>
+        <p className="text-[11px] text-text-secondary line-clamp-2">{prompt}</p>
       )}
     </div>
   );
