@@ -2,7 +2,7 @@ import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
-import type { GenerationArtifactData } from "@/stores/conversationStore";
+import type { GenerationArtifactData, SlideArtifactData } from "@/stores/conversationStore";
 import { useReportPreviewStore } from "@/stores/reportPreviewStore";
 import { useImagePreviewStore } from "@/stores/imagePreviewStore";
 
@@ -27,6 +27,7 @@ export function GenerationArtifactCard({ data }: { data: GenerationArtifactData 
   if (data.kind === "report") return <ReportCard data={data} />;
   if (data.kind === "image") return <ImageCard data={data} />;
   if (data.kind === "video") return <VideoCard data={data} />;
+  if (data.kind === "slide") return <SlideCard data={data} />;
   return null;
 }
 
@@ -225,6 +226,64 @@ function VideoCard({
       )}
       {visible.length === 0 && (
         <p className="text-[11px] text-text-tertiary">No videos returned.</p>
+      )}
+    </div>
+  );
+}
+
+// ── Slide ────────────────────────────────────────────────────────────────────
+
+function SlideCard({ data }: { data: SlideArtifactData }) {
+  const { title, cover, pageCount, slideUrls, html } = data;
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 shadow-sm">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-5 h-5 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+          <svg className="w-3 h-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+          </svg>
+        </div>
+        <span className="text-xs font-semibold text-text-primary tracking-tight shrink-0">
+          {title || "Untitled Deck"}
+        </span>
+        <span className="text-[10px] text-text-tertiary ml-auto shrink-0">
+          {pageCount} {pageCount === 1 ? "slide" : "slides"}
+        </span>
+      </div>
+
+      {cover && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full rounded-lg overflow-hidden bg-background hover:opacity-90 transition-opacity cursor-pointer"
+        >
+          <img
+            src={cover}
+            alt={title || "Slide preview"}
+            className="w-full aspect-video object-cover"
+          />
+        </button>
+      )}
+      {!cover && slideUrls.length > 0 && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full aspect-video rounded-lg bg-blue-50 flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors"
+        >
+          <span className="text-xs text-blue-600 font-medium">Click to preview</span>
+        </button>
+      )}
+
+      {expanded && html && (
+        <div className="mt-3 pt-3 border-t border-border-light">
+          <iframe
+            srcDoc={html}
+            title={title || "Slide preview"}
+            className="w-full rounded-lg border border-border-light"
+            style={{ height: "50vh", minHeight: 300 }}
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
       )}
     </div>
   );
