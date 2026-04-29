@@ -8,6 +8,7 @@ import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
 import { PENDING_SKILLS_CONV_ID, useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
 import { hydrateConversationSkillsFromServer, persistConversationSkillSelections } from "@/lib/conversationSkillSync";
+import { syncExtraContextDisallowedSkills } from "@/config/agentAdditionalDisallowedSkills";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
 const getState = () => useConversationStore.getState();
@@ -673,6 +674,8 @@ export function useChat() {
     if (conv) {
       s.setAgentType(conv.agentType);
       s.setSystemPromptId(conv.systemPromptId ?? null);
+      const ec = getState().extraContext;
+      getState().setExtraContext(syncExtraContextDisallowedSkills(ec, conv.agentType));
     }
 
     let resp;

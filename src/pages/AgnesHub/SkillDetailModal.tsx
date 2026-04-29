@@ -3,6 +3,8 @@ import { useShallow } from "zustand/shallow";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { agentClient } from "@/grpc/client";
+import { SourceBadge } from "@/components/SourceBadge";
+import { SkillTypeBadge } from "@/components/SkillTypeBadge";
 import { useMarketSkillsStore } from "@/stores/marketSkillsStore";
 import type {
   SkillFileNode,
@@ -55,6 +57,104 @@ function buildTree(files: SkillFileNode[]): TreeNode {
   };
   sortRec(root);
   return root;
+}
+
+/** Resolve ``![](foo/bar.png)`` relative to the current markdown file path (same rules as browser URL resolution). */
+function resolveSkillAssetPath(markdownFilePath: string, rawSrc: string): "external" | string {
+  const s = rawSrc.trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return "external";
+  try {
+    const dir = markdownFilePath.includes("/")
+      ? markdownFilePath.slice(0, markdownFilePath.lastIndexOf("/"))
+      : "";
+    const base = `http://skill.local/${dir ? `${dir}/` : ""}`;
+    const u = new URL(s.replace(/^\.\//, ""), base);
+    return u.pathname.replace(/^\/+/, "");
+  } catch {
+    return "";
+  }
+}
+
+function SkillMarkdownImg({
+  src,
+  alt,
+  skillId,
+  version,
+  mdPath,
+}: {
+  src?: string;
+  alt?: string;
+  skillId: string;
+  version: string;
+  mdPath: string;
+}) {
+  const [state, setState] = useState<"loading" | "ready" | "err">("loading");
+  const [dataUrl, setDataUrl] = useState("");
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    if (!src?.trim()) {
+      setState("err");
+      setMsg("Missing src");
+      return;
+    }
+    const resolved = resolveSkillAssetPath(mdPath, src);
+    if (resolved === "external") {
+      setDataUrl(src.trim());
+      setState("ready");
+      return;
+    }
+    if (!resolved) {
+      setState("err");
+      setMsg("Invalid image path");
+      return;
+    }
+    let cancelled = false;
+    setState("loading");
+    agentClient
+      .getSkillFileContent({ skillId, path: resolved, version })
+      .then((resp) => {
+        if (cancelled) return;
+        if (resp.contentType.startsWith("image/")) {
+          setDataUrl(`data:${resp.contentType};base64,${resp.content}`);
+          setState("ready");
+        } else if (resp.content.startsWith("⚠️")) {
+          setMsg(resp.content.split("\n")[0] ?? "Cannot preview");
+          setState("err");
+        } else {
+          setMsg("Not an image");
+          setState("err");
+        }
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setMsg(e instanceof Error ? e.message : String(e));
+        setState("err");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [src, skillId, version, mdPath]);
+
+  if (state === "loading") {
+    return <span className="text-xs text-text-tertiary italic">Loading image…</span>;
+  }
+  if (state === "err") {
+    return (
+      <span className="text-xs text-red-500/90 block my-2" title={msg}>
+        [image] {msg}
+      </span>
+    );
+  }
+  return (
+    <img
+      src={dataUrl}
+      alt={alt ?? ""}
+      className="max-w-full h-auto rounded border border-border-light my-2"
+      loading="lazy"
+    />
+  );
 }
 
 function fileLanguage(path: string): string {
@@ -177,16 +277,6 @@ interface Props {
    * 同时跳过任何依赖 user 身份的状态文案（"You created this skill" 等）。
    */
   adminView?: boolean;
-}
-
-function SourceBadge({ source }: { source: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    agnes: { label: "Official", cls: "bg-accent/10 text-accent" },
-    github: { label: "GitHub", cls: "bg-text-tertiary/15 text-text-secondary" },
-    user: { label: "Community", cls: "bg-text-tertiary/15 text-text-secondary" },
-  };
-  const v = map[source] ?? { label: source || "Unknown", cls: "bg-text-tertiary/15 text-text-secondary" };
-  return <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${v.cls}`}>{v.label}</span>;
 }
 
 function defaultSelectedPath(files: SkillFileNode[]): string {
@@ -344,9 +434,10 @@ export function SkillDetailModal({ skill, onClose, marketView = false, adminView
     });
   };
 
+  const isImagePreview = contentType.startsWith("image/");
   const isMarkdown =
-    contentType.startsWith("text/markdown") ||
-    /\.(md|markdown|mdx)$/i.test(selectedPath);
+    !isImagePreview &&
+    (contentType.startsWith("text/markdown") || /\.(md|markdown|mdx)$/i.test(selectedPath));
 
   // 详情页表头的 name/summary 必须跟随当前选中版本走 history 快照，否则会出现
   // "顶部还是 V2 draft 的 22，但下面文件内容是 V1 published 的 1" 这种错位。
@@ -367,6 +458,7 @@ export function SkillDetailModal({ skill, onClose, marketView = false, adminView
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h3 className="text-base font-semibold text-text-primary truncate">{displayName}</h3>
               <SourceBadge source={skill.source} />
+              <SkillTypeBadge skillType={skill.skillType} />
               {versions && versions.length > 0 && (
                 <select
                   value={activeVersion}
@@ -442,9 +534,30 @@ export function SkillDetailModal({ skill, onClose, marketView = false, adminView
             ) : (
               <div className="px-6 py-5">
                 <div className="text-[11px] text-text-tertiary mb-3 font-mono">{selectedPath}</div>
-                {isMarkdown ? (
+                {isImagePreview ? (
+                  <img
+                    src={`data:${contentType};base64,${content}`}
+                    alt={selectedPath}
+                    className="max-w-full h-auto rounded border border-border-light"
+                  />
+                ) : isMarkdown ? (
                   <div className="prose prose-sm max-w-none prose-headings:text-text-primary prose-p:text-text-secondary prose-li:text-text-secondary prose-strong:text-text-primary prose-code:text-accent prose-pre:bg-surface-alt prose-pre:text-text-primary">
-                    <Markdown remarkPlugins={[remarkGfm]}>{content}</Markdown>
+                    <Markdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        img: ({ src, alt }) => (
+                          <SkillMarkdownImg
+                            src={typeof src === "string" ? src : undefined}
+                            alt={typeof alt === "string" ? alt : undefined}
+                            skillId={skill.id}
+                            version={activeVersion}
+                            mdPath={selectedPath}
+                          />
+                        ),
+                      }}
+                    >
+                      {content}
+                    </Markdown>
                   </div>
                 ) : (
                   <pre className="text-xs leading-relaxed text-text-primary bg-surface-alt rounded-lg p-4 overflow-x-auto">

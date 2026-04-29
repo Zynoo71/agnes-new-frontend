@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { useShallow } from "zustand/shallow";
 import { useMySkillsStore } from "@/stores/mySkillsStore";
 import type { SkillInfo } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
+import { SourceBadge } from "@/components/SourceBadge";
+import { SkillTypeBadge } from "@/components/SkillTypeBadge";
 import { AgnesHubLayout } from "./AgnesHubLayout";
 import { Pagination } from "./Pagination";
 import { SkillDetailModal } from "./SkillDetailModal";
@@ -22,16 +24,6 @@ function formatRelative(ms: bigint | number): string {
   return new Date(n).toLocaleDateString();
 }
 
-function SourceBadge({ source }: { source: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    agnes: { label: "Official", cls: "bg-accent/10 text-accent" },
-    github: { label: "GitHub", cls: "bg-text-tertiary/15 text-text-secondary" },
-    user: { label: "Community", cls: "bg-text-tertiary/15 text-text-secondary" },
-  };
-  const v = map[source] ?? { label: source || "Unknown", cls: "bg-text-tertiary/15 text-text-secondary" };
-  return <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${v.cls}`}>{v.label}</span>;
-}
-
 const RELATION_FILTERS = [
   { key: "", label: "All" },
   { key: "owner", label: "Created" },
@@ -49,30 +41,34 @@ const RELATION_FILTERS = [
  * 原则：与 market 风格一致，corner 只展示「状态文案」，按钮不在 corner，
  * 按钮统一在 hover 时浮现于卡片右下角。
  */
+/** 我的 Skills 卡片右上角状态：统一中性样式，避免彩虹标签分散注意力（与市场 Added/Yours 翠绿 pill 区分） */
+const CORNER_META =
+  "border border-border bg-surface-hover text-text-secondary";
+
 function pickCornerLabel(skill: SkillInfo): { text: string; cls: string } | null {
   if (skill.mineRelation === "owner" && skill.source !== "github") {
     if (skill.marketDelisted) {
-      return { text: "Delisted", cls: "bg-text-tertiary/15 text-text-secondary" };
+      return { text: "Delisted", cls: CORNER_META };
     }
     if (skill.marketApprovalStatus === "pending") {
-      return { text: "Pending", cls: "bg-amber-500/10 text-amber-600" };
+      return { text: "Pending", cls: CORNER_META };
     }
     if (skill.marketApprovalStatus === "rejected") {
-      return { text: "Rejected", cls: "bg-red-500/10 text-red-600" };
+      return { text: "Rejected", cls: CORNER_META };
     }
     if (skill.latestPublishedVersion && skill.marketVisible) {
-      return { text: "Published", cls: "bg-emerald-500/10 text-emerald-600" };
+      return { text: "Published", cls: CORNER_META };
     }
-    return { text: "Draft", cls: "bg-text-tertiary/15 text-text-secondary" };
+    return { text: "Draft", cls: CORNER_META };
   }
   if (skill.mineRelation === "added_from_market") {
-    return { text: "Added", cls: "bg-text-tertiary/15 text-text-secondary" };
+    return { text: "Added", cls: CORNER_META };
   }
   if (skill.mineRelation === "cloned") {
-    return { text: "Cloned", cls: "bg-purple-500/10 text-purple-600" };
+    return { text: "Cloned", cls: CORNER_META };
   }
   if (skill.source === "github") {
-    return { text: "Imported", cls: "bg-text-tertiary/15 text-text-secondary" };
+    return { text: "Imported", cls: CORNER_META };
   }
   return null;
 }
@@ -127,9 +123,11 @@ function SkillCard({
     >
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-text-primary truncate">{skill.name}</span>
+          {/* 标题单独一行并 truncate；来源/类型固定下一行，避免短标题时标签跟在名称后面、长标题时又换行导致不一致 */}
+          <div className="text-sm font-semibold text-text-primary truncate pr-1">{skill.name}</div>
+          <div className="flex items-center gap-1.5 flex-wrap mt-1">
             <SourceBadge source={skill.source} />
+            <SkillTypeBadge skillType={skill.skillType} />
           </div>
           <div className="text-[10px] text-text-tertiary mt-0.5">
             {skill.likeCount.toString()} uses

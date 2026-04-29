@@ -2024,6 +2024,11 @@ export type ImportSkillFromGithubRequest = Message<"kw_agent_service.v1.ImportSk
    * @generated from field: string url = 1;
    */
   url: string;
+
+  /**
+   * @generated from field: string subpath = 2;
+   */
+  subpath: string;
 };
 
 /**

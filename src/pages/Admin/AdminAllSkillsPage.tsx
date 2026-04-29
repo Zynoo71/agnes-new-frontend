@@ -2,11 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/shallow";
 import { useAdminAllStore } from "@/stores/adminAllStore";
 import type { SkillInfo } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
+import { SourceBadge } from "@/components/SourceBadge";
+import { SkillTypeBadge } from "@/components/SkillTypeBadge";
 import { Pagination } from "@/pages/AgnesHub/Pagination";
 import { SkillDetailModal } from "@/pages/AgnesHub/SkillDetailModal";
 import { AdminLayout } from "./AdminLayout";
 
 const HARD_DELETE_ALLOWED = new Set(["agnes", "github", "gitee", "user"]);
+
+/** 与 SkillsHub 卡片一致：右上角状态中性样式 */
+const ADMIN_STATUS_BADGE =
+  "border border-border bg-surface-hover text-text-secondary rounded px-1.5 py-0.5";
 
 const SOURCE_FILTERS: { value: string; label: string }[] = [
   { value: "", label: "All sources" },
@@ -19,29 +25,18 @@ const SOURCE_FILTERS: { value: string; label: string }[] = [
 function pickStatus(skill: SkillInfo): { text: string; cls: string } {
   const status = skill.marketApprovalStatus;
   if (skill.marketDelisted) {
-    return { text: "Delisted", cls: "bg-text-tertiary/15 text-text-secondary" };
+    return { text: "Delisted", cls: ADMIN_STATUS_BADGE };
   }
   if (status === "pending") {
-    return { text: "Pending", cls: "bg-amber-500/10 text-amber-600" };
+    return { text: "Pending", cls: ADMIN_STATUS_BADGE };
   }
   if (status === "rejected") {
-    return { text: "Rejected", cls: "bg-red-500/10 text-red-600" };
+    return { text: "Rejected", cls: ADMIN_STATUS_BADGE };
   }
   if (skill.latestPublishedVersion && skill.marketVisible) {
-    return { text: "Published", cls: "bg-emerald-500/10 text-emerald-600" };
+    return { text: "Published", cls: ADMIN_STATUS_BADGE };
   }
-  return { text: "Draft", cls: "bg-text-tertiary/15 text-text-secondary" };
-}
-
-function SourceBadge({ source }: { source: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    agnes:  { label: "Official", cls: "bg-accent/10 text-accent" },
-    github: { label: "GitHub",   cls: "bg-purple-500/10 text-purple-600" },
-    gitee:  { label: "Gitee",    cls: "bg-rose-500/10 text-rose-600" },
-    user:   { label: "User",     cls: "bg-sky-500/10 text-sky-600" },
-  };
-  const v = map[source] ?? { label: source || "—", cls: "bg-text-tertiary/15 text-text-secondary" };
-  return <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${v.cls}`}>{v.label}</span>;
+  return { text: "Draft", cls: ADMIN_STATUS_BADGE };
 }
 
 function fmtDate(ms: bigint | number): string {
@@ -79,9 +74,10 @@ function AllCard({ skill, onOpenDetail, onHardDelete, deleting }: RowProps) {
     >
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-text-primary truncate">{skill.name}</span>
-            <SourceBadge source={skill.source} />
+            <SourceBadge source={skill.source} userLabel="User" />
+            <SkillTypeBadge skillType={skill.skillType} />
           </div>
           <div className="text-[10px] text-text-tertiary mt-0.5 truncate">
             {skill.likeCount.toString()} uses

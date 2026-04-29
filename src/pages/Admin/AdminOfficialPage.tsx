@@ -3,6 +3,8 @@ import { useShallow } from "zustand/shallow";
 import { useAdminOfficialStore } from "@/stores/adminOfficialStore";
 import type { SkillInfo } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
 import { agentClient } from "@/grpc/client";
+import { SourceBadge } from "@/components/SourceBadge";
+import { SkillTypeBadge } from "@/components/SkillTypeBadge";
 import { Pagination } from "@/pages/AgnesHub/Pagination";
 import { SkillDetailModal } from "@/pages/AgnesHub/SkillDetailModal";
 import {
@@ -14,21 +16,25 @@ import { AdminLayout } from "./AdminLayout";
 
 const DEFAULT_APP_ID = (import.meta.env.VITE_APP_ID ?? "") as string;
 
+/** 与 SkillsHub 卡片一致：状态标签中性灰，不把视线从标题拉开 */
+const ADMIN_STATUS_BADGE =
+  "border border-border bg-surface-hover text-text-secondary rounded px-1.5 py-0.5";
+
 function pickStatus(skill: SkillInfo): { text: string; cls: string } {
   const status = skill.marketApprovalStatus;
   if (skill.marketDelisted) {
-    return { text: "Delisted", cls: "bg-text-tertiary/15 text-text-secondary" };
+    return { text: "Delisted", cls: ADMIN_STATUS_BADGE };
   }
   if (status === "pending") {
-    return { text: "Pending", cls: "bg-amber-500/10 text-amber-600" };
+    return { text: "Pending", cls: ADMIN_STATUS_BADGE };
   }
   if (status === "rejected") {
-    return { text: "Rejected", cls: "bg-red-500/10 text-red-600" };
+    return { text: "Rejected", cls: ADMIN_STATUS_BADGE };
   }
   if (skill.latestPublishedVersion && skill.marketVisible) {
-    return { text: "Published", cls: "bg-emerald-500/10 text-emerald-600" };
+    return { text: "Published", cls: ADMIN_STATUS_BADGE };
   }
-  return { text: "Draft", cls: "bg-text-tertiary/15 text-text-secondary" };
+  return { text: "Draft", cls: ADMIN_STATUS_BADGE };
 }
 
 function fmtDate(ms: bigint | number): string {
@@ -78,14 +84,13 @@ function OfficialCard({ skill, busy, onOpenDetail, onEdit, onPublish, onDelete }
     >
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-text-primary truncate">{skill.name}</span>
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/10 text-accent shrink-0">
-              Official
-            </span>
+            <SourceBadge source="agnes" />
+            <SkillTypeBadge skillType={skill.skillType} />
             {hasNewDraft && (
               <span
-                className="text-[10px] text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0"
+                className={`text-[10px] font-medium shrink-0 ${ADMIN_STATUS_BADGE}`}
                 title={`New draft ${skill.latestVersion} not yet published`}
               >
                 draft
