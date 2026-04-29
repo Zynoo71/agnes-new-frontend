@@ -538,6 +538,10 @@ export function useChat() {
     }
 
     const extraContext = Object.keys(s.extraContext).length > 0 ? s.extraContext : undefined;
+    // Local toggle for hitting the real GrpcReservationClient (credits 扣费).
+    // VITE_BILLING_ENABLED=true → backend `billing_enabled=true` →
+    // _build_subscription_quota_client(); anything else → null (no-op).
+    const billingEnabled = import.meta.env.VITE_BILLING_ENABLED === "true" ? true : undefined;
     const stream = agentClient.chatStream(
       {
         conversationId: BigInt(convId),
@@ -552,6 +556,7 @@ export function useChat() {
         systemPromptId: s.systemPromptId ? BigInt(s.systemPromptId) : 0n,
         extraContext,
         selectedSkills: pickSelectedSkillsForRequest(convId),
+        billingEnabled,
       },
       { signal },
     );
