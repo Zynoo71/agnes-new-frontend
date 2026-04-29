@@ -8,6 +8,7 @@ const KIND_LABEL: Record<GenerationArtifactData["kind"], string> = {
   report: "Report",
   image: "Image",
   video: "Video",
+  slide: "Slide",
 };
 
 function formatMillis(ms: number): string {
@@ -34,6 +35,9 @@ function pickArtifactThumbnail(a: GenerationArtifactData): string | null {
     const r = a.results[0];
     return r ? r.coverUrl || r.firstFrameUrl || r.webpUrl || null : null;
   }
+  if (a.kind === "slide") {
+    return a.cover || null;
+  }
   return null;
 }
 
@@ -46,6 +50,9 @@ function artifactSubtitle(a: GenerationArtifactData): string {
   }
   if (a.kind === "image") {
     return `${a.results.length} ${a.results.length === 1 ? "image" : "images"}`;
+  }
+  if (a.kind === "slide") {
+    return `${a.pageCount} ${a.pageCount === 1 ? "slide" : "slides"}`;
   }
   const r = a.results[0];
   const parts: string[] = [`${a.results.length} ${a.results.length === 1 ? "video" : "videos"}`];
