@@ -28,6 +28,14 @@ function getDevLane(req: { headers: Record<string, unknown> }): string {
   return DEV_LANE;
 }
 
+function getAppTimezone(req: { headers: Record<string, unknown> }): string {
+  const tz = req.headers["x-app-timezone"];
+  if (typeof tz === "string" && tz.trim()) {
+    return tz.trim();
+  }
+  return "";
+}
+
 function parseJwtExpiry(token: string): number {
   const payload = token.split(".")[1] ?? "";
   if (!payload) {
@@ -107,6 +115,7 @@ function devPresignProxyPlugin(): Plugin {
         try {
           const token = await getDevBffToken();
           const devLane = getDevLane(req);
+          const timezone = getAppTimezone(req);
           const upstream = await fetch(`${DEV_BFF_BASE_URL}/api/v1/file/presigned-url`, {
             method: "POST",
             headers: {
@@ -115,6 +124,7 @@ function devPresignProxyPlugin(): Plugin {
               Accept: "application/json",
               "X-App": DEV_BFF_APP_ID,
               ...(devLane ? { "x-dev-lane": devLane } : {}),
+              ...(timezone ? { "x-app-timezone": timezone } : {}),
             },
             body: Buffer.concat(chunks),
           });
@@ -161,6 +171,7 @@ function devCreateConversationProxyPlugin(): Plugin {
         try {
           const token = await getDevBffToken();
           const devLane = getDevLane(req);
+          const timezone = getAppTimezone(req);
           const upstream = await fetch(`${DEV_BFF_BASE_URL}/api/v1/agnes/conversation`, {
             method: "POST",
             headers: {
@@ -169,6 +180,7 @@ function devCreateConversationProxyPlugin(): Plugin {
               Accept: "application/json",
               "X-App": DEV_BFF_APP_ID,
               ...(devLane ? { "x-dev-lane": devLane } : {}),
+              ...(timezone ? { "x-app-timezone": timezone } : {}),
             },
             body: Buffer.concat(chunks),
           });
