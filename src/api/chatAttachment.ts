@@ -1,5 +1,6 @@
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { getBffToken } from "@/api/bffAuth";
+import { getBrowserTimezone } from "@/utils/timezone";
 
 const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
@@ -39,6 +40,8 @@ function shouldUseUploadProxy(): boolean {
 export async function uploadChatAttachment(file: File, conversationId?: string | null): Promise<ChatAttachment> {
   const mimeType = file.type || "application/octet-stream";
   const devLaneHeader: Record<string, string> = DEV_LANE ? { "x-dev-lane": DEV_LANE } : {};
+  const timezone = getBrowserTimezone();
+  const timezoneHeader: Record<string, string> = timezone ? { "x-app-timezone": timezone } : {};
   const presignedPayload: Record<string, string> = {
     purpose: "chat_attachment",
     content_type: mimeType,
@@ -58,6 +61,7 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
           Accept: "application/json",
           //"x-user-id": DEV_USER_ID,
           ...devLaneHeader,
+          ...timezoneHeader,
         },
         body: presignedBody,
       })
@@ -69,6 +73,7 @@ export async function uploadChatAttachment(file: File, conversationId?: string |
           Accept: "application/json",
           "x-app-id": APP_ID,
           ...devLaneHeader,
+          ...timezoneHeader,
         },
         body: presignedBody,
       });

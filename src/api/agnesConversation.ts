@@ -1,5 +1,6 @@
 import { agentClient } from "@/grpc/client";
 import { getBffToken } from "@/api/bffAuth";
+import { getBrowserTimezone } from "@/utils/timezone";
 
 const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL ?? "";
 const APP_ID = import.meta.env.VITE_APP_ID ?? "agnes";
@@ -37,6 +38,8 @@ export async function createAgnesConversation(): Promise<string> {
   }
 
   const devLaneHeader: Record<string, string> = DEV_LANE ? { "x-dev-lane": DEV_LANE } : {};
+  const timezone = getBrowserTimezone();
+  const timezoneHeader: Record<string, string> = timezone ? { "x-app-timezone": timezone } : {};
   const response = await fetch(`${resolveBffBaseUrl()}/api/v1/agnes/conversation`, {
     method: "POST",
     headers: {
@@ -45,6 +48,7 @@ export async function createAgnesConversation(): Promise<string> {
       Accept: "application/json",
       "x-app-id": APP_ID,
       ...devLaneHeader,
+      ...timezoneHeader,
     },
     body: "{}",
   });

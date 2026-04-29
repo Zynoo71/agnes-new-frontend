@@ -2,6 +2,7 @@ import { createClient, type Interceptor } from "@connectrpc/connect";
 import { createGrpcWebTransport } from "@connectrpc/connect-web";
 import { KwAgentServiceService } from "@/gen/kw_agent_service/v1/kw_agent_service_pb";
 import { useUserStore } from "@/stores/userStore";
+import { getBrowserTimezone } from "@/utils/timezone";
 
 const DEV_LANE = import.meta.env.VITE_DEV_LANE ?? "";
 /** 与 `agnesConversation.ts` 一致；未传时后端会拒掉 Skill Hub 等 RPC（需 x-app-id）。 */
@@ -41,6 +42,10 @@ const injectHeadersInterceptor: Interceptor = (next) => (req) => {
   }
   if (APP_ID) {
     req.header.set("x-app-id", APP_ID);
+  }
+  const timezone = getBrowserTimezone();
+  if (timezone) {
+    req.header.set("x-app-timezone", timezone);
   }
   // Admin RPC 用，普通 RPC 后端会忽略；登录前/登出后 localStorage 为空也无害。
   const adminToken = getAdminToken();
