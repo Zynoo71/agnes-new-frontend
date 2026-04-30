@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kw_echo_service/v1/community_post.proto.
  */
 export const file_kw_echo_service_v1_community_post: GenFile = /*@__PURE__*/
-  fileDesc("Cidrd19lY2hvX3NlcnZpY2UvdjEvY29tbXVuaXR5X3Bvc3QucHJvdG8SEmt3X2VjaG9fc2VydmljZS52MSKUAgoYQ29tbXVuaXR5UG9zdENvbnRlbnREYXRhEgoKAmlkGAEgASgDEg8KB3Bvc3RfaWQYAiABKAMSFAoMY29udGVudF90eXBlGAMgASgFEicKB2NvbnRlbnQYBCABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSFQoNYXR0YWNobWVudF9ubxgFIAEoBRIRCglpMThuX2NvZGUYBiABKAkSLgoKY3JlYXRlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEgoKaXNfZGVsZXRlZBgJIAEoCCJVChZDb21tdW5pdHlQb3N0RW1vamlEYXRhEhEKCWVtb2ppX2tleRgBIAEoCRINCgVjb3VudBgCIAEoBRIZChFyZWFjdGVkX2J5X3ZpZXdlchgDIAEoCCKTAwoRQ29tbXVuaXR5UG9zdERhdGESCgoCaWQYASABKAMSEwoLc291cmNlX3R5cGUYAiABKAUSEAoIb3duZXJfaWQYAyABKAkSEwoLcG9zdF9zdGF0dXMYBCABKAUSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASPgoIY29udGVudHMYByADKAsyLC5rd19lY2hvX3NlcnZpY2UudjEuQ29tbXVuaXR5UG9zdENvbnRlbnREYXRhEjoKBmVtb2ppcxgIIAMoCzIqLmt3X2VjaG9fc2VydmljZS52MS5Db21tdW5pdHlQb3N0RW1vamlEYXRhEgwKBG5hbWUYCSABKAkSDgoGYXZhdGFyGAogASgJEhkKEWFubm91bmNlbWVudF90eXBlGAsgASgFEg8KB2dhbWVfaWQYDCABKAkSEAoIZ3JvdXBfaWQYDSABKAkidgoeQ29tbXVuaXR5UG9zdENvbnRlbnRDcmVhdGVJdGVtEhQKDGNvbnRlbnRfdHlwZRgBIAEoBRInCgdjb250ZW50GAIgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEhUKDWF0dGFjaG1lbnRfbm8YAyABKAUidgoeTG9jYWxpemVkQ29tbXVuaXR5UG9zdENvbnRlbnRzEg4KBmxvY2FsZRgBIAEoCRJECghjb250ZW50cxgCIAMoCzIyLmt3X2VjaG9fc2VydmljZS52MS5Db21tdW5pdHlQb3N0Q29udGVudENyZWF0ZUl0ZW0ivgEKGkNyZWF0ZUNvbW11bml0eVBvc3RSZXF1ZXN0EhMKC3NvdXJjZV90eXBlGAEgASgFEk4KEmxvY2FsaXplZF9jb250ZW50cxgDIAMoCzIyLmt3X2VjaG9fc2VydmljZS52MS5Mb2NhbGl6ZWRDb21tdW5pdHlQb3N0Q29udGVudHMSEAoIYWdlbnRfaWQYBCABKAkSGQoRYW5ub3VuY2VtZW50X3R5cGUYBSABKAVKBAgCEANSCG93bmVyX2lkIngKGENyZWF0ZUNvbW11bml0eVBvc3RSZXBseRIPCgdzdWNjZXNzGAEgASgIEg8KB3Bvc3RfaWQYAiABKAMSEwoLcG9zdF9zdGF0dXMYAyABKAUSFAoMY29udGVudF9yb3dzGAQgASgFEg8KB3Rhc2tfaWQYBSABKAkioAEKI0NyZWF0ZUNvbW11bml0eVBvc3RCeUJhY2tlbmRSZXF1ZXN0Eg4KBm5wY19pZBgBIAEoCRJOChJsb2NhbGl6ZWRfY29udGVudHMYAiADKAsyMi5rd19lY2hvX3NlcnZpY2UudjEuTG9jYWxpemVkQ29tbXVuaXR5UG9zdENvbnRlbnRzEhkKEWFubm91bmNlbWVudF90eXBlGAMgASgFIpQBChlMaXN0Q29tbXVuaXR5UG9zdHNSZXF1ZXN0Eg8KB3Bvc3RfaWQYASABKAMSEQoJcGFnZV9zaXplGAIgASgFEg4KBmxvY2FsZRgDIAEoCRIWCg52aWV3ZXJfdXNlcl9pZBgEIAEoCRIQCghvd25lcl9pZBgFIAEoCRIZChFnYW1lX2NoYXJhY3Rlcl9pZBgGIAEoCSJeChdMaXN0Q29tbXVuaXR5UG9zdHNSZXBseRI0CgVpdGVtcxgBIAMoCzIlLmt3X2VjaG9fc2VydmljZS52MS5Db21tdW5pdHlQb3N0RGF0YRINCgV0b3RhbBgCIAEoBSJ4Ch5BZG1pbkxpc3RDb21tdW5pdHlQb3N0c1JlcXVlc3QSDAoEcGFnZRgBIAEoBRIRCglwYWdlX3NpemUYAiABKAUSDgoGbG9jYWxlGAMgASgJEhAKCG93bmVyX2lkGAQgASgJEhMKC3Bvc3Rfc3RhdHVzGAUgASgFImMKHEFkbWluTGlzdENvbW11bml0eVBvc3RzUmVwbHkSNAoFaXRlbXMYASADKAsyJS5rd19lY2hvX3NlcnZpY2UudjEuQ29tbXVuaXR5UG9zdERhdGESDQoFdG90YWwYAiABKAUiNQoiQWRtaW5HZXRDb21tdW5pdHlQb3N0RGV0YWlsUmVxdWVzdBIPCgdwb3N0X2lkGAEgASgJIk0KF0NvbW11bml0eVBvc3RMb2NhbGVTbG90EhEKCWkxOG5fY29kZRgBIAEoCRIMCgR0ZXh0GAIgASgJEhEKCXZpZGVvX3VybBgDIAEoCSLtAQogQWRtaW5HZXRDb21tdW5pdHlQb3N0RGV0YWlsUmVwbHkSDwoHcG9zdF9pZBgBIAEoAxIQCghucGNfbmFtZRgCIAEoCRISCgppbWFnZV91cmxzGAQgAygJEjwKB2xvY2FsZXMYBSADKAsyKy5rd19lY2hvX3NlcnZpY2UudjEuQ29tbXVuaXR5UG9zdExvY2FsZVNsb3QSGQoRYW5ub3VuY2VtZW50X3R5cGUYBiABKAUSEwoLcG9zdF9zdGF0dXMYByABKAUSEAoIb3duZXJfaWQYCCABKAlKBAgDEARSDHBvc3RfY29udGVudCJzCixBZG1pblVwZGF0ZUNvbW11bml0eVBvc3RMb2NhbGVDb250ZW50UmVxdWVzdBIPCgdwb3N0X2lkGAEgASgJEhEKCWkxOG5fY29kZRgCIAEoCRIMCgR0ZXh0GAMgASgJEhEKCXZpZGVvX3VybBgEIAEoCSJOCipBZG1pblVwZGF0ZUNvbW11bml0eVBvc3RMb2NhbGVDb250ZW50UmVwbHkSDwoHc3VjY2VzcxgBIAEoCBIPCgd1cGRhdGVkGAIgASgIIk0KJUFkbWluVXBkYXRlQ29tbXVuaXR5UG9zdFN0YXR1c1JlcXVlc3QSDwoHcG9zdF9pZBgBIAEoCRITCgtwb3N0X3N0YXR1cxgCIAEoBSJHCiNBZG1pblVwZGF0ZUNvbW11bml0eVBvc3RTdGF0dXNSZXBseRIPCgdzdWNjZXNzGAEgASgIEg8KB3VwZGF0ZWQYAiABKAgiNAogQWRtaW5EZWxldGVDb21tdW5pdHlQb3N0c1JlcXVlc3QSEAoIcG9zdF9pZHMYASADKAkiSAoeQWRtaW5EZWxldGVDb21tdW5pdHlQb3N0c1JlcGx5Eg8KB3N1Y2Nlc3MYASABKAgSFQoNZGVsZXRlZF9jb3VudBgCIAEoBSJrCh5SZWFjdENvbW11bml0eVBvc3RFbW9qaVJlcXVlc3QSDwoHcG9zdF9pZBgBIAEoAxIRCgllbW9qaV9rZXkYAiABKAkSEAoIb3duZXJfaWQYAyABKAkSEwoLc291cmNlX3R5cGUYBCABKAUiVwofQ2FuY2VsQ29tbXVuaXR5UG9zdEVtb2ppUmVxdWVzdBIPCgdwb3N0X2lkGAEgASgDEhAKCG93bmVyX2lkGAIgASgJEhEKCWVtb2ppX2tleRgDIAEoCSJUCh1Db21tdW5pdHlQb3N0RW1vamlBY3Rpb25SZXBseRIPCgdzdWNjZXNzGAEgASgIEg8KB2NoYW5nZWQYAiABKAgSEQoJZW1vamlfa2V5GAMgASgJIn8KI0dldENvbW11bml0eVBvc3RPd25lclByb2ZpbGVSZXF1ZXN0EhMKC3NvdXJjZV90eXBlGAEgASgFEhAKCG93bmVyX2lkGAIgASgJEhYKDnZpZXdlcl91c2VyX2lkGAMgASgJEhkKEWdhbWVfY2hhcmFjdGVyX2lkGAQgASgJIvgBCiFHZXRDb21tdW5pdHlQb3N0T3duZXJQcm9maWxlUmVwbHkSDgoGZXhpc3RzGAEgASgIEg8KB3Bvc3RfaWQYAiABKAMSEwoLc291cmNlX3R5cGUYAyABKAUSEAoIb3duZXJfaWQYBCABKAkSDwoHZ2FtZV9pZBgFIAEoCRISCgpnYW1lX2ludHJvGAYgASgJEhkKEWdhbWVfYWN0aXZlX3ZhbHVlGAcgASgDEhMKC2dhbWVfbnBjX2lkGAggASgJEhAKCG5wY19uYW1lGAkgASgJEhIKCm5wY19hdmF0YXIYCiABKAkSEAoIZ3JvdXBfaWQYCyABKAkicgofR2V0UmVsYXRlZE5wY0dhbWVzQnlQb3N0UmVxdWVzdBITCgtzb3VyY2VfdHlwZRgBIAEoBRIQCghvd25lcl9pZBgCIAEoCRINCgVsaW1pdBgDIAEoBRIZChFnYW1lX2NoYXJhY3Rlcl9pZBgEIAEoCSKPAQoSUmVsYXRlZE5wY0dhbWVDYXJkEhIKCm5wY19hdmF0YXIYASABKAkSEQoJbnBjX2ludHJvGAIgASgJEhAKCG5wY19uYW1lGAMgASgJEhkKEWdhbWVfYWN0aXZlX3ZhbHVlGAQgASgDEhMKC3NvdXJjZV90eXBlGAUgASgFEhAKCG93bmVyX2lkGAYgASgJIlYKHUdldFJlbGF0ZWROcGNHYW1lc0J5UG9zdFJlcGx5EjUKBWl0ZW1zGAEgAygLMiYua3dfZWNob19zZXJ2aWNlLnYxLlJlbGF0ZWROcGNHYW1lQ2FyZDL9DAoUQ29tbXVuaXR5UG9zdFNlcnZpY2UScwoTQ3JlYXRlQ29tbXVuaXR5UG9zdBIuLmt3X2VjaG9fc2VydmljZS52MS5DcmVhdGVDb21tdW5pdHlQb3N0UmVxdWVzdBosLmt3X2VjaG9fc2VydmljZS52MS5DcmVhdGVDb21tdW5pdHlQb3N0UmVwbHkShQEKHENyZWF0ZUNvbW11bml0eVBvc3RCeUJhY2tlbmQSNy5rd19lY2hvX3NlcnZpY2UudjEuQ3JlYXRlQ29tbXVuaXR5UG9zdEJ5QmFja2VuZFJlcXVlc3QaLC5rd19lY2hvX3NlcnZpY2UudjEuQ3JlYXRlQ29tbXVuaXR5UG9zdFJlcGx5EnAKEkxpc3RDb21tdW5pdHlQb3N0cxItLmt3X2VjaG9fc2VydmljZS52MS5MaXN0Q29tbXVuaXR5UG9zdHNSZXF1ZXN0Gisua3dfZWNob19zZXJ2aWNlLnYxLkxpc3RDb21tdW5pdHlQb3N0c1JlcGx5En8KF0FkbWluTGlzdENvbW11bml0eVBvc3RzEjIua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluTGlzdENvbW11bml0eVBvc3RzUmVxdWVzdBowLmt3X2VjaG9fc2VydmljZS52MS5BZG1pbkxpc3RDb21tdW5pdHlQb3N0c1JlcGx5EosBChtBZG1pbkdldENvbW11bml0eVBvc3REZXRhaWwSNi5rd19lY2hvX3NlcnZpY2UudjEuQWRtaW5HZXRDb21tdW5pdHlQb3N0RGV0YWlsUmVxdWVzdBo0Lmt3X2VjaG9fc2VydmljZS52MS5BZG1pbkdldENvbW11bml0eVBvc3REZXRhaWxSZXBseRKpAQolQWRtaW5VcGRhdGVDb21tdW5pdHlQb3N0TG9jYWxlQ29udGVudBJALmt3X2VjaG9fc2VydmljZS52MS5BZG1pblVwZGF0ZUNvbW11bml0eVBvc3RMb2NhbGVDb250ZW50UmVxdWVzdBo+Lmt3X2VjaG9fc2VydmljZS52MS5BZG1pblVwZGF0ZUNvbW11bml0eVBvc3RMb2NhbGVDb250ZW50UmVwbHkSlAEKHkFkbWluVXBkYXRlQ29tbXVuaXR5UG9zdFN0YXR1cxI5Lmt3X2VjaG9fc2VydmljZS52MS5BZG1pblVwZGF0ZUNvbW11bml0eVBvc3RTdGF0dXNSZXF1ZXN0Gjcua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluVXBkYXRlQ29tbXVuaXR5UG9zdFN0YXR1c1JlcGx5EoUBChlBZG1pbkRlbGV0ZUNvbW11bml0eVBvc3RzEjQua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluRGVsZXRlQ29tbXVuaXR5UG9zdHNSZXF1ZXN0GjIua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluRGVsZXRlQ29tbXVuaXR5UG9zdHNSZXBseRKAAQoXUmVhY3RDb21tdW5pdHlQb3N0RW1vamkSMi5rd19lY2hvX3NlcnZpY2UudjEuUmVhY3RDb21tdW5pdHlQb3N0RW1vamlSZXF1ZXN0GjEua3dfZWNob19zZXJ2aWNlLnYxLkNvbW11bml0eVBvc3RFbW9qaUFjdGlvblJlcGx5EoIBChhDYW5jZWxDb21tdW5pdHlQb3N0RW1vamkSMy5rd19lY2hvX3NlcnZpY2UudjEuQ2FuY2VsQ29tbXVuaXR5UG9zdEVtb2ppUmVxdWVzdBoxLmt3X2VjaG9fc2VydmljZS52MS5Db21tdW5pdHlQb3N0RW1vamlBY3Rpb25SZXBseRKOAQocR2V0Q29tbXVuaXR5UG9zdE93bmVyUHJvZmlsZRI3Lmt3X2VjaG9fc2VydmljZS52MS5HZXRDb21tdW5pdHlQb3N0T3duZXJQcm9maWxlUmVxdWVzdBo1Lmt3X2VjaG9fc2VydmljZS52MS5HZXRDb21tdW5pdHlQb3N0T3duZXJQcm9maWxlUmVwbHkSggEKGEdldFJlbGF0ZWROcGNHYW1lc0J5UG9zdBIzLmt3X2VjaG9fc2VydmljZS52MS5HZXRSZWxhdGVkTnBjR2FtZXNCeVBvc3RSZXF1ZXN0GjEua3dfZWNob19zZXJ2aWNlLnYxLkdldFJlbGF0ZWROcGNHYW1lc0J5UG9zdFJlcGx5QjpaOGFnbmVzL3Byb3RvL2dlbi9nby9rd19lY2hvX3NlcnZpY2UvdjE7a3dfZWNob19zZXJ2aWNlX3YxYgZwcm90bzM", [file_google_protobuf_timestamp, file_google_protobuf_struct]);
+  fileDesc("Cidrd19lY2hvX3NlcnZpY2UvdjEvY29tbXVuaXR5X3Bvc3QucHJvdG8SEmt3X2VjaG9fc2VydmljZS52MSKUAgoYQ29tbXVuaXR5UG9zdENvbnRlbnREYXRhEgoKAmlkGAEgASgDEg8KB3Bvc3RfaWQYAiABKAMSFAoMY29udGVudF90eXBlGAMgASgFEicKB2NvbnRlbnQYBCABKAsyFi5nb29nbGUucHJvdG9idWYuVmFsdWUSFQoNYXR0YWNobWVudF9ubxgFIAEoBRIRCglpMThuX2NvZGUYBiABKAkSLgoKY3JlYXRlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEgoKaXNfZGVsZXRlZBgJIAEoCCJVChZDb21tdW5pdHlQb3N0RW1vamlEYXRhEhEKCWVtb2ppX2tleRgBIAEoCRINCgVjb3VudBgCIAEoBRIZChFyZWFjdGVkX2J5X3ZpZXdlchgDIAEoCCKjBAoRQ29tbXVuaXR5UG9zdERhdGESCgoCaWQYASABKAMSEwoLc291cmNlX3R5cGUYAiABKAUSEAoIb3duZXJfaWQYAyABKAkSEwoLcG9zdF9zdGF0dXMYBCABKAUSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASPgoIY29udGVudHMYByADKAsyLC5rd19lY2hvX3NlcnZpY2UudjEuQ29tbXVuaXR5UG9zdENvbnRlbnREYXRhEjoKBmVtb2ppcxgIIAMoCzIqLmt3X2VjaG9fc2VydmljZS52MS5Db21tdW5pdHlQb3N0RW1vamlEYXRhEgwKBG5hbWUYCSABKAkSDgoGYXZhdGFyGAogASgJEhkKEWFubm91bmNlbWVudF90eXBlGAsgASgFEg8KB2dhbWVfaWQYDCABKAkSEAoIZ3JvdXBfaWQYDSABKAkSEQoJZ2FtZV9uYW1lGA4gASgJEhIKCmdhbWVfaW50cm8YDyABKAkSHQoVZ2FtZV9iYWNrZ3JvdW5kX2ltYWdlGBAgASgJEhAKCGdhbWVfYmdtGBEgASgJEh4KFmdhbWVfb3BlbmluZ19hbmltYXRpb24YEiABKAkSFgoOZ2FtZV9pbnRyb190dHMYEyABKAkidgoeQ29tbXVuaXR5UG9zdENvbnRlbnRDcmVhdGVJdGVtEhQKDGNvbnRlbnRfdHlwZRgBIAEoBRInCgdjb250ZW50GAIgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlEhUKDWF0dGFjaG1lbnRfbm8YAyABKAUidgoeTG9jYWxpemVkQ29tbXVuaXR5UG9zdENvbnRlbnRzEg4KBmxvY2FsZRgBIAEoCRJECghjb250ZW50cxgCIAMoCzIyLmt3X2VjaG9fc2VydmljZS52MS5Db21tdW5pdHlQb3N0Q29udGVudENyZWF0ZUl0ZW0ivgEKGkNyZWF0ZUNvbW11bml0eVBvc3RSZXF1ZXN0EhMKC3NvdXJjZV90eXBlGAEgASgFEk4KEmxvY2FsaXplZF9jb250ZW50cxgDIAMoCzIyLmt3X2VjaG9fc2VydmljZS52MS5Mb2NhbGl6ZWRDb21tdW5pdHlQb3N0Q29udGVudHMSEAoIYWdlbnRfaWQYBCABKAkSGQoRYW5ub3VuY2VtZW50X3R5cGUYBSABKAVKBAgCEANSCG93bmVyX2lkIngKGENyZWF0ZUNvbW11bml0eVBvc3RSZXBseRIPCgdzdWNjZXNzGAEgASgIEg8KB3Bvc3RfaWQYAiABKAMSEwoLcG9zdF9zdGF0dXMYAyABKAUSFAoMY29udGVudF9yb3dzGAQgASgFEg8KB3Rhc2tfaWQYBSABKAkioAEKI0NyZWF0ZUNvbW11bml0eVBvc3RCeUJhY2tlbmRSZXF1ZXN0Eg4KBm5wY19pZBgBIAEoCRJOChJsb2NhbGl6ZWRfY29udGVudHMYAiADKAsyMi5rd19lY2hvX3NlcnZpY2UudjEuTG9jYWxpemVkQ29tbXVuaXR5UG9zdENvbnRlbnRzEhkKEWFubm91bmNlbWVudF90eXBlGAMgASgFIpQBChlMaXN0Q29tbXVuaXR5UG9zdHNSZXF1ZXN0Eg8KB3Bvc3RfaWQYASABKAMSEQoJcGFnZV9zaXplGAIgASgFEg4KBmxvY2FsZRgDIAEoCRIWCg52aWV3ZXJfdXNlcl9pZBgEIAEoCRIQCghvd25lcl9pZBgFIAEoCRIZChFnYW1lX2NoYXJhY3Rlcl9pZBgGIAEoCSJeChdMaXN0Q29tbXVuaXR5UG9zdHNSZXBseRI0CgVpdGVtcxgBIAMoCzIlLmt3X2VjaG9fc2VydmljZS52MS5Db21tdW5pdHlQb3N0RGF0YRINCgV0b3RhbBgCIAEoBSLQAQoeQWRtaW5MaXN0Q29tbXVuaXR5UG9zdHNSZXF1ZXN0EgwKBHBhZ2UYASABKAUSEQoJcGFnZV9zaXplGAIgASgFEg4KBmxvY2FsZRgDIAEoCRIQCghvd25lcl9pZBgEIAEoCRITCgtwb3N0X3N0YXR1cxgFIAEoBRIUCgdwb3N0X2lkGAYgASgDSACIAQESHgoRYW5ub3VuY2VtZW50X3R5cGUYByABKAVIAYgBAUIKCghfcG9zdF9pZEIUChJfYW5ub3VuY2VtZW50X3R5cGUiYwocQWRtaW5MaXN0Q29tbXVuaXR5UG9zdHNSZXBseRI0CgVpdGVtcxgBIAMoCzIlLmt3X2VjaG9fc2VydmljZS52MS5Db21tdW5pdHlQb3N0RGF0YRINCgV0b3RhbBgCIAEoBSI1CiJBZG1pbkdldENvbW11bml0eVBvc3REZXRhaWxSZXF1ZXN0Eg8KB3Bvc3RfaWQYASABKAkiTQoXQ29tbXVuaXR5UG9zdExvY2FsZVNsb3QSEQoJaTE4bl9jb2RlGAEgASgJEgwKBHRleHQYAiABKAkSEQoJdmlkZW9fdXJsGAMgASgJIu0BCiBBZG1pbkdldENvbW11bml0eVBvc3REZXRhaWxSZXBseRIPCgdwb3N0X2lkGAEgASgDEhAKCG5wY19uYW1lGAIgASgJEhIKCmltYWdlX3VybHMYBCADKAkSPAoHbG9jYWxlcxgFIAMoCzIrLmt3X2VjaG9fc2VydmljZS52MS5Db21tdW5pdHlQb3N0TG9jYWxlU2xvdBIZChFhbm5vdW5jZW1lbnRfdHlwZRgGIAEoBRITCgtwb3N0X3N0YXR1cxgHIAEoBRIQCghvd25lcl9pZBgIIAEoCUoECAMQBFIMcG9zdF9jb250ZW50InMKLEFkbWluVXBkYXRlQ29tbXVuaXR5UG9zdExvY2FsZUNvbnRlbnRSZXF1ZXN0Eg8KB3Bvc3RfaWQYASABKAkSEQoJaTE4bl9jb2RlGAIgASgJEgwKBHRleHQYAyABKAkSEQoJdmlkZW9fdXJsGAQgASgJIk4KKkFkbWluVXBkYXRlQ29tbXVuaXR5UG9zdExvY2FsZUNvbnRlbnRSZXBseRIPCgdzdWNjZXNzGAEgASgIEg8KB3VwZGF0ZWQYAiABKAgiYAonQWRtaW5EdWJDb21tdW5pdHlQb3N0TG9jYWxlVmlkZW9SZXF1ZXN0Eg8KB3Bvc3RfaWQYASABKAkSEQoJaTE4bl9jb2RlGAIgASgJEhEKCXZpZGVvX3VybBgDIAEoCSJNCiVBZG1pblVwZGF0ZUNvbW11bml0eVBvc3RTdGF0dXNSZXF1ZXN0Eg8KB3Bvc3RfaWQYASABKAkSEwoLcG9zdF9zdGF0dXMYAiABKAUiRwojQWRtaW5VcGRhdGVDb21tdW5pdHlQb3N0U3RhdHVzUmVwbHkSDwoHc3VjY2VzcxgBIAEoCBIPCgd1cGRhdGVkGAIgASgIIjQKIEFkbWluRGVsZXRlQ29tbXVuaXR5UG9zdHNSZXF1ZXN0EhAKCHBvc3RfaWRzGAEgAygJIkgKHkFkbWluRGVsZXRlQ29tbXVuaXR5UG9zdHNSZXBseRIPCgdzdWNjZXNzGAEgASgIEhUKDWRlbGV0ZWRfY291bnQYAiABKAUiawoeUmVhY3RDb21tdW5pdHlQb3N0RW1vamlSZXF1ZXN0Eg8KB3Bvc3RfaWQYASABKAMSEQoJZW1vamlfa2V5GAIgASgJEhAKCG93bmVyX2lkGAMgASgJEhMKC3NvdXJjZV90eXBlGAQgASgFIlcKH0NhbmNlbENvbW11bml0eVBvc3RFbW9qaVJlcXVlc3QSDwoHcG9zdF9pZBgBIAEoAxIQCghvd25lcl9pZBgCIAEoCRIRCgllbW9qaV9rZXkYAyABKAkiVAodQ29tbXVuaXR5UG9zdEVtb2ppQWN0aW9uUmVwbHkSDwoHc3VjY2VzcxgBIAEoCBIPCgdjaGFuZ2VkGAIgASgIEhEKCWVtb2ppX2tleRgDIAEoCSJ/CiNHZXRDb21tdW5pdHlQb3N0T3duZXJQcm9maWxlUmVxdWVzdBITCgtzb3VyY2VfdHlwZRgBIAEoBRIQCghvd25lcl9pZBgCIAEoCRIWCg52aWV3ZXJfdXNlcl9pZBgDIAEoCRIZChFnYW1lX2NoYXJhY3Rlcl9pZBgEIAEoCSL0AgohR2V0Q29tbXVuaXR5UG9zdE93bmVyUHJvZmlsZVJlcGx5Eg4KBmV4aXN0cxgBIAEoCBIPCgdwb3N0X2lkGAIgASgDEhMKC3NvdXJjZV90eXBlGAMgASgFEhAKCG93bmVyX2lkGAQgASgJEg8KB2dhbWVfaWQYBSABKAkSEgoKZ2FtZV9pbnRybxgGIAEoCRIZChFnYW1lX2FjdGl2ZV92YWx1ZRgHIAEoAxITCgtnYW1lX25wY19pZBgIIAEoCRIQCghucGNfbmFtZRgJIAEoCRISCgpucGNfYXZhdGFyGAogASgJEhAKCGdyb3VwX2lkGAsgASgJEhEKCWdhbWVfbmFtZRgMIAEoCRIdChVnYW1lX2JhY2tncm91bmRfaW1hZ2UYDSABKAkSEAoIZ2FtZV9iZ20YDiABKAkSHgoWZ2FtZV9vcGVuaW5nX2FuaW1hdGlvbhgPIAEoCRIWCg5nYW1lX2ludHJvX3R0cxgQIAEoCSJyCh9HZXRSZWxhdGVkTnBjR2FtZXNCeVBvc3RSZXF1ZXN0EhMKC3NvdXJjZV90eXBlGAEgASgFEhAKCG93bmVyX2lkGAIgASgJEg0KBWxpbWl0GAMgASgFEhkKEWdhbWVfY2hhcmFjdGVyX2lkGAQgASgJIo8BChJSZWxhdGVkTnBjR2FtZUNhcmQSEgoKbnBjX2F2YXRhchgBIAEoCRIRCglucGNfaW50cm8YAiABKAkSEAoIbnBjX25hbWUYAyABKAkSGQoRZ2FtZV9hY3RpdmVfdmFsdWUYBCABKAMSEwoLc291cmNlX3R5cGUYBSABKAUSEAoIb3duZXJfaWQYBiABKAkiVgodR2V0UmVsYXRlZE5wY0dhbWVzQnlQb3N0UmVwbHkSNQoFaXRlbXMYASADKAsyJi5rd19lY2hvX3NlcnZpY2UudjEuUmVsYXRlZE5wY0dhbWVDYXJkMp8OChRDb21tdW5pdHlQb3N0U2VydmljZRJzChNDcmVhdGVDb21tdW5pdHlQb3N0Ei4ua3dfZWNob19zZXJ2aWNlLnYxLkNyZWF0ZUNvbW11bml0eVBvc3RSZXF1ZXN0Giwua3dfZWNob19zZXJ2aWNlLnYxLkNyZWF0ZUNvbW11bml0eVBvc3RSZXBseRKFAQocQ3JlYXRlQ29tbXVuaXR5UG9zdEJ5QmFja2VuZBI3Lmt3X2VjaG9fc2VydmljZS52MS5DcmVhdGVDb21tdW5pdHlQb3N0QnlCYWNrZW5kUmVxdWVzdBosLmt3X2VjaG9fc2VydmljZS52MS5DcmVhdGVDb21tdW5pdHlQb3N0UmVwbHkScAoSTGlzdENvbW11bml0eVBvc3RzEi0ua3dfZWNob19zZXJ2aWNlLnYxLkxpc3RDb21tdW5pdHlQb3N0c1JlcXVlc3QaKy5rd19lY2hvX3NlcnZpY2UudjEuTGlzdENvbW11bml0eVBvc3RzUmVwbHkSfwoXQWRtaW5MaXN0Q29tbXVuaXR5UG9zdHMSMi5rd19lY2hvX3NlcnZpY2UudjEuQWRtaW5MaXN0Q29tbXVuaXR5UG9zdHNSZXF1ZXN0GjAua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluTGlzdENvbW11bml0eVBvc3RzUmVwbHkSiwEKG0FkbWluR2V0Q29tbXVuaXR5UG9zdERldGFpbBI2Lmt3X2VjaG9fc2VydmljZS52MS5BZG1pbkdldENvbW11bml0eVBvc3REZXRhaWxSZXF1ZXN0GjQua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluR2V0Q29tbXVuaXR5UG9zdERldGFpbFJlcGx5EqkBCiVBZG1pblVwZGF0ZUNvbW11bml0eVBvc3RMb2NhbGVDb250ZW50EkAua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluVXBkYXRlQ29tbXVuaXR5UG9zdExvY2FsZUNvbnRlbnRSZXF1ZXN0Gj4ua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluVXBkYXRlQ29tbXVuaXR5UG9zdExvY2FsZUNvbnRlbnRSZXBseRKfAQogQWRtaW5EdWJDb21tdW5pdHlQb3N0TG9jYWxlVmlkZW8SOy5rd19lY2hvX3NlcnZpY2UudjEuQWRtaW5EdWJDb21tdW5pdHlQb3N0TG9jYWxlVmlkZW9SZXF1ZXN0Gj4ua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluVXBkYXRlQ29tbXVuaXR5UG9zdExvY2FsZUNvbnRlbnRSZXBseRKUAQoeQWRtaW5VcGRhdGVDb21tdW5pdHlQb3N0U3RhdHVzEjkua3dfZWNob19zZXJ2aWNlLnYxLkFkbWluVXBkYXRlQ29tbXVuaXR5UG9zdFN0YXR1c1JlcXVlc3QaNy5rd19lY2hvX3NlcnZpY2UudjEuQWRtaW5VcGRhdGVDb21tdW5pdHlQb3N0U3RhdHVzUmVwbHkShQEKGUFkbWluRGVsZXRlQ29tbXVuaXR5UG9zdHMSNC5rd19lY2hvX3NlcnZpY2UudjEuQWRtaW5EZWxldGVDb21tdW5pdHlQb3N0c1JlcXVlc3QaMi5rd19lY2hvX3NlcnZpY2UudjEuQWRtaW5EZWxldGVDb21tdW5pdHlQb3N0c1JlcGx5EoABChdSZWFjdENvbW11bml0eVBvc3RFbW9qaRIyLmt3X2VjaG9fc2VydmljZS52MS5SZWFjdENvbW11bml0eVBvc3RFbW9qaVJlcXVlc3QaMS5rd19lY2hvX3NlcnZpY2UudjEuQ29tbXVuaXR5UG9zdEVtb2ppQWN0aW9uUmVwbHkSggEKGENhbmNlbENvbW11bml0eVBvc3RFbW9qaRIzLmt3X2VjaG9fc2VydmljZS52MS5DYW5jZWxDb21tdW5pdHlQb3N0RW1vamlSZXF1ZXN0GjEua3dfZWNob19zZXJ2aWNlLnYxLkNvbW11bml0eVBvc3RFbW9qaUFjdGlvblJlcGx5Eo4BChxHZXRDb21tdW5pdHlQb3N0T3duZXJQcm9maWxlEjcua3dfZWNob19zZXJ2aWNlLnYxLkdldENvbW11bml0eVBvc3RPd25lclByb2ZpbGVSZXF1ZXN0GjUua3dfZWNob19zZXJ2aWNlLnYxLkdldENvbW11bml0eVBvc3RPd25lclByb2ZpbGVSZXBseRKCAQoYR2V0UmVsYXRlZE5wY0dhbWVzQnlQb3N0EjMua3dfZWNob19zZXJ2aWNlLnYxLkdldFJlbGF0ZWROcGNHYW1lc0J5UG9zdFJlcXVlc3QaMS5rd19lY2hvX3NlcnZpY2UudjEuR2V0UmVsYXRlZE5wY0dhbWVzQnlQb3N0UmVwbHlCOlo4YWduZXMvcHJvdG8vZ2VuL2dvL2t3X2VjaG9fc2VydmljZS92MTtrd19lY2hvX3NlcnZpY2VfdjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_google_protobuf_struct]);
 
 /**
  * 单条内容块（community_post_contents）
@@ -179,7 +179,7 @@ export type CommunityPostData = Message<"kw_echo_service.v1.CommunityPostData"> 
   avatar: string;
 
   /**
-   * 公告类型: 0-普通公告, 1-官方公告, 3-自定义官方公告（community_posts.announcement_type）
+   * 公告类型: 0-普通公告, 1-官方公告, 2-自定义官方公告（community_posts.announcement_type）
    *
    * @generated from field: int32 announcement_type = 11;
    */
@@ -198,6 +198,38 @@ export type CommunityPostData = Message<"kw_echo_service.v1.CommunityPostData"> 
    * @generated from field: string group_id = 13;
    */
   groupId: string;
+
+  /**
+   * 以下与 kw_groupchat_service.v1.GameInfo 当前语言一致；非 NPC 帖或 game_id 为空时为空串
+   *
+   * @generated from field: string game_name = 14;
+   */
+  gameName: string;
+
+  /**
+   * @generated from field: string game_intro = 15;
+   */
+  gameIntro: string;
+
+  /**
+   * @generated from field: string game_background_image = 16;
+   */
+  gameBackgroundImage: string;
+
+  /**
+   * @generated from field: string game_bgm = 17;
+   */
+  gameBgm: string;
+
+  /**
+   * @generated from field: string game_opening_animation = 18;
+   */
+  gameOpeningAnimation: string;
+
+  /**
+   * @generated from field: string game_intro_tts = 19;
+   */
+  gameIntroTts: string;
 };
 
 /**
@@ -289,7 +321,7 @@ export type CreateCommunityPostRequest = Message<"kw_echo_service.v1.CreateCommu
   agentId: string;
 
   /**
-   * 0-普通公告, 1-官方公告, 3-自定义官方公告；缺省 0
+   * 0-普通公告, 1-官方公告, 2-自定义官方公告；缺省 0
    *
    * @generated from field: int32 announcement_type = 5;
    */
@@ -361,7 +393,7 @@ export type CreateCommunityPostByBackendRequest = Message<"kw_echo_service.v1.Cr
   localizedContents: LocalizedCommunityPostContents[];
 
   /**
-   * 0-普通公告, 1-官方公告, 3-自定义官方公告；缺省 0
+   * 0-普通公告, 1-官方公告, 2-自定义官方公告；缺省 0
    *
    * @generated from field: int32 announcement_type = 3;
    */
@@ -479,6 +511,20 @@ export type AdminListCommunityPostsRequest = Message<"kw_echo_service.v1.AdminLi
    * @generated from field: int32 post_status = 5;
    */
   postStatus: number;
+
+  /**
+   * 可选：>0 时仅返回该主键帖子（仍受 owner_id/post_status 等其它条件约束）
+   *
+   * @generated from field: optional int64 post_id = 6;
+   */
+  postId?: bigint;
+
+  /**
+   * 可选：按 community_posts.announcement_type 精确筛选（未设置则不过滤）
+   *
+   * @generated from field: optional int32 announcement_type = 7;
+   */
+  announcementType?: number;
 };
 
 /**
@@ -583,7 +629,7 @@ export type AdminGetCommunityPostDetailReply = Message<"kw_echo_service.v1.Admin
   locales: CommunityPostLocaleSlot[];
 
   /**
-   * 0-普通公告, 1-官方公告, 3-自定义官方公告
+   * 0-普通公告, 1-官方公告, 2-自定义官方公告
    *
    * @generated from field: int32 announcement_type = 6;
    */
@@ -629,7 +675,7 @@ export type AdminUpdateCommunityPostLocaleContentRequest = Message<"kw_echo_serv
   text: string;
 
   /**
-   * 非空则更新该语种首条视频块 JSON 的 url（须为 http(s)，且会做可达性探测）
+   * 非空则更新该语种首条视频块 JSON 的 url（须为 http(s)，可达性探测 + Vision 后处理）；不触发配音（配音见 AdminDubCommunityPostLocaleVideo）
    *
    * @generated from field: string video_url = 4;
    */
@@ -666,6 +712,35 @@ export const AdminUpdateCommunityPostLocaleContentReplySchema: GenMessage<AdminU
   messageDesc(file_kw_echo_service_v1_community_post, 16);
 
 /**
+ * @generated from message kw_echo_service.v1.AdminDubCommunityPostLocaleVideoRequest
+ */
+export type AdminDubCommunityPostLocaleVideoRequest = Message<"kw_echo_service.v1.AdminDubCommunityPostLocaleVideoRequest"> & {
+  /**
+   * @generated from field: string post_id = 1;
+   */
+  postId: string;
+
+  /**
+   * @generated from field: string i18n_code = 2;
+   */
+  i18nCode: string;
+
+  /**
+   * 须为 http(s)，会做可达性探测；配音源为该 URL（与更新 locale 视频块时的后处理 + 配音流程一致）
+   *
+   * @generated from field: string video_url = 3;
+   */
+  videoUrl: string;
+};
+
+/**
+ * Describes the message kw_echo_service.v1.AdminDubCommunityPostLocaleVideoRequest.
+ * Use `create(AdminDubCommunityPostLocaleVideoRequestSchema)` to create a new message.
+ */
+export const AdminDubCommunityPostLocaleVideoRequestSchema: GenMessage<AdminDubCommunityPostLocaleVideoRequest> = /*@__PURE__*/
+  messageDesc(file_kw_echo_service_v1_community_post, 17);
+
+/**
  * @generated from message kw_echo_service.v1.AdminUpdateCommunityPostStatusRequest
  */
 export type AdminUpdateCommunityPostStatusRequest = Message<"kw_echo_service.v1.AdminUpdateCommunityPostStatusRequest"> & {
@@ -685,7 +760,7 @@ export type AdminUpdateCommunityPostStatusRequest = Message<"kw_echo_service.v1.
  * Use `create(AdminUpdateCommunityPostStatusRequestSchema)` to create a new message.
  */
 export const AdminUpdateCommunityPostStatusRequestSchema: GenMessage<AdminUpdateCommunityPostStatusRequest> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 17);
+  messageDesc(file_kw_echo_service_v1_community_post, 18);
 
 /**
  * @generated from message kw_echo_service.v1.AdminUpdateCommunityPostStatusReply
@@ -707,7 +782,7 @@ export type AdminUpdateCommunityPostStatusReply = Message<"kw_echo_service.v1.Ad
  * Use `create(AdminUpdateCommunityPostStatusReplySchema)` to create a new message.
  */
 export const AdminUpdateCommunityPostStatusReplySchema: GenMessage<AdminUpdateCommunityPostStatusReply> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 18);
+  messageDesc(file_kw_echo_service_v1_community_post, 19);
 
 /**
  * @generated from message kw_echo_service.v1.AdminDeleteCommunityPostsRequest
@@ -724,7 +799,7 @@ export type AdminDeleteCommunityPostsRequest = Message<"kw_echo_service.v1.Admin
  * Use `create(AdminDeleteCommunityPostsRequestSchema)` to create a new message.
  */
 export const AdminDeleteCommunityPostsRequestSchema: GenMessage<AdminDeleteCommunityPostsRequest> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 19);
+  messageDesc(file_kw_echo_service_v1_community_post, 20);
 
 /**
  * @generated from message kw_echo_service.v1.AdminDeleteCommunityPostsReply
@@ -746,7 +821,7 @@ export type AdminDeleteCommunityPostsReply = Message<"kw_echo_service.v1.AdminDe
  * Use `create(AdminDeleteCommunityPostsReplySchema)` to create a new message.
  */
 export const AdminDeleteCommunityPostsReplySchema: GenMessage<AdminDeleteCommunityPostsReply> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 20);
+  messageDesc(file_kw_echo_service_v1_community_post, 21);
 
 /**
  * @generated from message kw_echo_service.v1.ReactCommunityPostEmojiRequest
@@ -780,7 +855,7 @@ export type ReactCommunityPostEmojiRequest = Message<"kw_echo_service.v1.ReactCo
  * Use `create(ReactCommunityPostEmojiRequestSchema)` to create a new message.
  */
 export const ReactCommunityPostEmojiRequestSchema: GenMessage<ReactCommunityPostEmojiRequest> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 21);
+  messageDesc(file_kw_echo_service_v1_community_post, 22);
 
 /**
  * @generated from message kw_echo_service.v1.CancelCommunityPostEmojiRequest
@@ -807,7 +882,7 @@ export type CancelCommunityPostEmojiRequest = Message<"kw_echo_service.v1.Cancel
  * Use `create(CancelCommunityPostEmojiRequestSchema)` to create a new message.
  */
 export const CancelCommunityPostEmojiRequestSchema: GenMessage<CancelCommunityPostEmojiRequest> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 22);
+  messageDesc(file_kw_echo_service_v1_community_post, 23);
 
 /**
  * @generated from message kw_echo_service.v1.CommunityPostEmojiActionReply
@@ -838,7 +913,7 @@ export type CommunityPostEmojiActionReply = Message<"kw_echo_service.v1.Communit
  * Use `create(CommunityPostEmojiActionReplySchema)` to create a new message.
  */
 export const CommunityPostEmojiActionReplySchema: GenMessage<CommunityPostEmojiActionReply> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 23);
+  messageDesc(file_kw_echo_service_v1_community_post, 24);
 
 /**
  * @generated from message kw_echo_service.v1.GetCommunityPostOwnerProfileRequest
@@ -874,7 +949,7 @@ export type GetCommunityPostOwnerProfileRequest = Message<"kw_echo_service.v1.Ge
  * Use `create(GetCommunityPostOwnerProfileRequestSchema)` to create a new message.
  */
 export const GetCommunityPostOwnerProfileRequestSchema: GenMessage<GetCommunityPostOwnerProfileRequest> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 24);
+  messageDesc(file_kw_echo_service_v1_community_post, 25);
 
 /**
  * @generated from message kw_echo_service.v1.GetCommunityPostOwnerProfileReply
@@ -936,6 +1011,33 @@ export type GetCommunityPostOwnerProfileReply = Message<"kw_echo_service.v1.GetC
    * @generated from field: string group_id = 11;
    */
   groupId: string;
+
+  /**
+   * 与 GameInfo 对齐（game_intro 字段 6 已表示简介，此处补充名称与资源 URL）
+   *
+   * @generated from field: string game_name = 12;
+   */
+  gameName: string;
+
+  /**
+   * @generated from field: string game_background_image = 13;
+   */
+  gameBackgroundImage: string;
+
+  /**
+   * @generated from field: string game_bgm = 14;
+   */
+  gameBgm: string;
+
+  /**
+   * @generated from field: string game_opening_animation = 15;
+   */
+  gameOpeningAnimation: string;
+
+  /**
+   * @generated from field: string game_intro_tts = 16;
+   */
+  gameIntroTts: string;
 };
 
 /**
@@ -943,7 +1045,7 @@ export type GetCommunityPostOwnerProfileReply = Message<"kw_echo_service.v1.GetC
  * Use `create(GetCommunityPostOwnerProfileReplySchema)` to create a new message.
  */
 export const GetCommunityPostOwnerProfileReplySchema: GenMessage<GetCommunityPostOwnerProfileReply> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 25);
+  messageDesc(file_kw_echo_service_v1_community_post, 26);
 
 /**
  * @generated from message kw_echo_service.v1.GetRelatedNpcGamesByPostRequest
@@ -979,7 +1081,7 @@ export type GetRelatedNpcGamesByPostRequest = Message<"kw_echo_service.v1.GetRel
  * Use `create(GetRelatedNpcGamesByPostRequestSchema)` to create a new message.
  */
 export const GetRelatedNpcGamesByPostRequestSchema: GenMessage<GetRelatedNpcGamesByPostRequest> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 26);
+  messageDesc(file_kw_echo_service_v1_community_post, 27);
 
 /**
  * @generated from message kw_echo_service.v1.RelatedNpcGameCard
@@ -1025,7 +1127,7 @@ export type RelatedNpcGameCard = Message<"kw_echo_service.v1.RelatedNpcGameCard"
  * Use `create(RelatedNpcGameCardSchema)` to create a new message.
  */
 export const RelatedNpcGameCardSchema: GenMessage<RelatedNpcGameCard> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 27);
+  messageDesc(file_kw_echo_service_v1_community_post, 28);
 
 /**
  * @generated from message kw_echo_service.v1.GetRelatedNpcGamesByPostReply
@@ -1042,7 +1144,7 @@ export type GetRelatedNpcGamesByPostReply = Message<"kw_echo_service.v1.GetRelat
  * Use `create(GetRelatedNpcGamesByPostReplySchema)` to create a new message.
  */
 export const GetRelatedNpcGamesByPostReplySchema: GenMessage<GetRelatedNpcGamesByPostReply> = /*@__PURE__*/
-  messageDesc(file_kw_echo_service_v1_community_post, 28);
+  messageDesc(file_kw_echo_service_v1_community_post, 29);
 
 /**
  * @generated from service kw_echo_service.v1.CommunityPostService
@@ -1094,6 +1196,16 @@ export const CommunityPostService: GenService<{
   adminUpdateCommunityPostLocaleContent: {
     methodKind: "unary";
     input: typeof AdminUpdateCommunityPostLocaleContentRequestSchema;
+    output: typeof AdminUpdateCommunityPostLocaleContentReplySchema;
+  },
+  /**
+   * 管理端：异步受理配音落库；RPC 立即返回 success=true、updated=false，实际写入在服务端后台任务完成（原 locale-content 仅更新 URL/后处理、不配音）。
+   *
+   * @generated from rpc kw_echo_service.v1.CommunityPostService.AdminDubCommunityPostLocaleVideo
+   */
+  adminDubCommunityPostLocaleVideo: {
+    methodKind: "unary";
+    input: typeof AdminDubCommunityPostLocaleVideoRequestSchema;
     output: typeof AdminUpdateCommunityPostLocaleContentReplySchema;
   },
   /**

@@ -240,7 +240,7 @@ export const ProductAddonConfigSchema: GenMessage<ProductAddonConfig> = /*@__PUR
 
 /**
  * ProductResourceConfig 资源商品专属配置（模板/游戏/功能解锁）
- * 
+ *
  * 调用方使用指南：
  *   1. 判断用户能否访问：先看 access_type
  *      - 0(开放): 所有人可访问

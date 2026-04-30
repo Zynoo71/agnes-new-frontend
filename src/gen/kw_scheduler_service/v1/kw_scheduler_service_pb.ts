@@ -1301,10 +1301,10 @@ export const NotifyStatusSchema: GenEnum<NotifyStatus> = /*@__PURE__*/
 /**
  * ============================================================================
  * SchedulerService — 定时任务管理与调度服务
- * 
+ *
  * 1. 管理 API：创建/查询/修改/删除定时任务（SuperAgent Tool 或管理后台调用）
  * 2. 调度引擎：按 cron/once/interval 触发，调用 kw-agent-service 执行
- * 
+ *
  * 调度模型：
  *   - 单个 Asynq cron ("*\/1 * * * *") 执行 scan_and_dispatch
  *   - DB 行锁 (FOR UPDATE SKIP LOCKED) 保证多实例安全

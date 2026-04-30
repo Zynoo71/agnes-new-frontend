@@ -13,8 +13,8 @@ interface ConversationListStore {
   conversations: ConvMeta[];
 
   load: () => void;
-  add: (id: string, agentType: string, systemPromptId?: string) => void;
-  update: (id: string, fields: Partial<Pick<ConvMeta, "title" | "agentType" | "systemPromptId">>) => void;
+  add: (id: string, agentType: string, systemPromptId?: string, llmAlias?: string) => void;
+  update: (id: string, fields: Partial<Pick<ConvMeta, "title" | "agentType" | "systemPromptId" | "llmAlias">>) => void;
   remove: (id: string) => void;
 }
 
@@ -27,10 +27,10 @@ export const useConversationListStore = create<ConversationListStore>((set) => (
 
   load: () => set({ conversations: dbList(currentUserId()) }),
 
-  add: (id, agentType, systemPromptId) => {
+  add: (id, agentType, systemPromptId, llmAlias) => {
     const userId = currentUserId();
     if (!userId) return;
-    dbAdd(userId, id, agentType, systemPromptId);
+    dbAdd(userId, id, agentType, systemPromptId, llmAlias);
     set({ conversations: dbList(userId) });
   },
 

@@ -6,10 +6,19 @@ import { useConversationStore, type AgentTask, type ContentBlock, type Message, 
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
+import { useModelStore } from "@/stores/modelStore";
 import { PENDING_SKILLS_CONV_ID, useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
 import { hydrateConversationSkillsFromServer, persistConversationSkillSelections } from "@/lib/conversationSkillSync";
 import { syncExtraContextDisallowedSkills } from "@/config/agentAdditionalDisallowedSkills";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
+
+function resolveAliasForConv(convId: string | null): string {
+  if (!convId) return useModelStore.getState().selectedAlias;
+  const conv = useConversationListStore
+    .getState()
+    .conversations.find((c) => c.id === convId);
+  return conv?.llmAlias ?? useModelStore.getState().selectedAlias;
+}
 
 const getState = () => useConversationStore.getState();
 
@@ -499,7 +508,12 @@ export function useChat() {
     getState().reset();
     const id = await createAgnesConversation();
     getState().setConversationId(id);
-    useConversationListStore.getState().add(id, getState().agentType, getState().systemPromptId ?? undefined);
+    useConversationListStore.getState().add(
+      id,
+      getState().agentType,
+      getState().systemPromptId ?? undefined,
+      useModelStore.getState().selectedAlias,
+    );
     const skillsStore = useChatSelectedSkillsStore.getState();
     const pending = skillsStore.get(PENDING_SKILLS_CONV_ID);
     if (pending.length > 0) {
@@ -557,6 +571,7 @@ export function useChat() {
         extraContext,
         selectedSkills: pickSelectedSkillsForRequest(convId),
         billingEnabled,
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );
@@ -586,6 +601,7 @@ export function useChat() {
       {
         conversationId: BigInt(convId),
         resumeData: new TextEncoder().encode(JSON.stringify(resumePayload)),
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );
@@ -614,6 +630,7 @@ export function useChat() {
         conversationId: BigInt(convId),
         query: newQuery,
         selectedSkills: pickSelectedSkillsForRequest(convId),
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );
@@ -640,6 +657,7 @@ export function useChat() {
       {
         conversationId: BigInt(convId),
         selectedSkills: pickSelectedSkillsForRequest(convId),
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );

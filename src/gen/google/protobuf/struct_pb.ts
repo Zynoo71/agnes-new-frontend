@@ -49,7 +49,7 @@ export const file_google_protobuf_struct: GenFile = /*@__PURE__*/
  * scripting languages like JS a struct is represented as an
  * object. The details of that representation are described together
  * with the proto support for the language.
- * 
+ *
  * The JSON representation for `Struct` is JSON object.
  *
  * @generated from message google.protobuf.Struct
@@ -75,7 +75,7 @@ export const StructSchema: GenMessage<Struct> = /*@__PURE__*/
  * null, a number, a string, a boolean, a recursive struct value, or a
  * list of values. A producer of value is expected to set one of these
  * variants. Absence of any variant indicates an error.
- * 
+ *
  * The JSON representation for `Value` is JSON value.
  *
  * @generated from message google.protobuf.Value
@@ -146,7 +146,7 @@ export const ValueSchema: GenMessage<Value> = /*@__PURE__*/
 
 /**
  * `ListValue` is a wrapper around a repeated field of values.
- * 
+ *
  * The JSON representation for `ListValue` is JSON array.
  *
  * @generated from message google.protobuf.ListValue
@@ -170,7 +170,7 @@ export const ListValueSchema: GenMessage<ListValue> = /*@__PURE__*/
 /**
  * `NullValue` is a singleton enumeration to represent the null value for the
  * `Value` type union.
- * 
+ *
  * The JSON representation for `NullValue` is JSON `null`.
  *
  * @generated from enum google.protobuf.NullValue
