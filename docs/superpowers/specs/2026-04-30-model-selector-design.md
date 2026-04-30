@@ -71,8 +71,8 @@ interface ModelStore {
 
 **`src/stores/conversationListStore.ts` (existing, extend)** — surface the new field.
 
-- Extend `update` signature: add `"llmAlias"` to the `Pick<ConvMeta, ...>` set.
-- No new method needed — locking is `update(id, { llmAlias })`.
+- Extend `add` signature: accept optional `llmAlias` and pass through to `dbAdd`.
+- Extend `update`'s `fields` type: add `"llmAlias"` to the `Pick<ConvMeta, ...>` set so callers can patch it.
 
 ### Lookup function
 
@@ -94,15 +94,31 @@ Use this everywhere a `chatStream` request is built.
 
 **`src/components/ModelSelector.tsx` (new)** — dropdown component, visual style matches existing `SystemPromptSelector.tsx`.
 
-Props:
-- `convId: string | null` — null/undefined = blank `/chat` (new conv), otherwise existing conv.
+Props (mirroring `SystemPromptSelector`):
+- `selectedAlias: string` — current value to display
+- `onChange: (alias: string) => void` — called when user picks an option
+- `disabled: boolean` — true after first user message sent
 
-Behavior:
-- **Display value:**
-  - If `convId` exists and `conversationListStore` has a `llmAlias` for it → show that conv's locked label, `disabled`.
-  - Otherwise → show `modelStore.selectedAlias`'s label, enabled.
-- **On change:** call `modelStore.setAlias(newAlias)` (writes localStorage).
-- **Options list:** hardcoded `MODEL_OPTIONS` array at top of file.
+Internals:
+- Hardcoded `MODEL_OPTIONS` array at top of file.
+- Renders dropdown showing the label for `selectedAlias`. When `selectedAlias === ""`, shows `Auto`.
+
+**Wiring in `ChatPanel.tsx`** (mirror the `SystemPromptSelector` block at lines 852-861):
+
+```tsx
+<ModelSelector
+  selectedAlias={resolveAliasForConv(conversationId) /* or read directly from store */}
+  onChange={(alias) => {
+    useModelStore.getState().setAlias(alias);
+    if (conversationId) {
+      useConversationListStore.getState().update(conversationId, { llmAlias: alias });
+    }
+  }}
+  disabled={hasUserMessages}
+/>
+```
+
+**Lock semantics** — `disabled={hasUserMessages}` matches the existing `SystemPromptSelector` pattern: dropdown is editable in a brand-new conv and even after `convId` is created (DB row exists), but disabled the moment the first user message has been sent. While editable, every change updates BOTH the global `modelStore` (so it becomes the default for the next new conv) AND the DB row (so subsequent reads via `resolveAliasForConv` return the latest pick).
 
 **Placement** — `src/panels/ChatPanel.tsx`, input toolbar:
 
@@ -117,10 +133,20 @@ Same row as `SystemPromptSelector`, immediately to its right.
 
 `src/hooks/useChat.ts` — every place that constructs a `chatStream` / `resumeStream` / `editResendStream` / `regenerateStream` request reads the alias via `resolveAliasForConv(convId)` and sets it on `req.llmAlias`.
 
-**Lock event timing** — at the same point in the existing flow where the conversation row is first written to sql.js (the call site of `addConversation` for a new conv). Pass `llmAlias` into `addConversation` so the row is created with the alias already set, and never updated thereafter for this purpose. Mirror the way `systemPromptId` is currently locked at conv creation. Subsequent reads return the persisted value via `listConversations`.
+**At conversation creation** (existing line 502, inside `createConversation`) — pass the current `modelStore` selection into `add` so the DB row starts in sync with the dropdown:
 
 ```ts
-// pseudocode at useChat.ts:545
+useConversationListStore.getState().add(
+  id,
+  getState().agentType,
+  getState().systemPromptId ?? undefined,
+  useModelStore.getState().selectedAlias,   // NEW
+);
+```
+
+**At every chatStream/resume/edit/regenerate request** — read via `resolveAliasForConv` so the request always carries whatever value is currently on the conv:
+
+```ts
 const llmAlias = resolveAliasForConv(convId);
 const req = {
   conversationId: BigInt(convId),
@@ -133,13 +159,9 @@ const req = {
   billingEnabled,
   llmAlias,                              // NEW
 };
-
-// At the existing addConversation call for a brand-new conv, also pass llmAlias
-// so the row is locked at creation:
-addConversation(userId, convId, agentType, systemPromptId, llmAlias);
 ```
 
-`resumeStream` / `editResendStream` / `regenerateStream` always read via `resolveAliasForConv` and never write back (the conv is already locked by definition).
+**Mid-life updates** are handled by the `ModelSelector`'s `onChange` (in `ChatPanel.tsx`) calling `update(convId, { llmAlias })`. Once `hasUserMessages` flips true, the dropdown is `disabled` and no further updates occur — the value is effectively locked.
 
 ## Data Flow
 
@@ -148,22 +170,32 @@ addConversation(userId, convId, agentType, systemPromptId, llmAlias);
    └─→ modelStore.setAlias("claude-opus-4-6")
         └─→ localStorage["agnes:llm-alias"] = "claude-opus-4-6"
 
+[User clicks "New Chat"]
+   └─→ createConversation()
+        └─→ addConversation(userId, convId, agentType, systemPromptId, "claude-opus-4-6")
+              (DB row created with current modelStore value)
+
+[User changes dropdown before first message]
+   └─→ ModelSelector onChange("gemini-3-flash")
+        ├─→ modelStore.setAlias("gemini-3-flash") → localStorage updated
+        └─→ conversationListStore.update(convId, {llmAlias: "gemini-3-flash"})
+              (DB row patched, future reads see "gemini-3-flash")
+
 [User sends first message]
-   └─→ useChat.startStream()
-        ├─→ resolveAliasForConv(convId) = "claude-opus-4-6"  (no DB row yet → falls back to modelStore)
-        ├─→ addConversation(userId, convId, agentType, systemPromptId, "claude-opus-4-6")
-        │     (DB row created with llm_alias locked)
-        └─→ chatStream({..., llmAlias: "claude-opus-4-6"})
+   └─→ useChat.sendMessage()
+        ├─→ resolveAliasForConv(convId) = "gemini-3-flash" (latest DB row value)
+        └─→ chatStream({..., llmAlias: "gemini-3-flash"})
+   └─→ hasUserMessages → true → dropdown becomes disabled
 
 [User sends 2nd message in same conv]
-   └─→ resolveAliasForConv(convId) = "claude-opus-4-6"  (locked value)
-   └─→ chatStream({..., llmAlias: "claude-opus-4-6"})
+   └─→ resolveAliasForConv(convId) = "gemini-3-flash" (still in DB)
+   └─→ chatStream({..., llmAlias: "gemini-3-flash"})
 
 [User opens existing conv from sidebar]
-   └─→ ModelSelector reads conv.llmAlias = "claude-opus-4-6", renders disabled
+   └─→ ModelSelector shows conv's locked label, disabled (hasUserMessages=true)
 
 [User opens new /chat]
-   └─→ ModelSelector reads modelStore.selectedAlias = "claude-opus-4-6" (last choice), enabled
+   └─→ ModelSelector reads modelStore.selectedAlias = "gemini-3-flash" (last pick), enabled
 ```
 
 ## Files Changed
