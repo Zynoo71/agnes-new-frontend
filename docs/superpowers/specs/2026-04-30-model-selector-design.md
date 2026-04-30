@@ -131,7 +131,7 @@ Same row as `SystemPromptSelector`, immediately to its right.
 
 ### Wiring `useChat`
 
-`src/hooks/useChat.ts` — every place that constructs a `chatStream` / `resumeStream` / `editResendStream` / `regenerateStream` request reads the alias via `resolveAliasForConv(convId)` and sets it on `req.llmAlias`.
+`src/hooks/useChat.ts` — only `chatStream` carries `llmAlias`. `resumeStream` / `editResendStream` / `regenerateStream` proto messages do not have an `llm_alias` field; backend resolves the model from conversation state for those flows.
 
 **At conversation creation** (existing line 502, inside `createConversation`) — pass the current `modelStore` selection into `add` so the DB row starts in sync with the dropdown:
 
@@ -144,7 +144,7 @@ useConversationListStore.getState().add(
 );
 ```
 
-**At every chatStream/resume/edit/regenerate request** — read via `resolveAliasForConv` so the request always carries whatever value is currently on the conv:
+**At every chatStream request** — read via `resolveAliasForConv` so the request always carries whatever value is currently locked on the conv:
 
 ```ts
 const llmAlias = resolveAliasForConv(convId);
@@ -207,7 +207,7 @@ const req = {
 **Modified:**
 - `src/db/index.ts` — extend `ConvMeta`, add `llm_alias TEXT` column with idempotent migration, thread `llmAlias` through `addConversation` / `updateConversation` / `listConversations`.
 - `src/stores/conversationListStore.ts` — extend `update` field whitelist to include `llmAlias`.
-- `src/hooks/useChat.ts` — add `resolveAliasForConv` helper; wire `llmAlias` into all four stream request constructors; pass `llmAlias` to `addConversation` at conv creation.
+- `src/hooks/useChat.ts` — add `resolveAliasForConv` helper; wire `llmAlias` into the `chatStream` request constructor; pass `llmAlias` to `add()` at conv creation.
 - `src/panels/ChatPanel.tsx` — render `<ModelSelector convId={convId} />` in input toolbar next to `SystemPromptSelector`.
 
 **Auto-regenerated (do not hand-edit):**
