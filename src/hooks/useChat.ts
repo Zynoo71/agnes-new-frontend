@@ -601,6 +601,7 @@ export function useChat() {
       {
         conversationId: BigInt(convId),
         resumeData: new TextEncoder().encode(JSON.stringify(resumePayload)),
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );
