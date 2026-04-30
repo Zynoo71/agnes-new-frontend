@@ -5,6 +5,7 @@ export interface ConvMeta {
   title: string;
   agentType: string;
   systemPromptId: string | null;
+  llmAlias: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,14 +92,17 @@ export async function initDb(): Promise<void> {
     // see them because list() filters by exact match.
     db.run("ALTER TABLE conversations ADD COLUMN user_id TEXT NOT NULL DEFAULT ''");
   }
+  if (!hasColumn("llm_alias")) {
+    db.run("ALTER TABLE conversations ADD COLUMN llm_alias TEXT");
+  }
 }
 
-export function addConversation(userId: string, id: string, agentType: string, systemPromptId?: string): void {
+export function addConversation(userId: string, id: string, agentType: string, systemPromptId?: string, llmAlias?: string): void {
   if (!db) return;
   const now = new Date().toISOString();
   db.run(
-    "INSERT OR IGNORE INTO conversations (id, user_id, title, agent_type, system_prompt_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [id, userId, "New Conversation", agentType, systemPromptId ?? null, now, now],
+    "INSERT OR IGNORE INTO conversations (id, user_id, title, agent_type, system_prompt_id, llm_alias, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    [id, userId, "New Conversation", agentType, systemPromptId ?? null, llmAlias ?? null, now, now],
   );
   schedulePersist();
 }
@@ -106,7 +110,7 @@ export function addConversation(userId: string, id: string, agentType: string, s
 export function updateConversation(
   userId: string,
   id: string,
-  fields: Partial<Pick<ConvMeta, "title" | "agentType" | "systemPromptId">>,
+  fields: Partial<Pick<ConvMeta, "title" | "agentType" | "systemPromptId" | "llmAlias">>,
 ): void {
   if (!db) return;
   const sets: string[] = ["updated_at = ?"];
@@ -114,6 +118,7 @@ export function updateConversation(
   if (fields.title !== undefined) { sets.push("title = ?"); vals.push(fields.title); }
   if (fields.agentType !== undefined) { sets.push("agent_type = ?"); vals.push(fields.agentType); }
   if (fields.systemPromptId !== undefined) { sets.push("system_prompt_id = ?"); vals.push(fields.systemPromptId); }
+  if (fields.llmAlias !== undefined) { sets.push("llm_alias = ?"); vals.push(fields.llmAlias); }
   vals.push(id, userId);
   db.run(`UPDATE conversations SET ${sets.join(", ")} WHERE id = ? AND user_id = ?`, vals);
   schedulePersist();
@@ -130,7 +135,7 @@ export function listConversations(userId: string): ConvMeta[] {
   // caller slips through.
   if (!SAFE_USER_ID.test(userId)) return [];
   const rows = db.exec(
-    `SELECT id, title, agent_type, system_prompt_id, created_at, updated_at FROM conversations WHERE user_id = '${userId}' ORDER BY updated_at DESC`,
+    `SELECT id, title, agent_type, system_prompt_id, llm_alias, created_at, updated_at FROM conversations WHERE user_id = '${userId}' ORDER BY updated_at DESC`,
   );
   if (!rows.length) return [];
   return rows[0].values.map((r) => ({
@@ -138,8 +143,9 @@ export function listConversations(userId: string): ConvMeta[] {
     title: r[1] as string,
     agentType: r[2] as string,
     systemPromptId: (r[3] as string) ?? null,
-    createdAt: r[4] as string,
-    updatedAt: r[5] as string,
+    llmAlias: (r[4] as string) ?? null,
+    createdAt: r[5] as string,
+    updatedAt: r[6] as string,
   }));
 }
 
