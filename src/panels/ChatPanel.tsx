@@ -858,28 +858,16 @@ export function ChatPanel() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1">
-          <SystemPromptSelector
-            selectedId={systemPromptId}
-            onChange={(id) => {
-              setSystemPromptId(id);
-              if (conversationId) {
-                useConversationListStore.getState().update(conversationId, { systemPromptId: id });
-              }
-            }}
-            disabled={hasUserMessages}
-          />
-          <ModelSelector
-            selectedAlias={displayAlias}
-            onChange={(alias) => {
-              useModelStore.getState().setAlias(alias);
-              if (conversationId) {
-                useConversationListStore.getState().update(conversationId, { llmAlias: alias });
-              }
-            }}
-            disabled={hasUserMessages}
-          />
-        </div>
+        <SystemPromptSelector
+          selectedId={systemPromptId}
+          onChange={(id) => {
+            setSystemPromptId(id);
+            if (conversationId) {
+              useConversationListStore.getState().update(conversationId, { systemPromptId: id });
+            }
+          }}
+          disabled={hasUserMessages}
+        />
       </div>
       {pendingFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 px-3 pt-2">
@@ -1033,6 +1021,16 @@ export function ChatPanel() {
           )}
 
           <div className="ml-auto flex items-center gap-2">
+            <ModelSelector
+              selectedAlias={displayAlias}
+              onChange={(alias) => {
+                useModelStore.getState().setAlias(alias);
+                if (conversationId) {
+                  useConversationListStore.getState().update(conversationId, { llmAlias: alias });
+                }
+              }}
+              disabled={hasUserMessages}
+            />
             <button
               onClick={() => void handleExportHtml()}
               disabled={isEmpty || isExportingHtml}

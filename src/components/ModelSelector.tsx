@@ -66,7 +66,7 @@ export function ModelSelector({ selectedAlias, onChange, disabled }: Props) {
       </button>
 
       {open && !disabled && (
-        <div className="absolute right-0 bottom-full mb-1 z-50 w-56 bg-surface border border-border
+        <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-surface border border-border
                         rounded-xl shadow-lg py-1 max-h-60 overflow-y-auto">
           {MODEL_OPTIONS.map((o) => (
             <button
