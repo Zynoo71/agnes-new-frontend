@@ -8,6 +8,8 @@ import { MessageBubble } from "@/components/MessageBubble";
 import { ArtifactsBar } from "@/components/ArtifactsBar";
 import { EventStream } from "@/components/EventStream";
 import { SystemPromptSelector } from "@/components/SystemPromptSelector";
+import { ModelSelector } from "@/components/ModelSelector";
+import { useModelStore } from "@/stores/modelStore";
 import { ChatSkillsPicker } from "@/components/ChatSkillsPicker";
 import { hydrateConversationSkillsFromServer } from "@/lib/conversationSkillSync";
 import { syncExtraContextDisallowedSkills } from "@/config/agentAdditionalDisallowedSkills";
@@ -664,6 +666,13 @@ export function ChatPanel() {
   const isEmpty = messages.length === 0;
   const hasUserMessages = messages.some((m) => m.role === "user");
 
+  const lastPickAlias = useModelStore((s) => s.selectedAlias);
+  const conversations = useConversationListStore((s) => s.conversations);
+  const lockedAlias = conversationId
+    ? conversations.find((c) => c.id === conversationId)?.llmAlias ?? null
+    : null;
+  const displayAlias = lockedAlias ?? lastPickAlias;
+
   // Reset scroll state when conversation changes — force next scroll to bottom.
   useEffect(() => {
     isNearBottomRef.current = true;
@@ -849,16 +858,28 @@ export function ChatPanel() {
             </button>
           ))}
         </div>
-        <SystemPromptSelector
-          selectedId={systemPromptId}
-          onChange={(id) => {
-            setSystemPromptId(id);
-            if (conversationId) {
-              useConversationListStore.getState().update(conversationId, { systemPromptId: id });
-            }
-          }}
-          disabled={hasUserMessages}
-        />
+        <div className="flex items-center gap-1">
+          <SystemPromptSelector
+            selectedId={systemPromptId}
+            onChange={(id) => {
+              setSystemPromptId(id);
+              if (conversationId) {
+                useConversationListStore.getState().update(conversationId, { systemPromptId: id });
+              }
+            }}
+            disabled={hasUserMessages}
+          />
+          <ModelSelector
+            selectedAlias={displayAlias}
+            onChange={(alias) => {
+              useModelStore.getState().setAlias(alias);
+              if (conversationId) {
+                useConversationListStore.getState().update(conversationId, { llmAlias: alias });
+              }
+            }}
+            disabled={hasUserMessages}
+          />
+        </div>
       </div>
       {pendingFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 px-3 pt-2">
