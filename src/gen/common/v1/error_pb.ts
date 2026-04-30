@@ -14,17 +14,17 @@ export const file_common_v1_error: GenFile = /*@__PURE__*/
 
 /**
  * ErrorDetail：通过 google.rpc.Status.details 透传业务错误详情。
- * 
+ *
  * 说明：
  * - 不侵入业务 RPC 的 Request/Response 模型
  * - 网关或客户端可从 details 中还原 error_code/message/metadata
  * - metadata 用于结构化补充信息（字段名、资源ID、校验原因等）
- * 
+ *
  * Python 示例：从 agnes_core.grpc.errors 导入六位常量
  *   from agnes_core.grpc.errors import BizError, COMMON_INVALID_ARGUMENT
  *   raise BizError(COMMON_INVALID_ARGUMENT, "email 格式不合法",
  *                  metadata={"field": "email"})
- * 
+ *
  * Go 示例：
  *   return nil, bizerr.New(commonv1.COMMON_NOT_FOUND, "用户不存在")
  *

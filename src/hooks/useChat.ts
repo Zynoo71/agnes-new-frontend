@@ -12,6 +12,14 @@ import { hydrateConversationSkillsFromServer, persistConversationSkillSelections
 import { syncExtraContextDisallowedSkills } from "@/config/agentAdditionalDisallowedSkills";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
+function resolveAliasForConv(convId: string | null): string {
+  if (!convId) return useModelStore.getState().selectedAlias;
+  const conv = useConversationListStore
+    .getState()
+    .conversations.find((c) => c.id === convId);
+  return conv?.llmAlias ?? useModelStore.getState().selectedAlias;
+}
+
 const getState = () => useConversationStore.getState();
 
 /**
@@ -563,6 +571,7 @@ export function useChat() {
         extraContext,
         selectedSkills: pickSelectedSkillsForRequest(convId),
         billingEnabled,
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );
@@ -620,6 +629,7 @@ export function useChat() {
         conversationId: BigInt(convId),
         query: newQuery,
         selectedSkills: pickSelectedSkillsForRequest(convId),
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );
@@ -646,6 +656,7 @@ export function useChat() {
       {
         conversationId: BigInt(convId),
         selectedSkills: pickSelectedSkillsForRequest(convId),
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );

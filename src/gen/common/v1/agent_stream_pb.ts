@@ -2,19 +2,19 @@
 // @generated from file common/v1/agent_stream.proto (package common.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file common/v1/agent_stream.proto.
  */
 export const file_common_v1_agent_stream: GenFile = /*@__PURE__*/
-  fileDesc("Chxjb21tb24vdjEvYWdlbnRfc3RyZWFtLnByb3RvEgljb21tb24udjEiygQKEEFnZW50U3RyZWFtRXZlbnQSEgoKbWVzc2FnZV9pZBgBIAEoCRILCgNzZXEYAiABKAMSLAoLYWdlbnRfc3RhcnQYCiABKAsyFS5jb21tb24udjEuQWdlbnRTdGFydEgAEigKCWFnZW50X2VuZBgLIAEoCzITLmNvbW1vbi52MS5BZ2VudEVuZEgAEiwKC2FnZW50X2Vycm9yGAwgASgLMhUuY29tbW9uLnYxLkFnZW50RXJyb3JIABI0Cg9hZ2VudF9jYW5jZWxsZWQYEiABKAsyGS5jb21tb24udjEuQWdlbnRDYW5jZWxsZWRIABIqCgpub2RlX3N0YXJ0GA0gASgLMhQuY29tbW9uLnYxLk5vZGVTdGFydEgAEiYKCG5vZGVfZW5kGA4gASgLMhIuY29tbW9uLnYxLk5vZGVFbmRIABIwCg1tZXNzYWdlX2RlbHRhGA8gASgLMhcuY29tbW9uLnYxLk1lc3NhZ2VEZWx0YUgAEjQKD3JlYXNvbmluZ19kZWx0YRgTIAEoCzIZLmNvbW1vbi52MS5SZWFzb25pbmdEZWx0YUgAEjMKD3Rvb2xfY2FsbF9zdGFydBgQIAEoCzIYLmNvbW1vbi52MS5Ub29sQ2FsbFN0YXJ0SAASNQoQdG9vbF9jYWxsX3Jlc3VsdBgRIAEoCzIZLmNvbW1vbi52MS5Ub29sQ2FsbFJlc3VsdEgAEigKBmN1c3RvbRhkIAEoCzIWLmNvbW1vbi52MS5DdXN0b21FdmVudEgAQgcKBWV2ZW50IgwKCkFnZW50U3RhcnQiCgoIQWdlbnRFbmQiEAoOQWdlbnRDYW5jZWxsZWQiRgoKQWdlbnRFcnJvchISCgplcnJvcl90eXBlGAEgASgJEg8KB21lc3NhZ2UYAiABKAkSEwoLcmVjb3ZlcmFibGUYAyABKAgiGQoJTm9kZVN0YXJ0EgwKBG5vZGUYASABKAkiFwoHTm9kZUVuZBIMCgRub2RlGAEgASgJIh8KDE1lc3NhZ2VEZWx0YRIPCgdjb250ZW50GAEgASgJIiEKDlJlYXNvbmluZ0RlbHRhEg8KB2NvbnRlbnQYASABKAkiTAoNVG9vbENhbGxTdGFydBIRCgl0b29sX25hbWUYASABKAkSFAoMdG9vbF9jYWxsX2lkGAIgASgJEhIKCnRvb2xfaW5wdXQYAyABKAwiTgoOVG9vbENhbGxSZXN1bHQSEQoJdG9vbF9uYW1lGAEgASgJEhMKC3Rvb2xfcmVzdWx0GAIgASgMEhQKDHRvb2xfY2FsbF9pZBgDIAEoCSIsCgtDdXN0b21FdmVudBIMCgR0eXBlGAEgASgJEg8KB3BheWxvYWQYAiABKAxCJ1olYWduZXMvcHJvdG8vZ2VuL2dvL2NvbW1vbi92MTtjb21tb252MWIGcHJvdG8z");
+  fileDesc("Chxjb21tb24vdjEvYWdlbnRfc3RyZWFtLnByb3RvEgljb21tb24udjEiqwUKEEFnZW50U3RyZWFtRXZlbnQSEgoKbWVzc2FnZV9pZBgBIAEoCRILCgNzZXEYAiABKAMSGwoTYXBwX3N0YW5kYWxvbmVfY2FyZBgDIAEoCBIKCgJ0cxgEIAEoAxIsCgthZ2VudF9zdGFydBgKIAEoCzIVLmNvbW1vbi52MS5BZ2VudFN0YXJ0SAASKAoJYWdlbnRfZW5kGAsgASgLMhMuY29tbW9uLnYxLkFnZW50RW5kSAASLAoLYWdlbnRfZXJyb3IYDCABKAsyFS5jb21tb24udjEuQWdlbnRFcnJvckgAEjQKD2FnZW50X2NhbmNlbGxlZBgSIAEoCzIZLmNvbW1vbi52MS5BZ2VudENhbmNlbGxlZEgAEioKCm5vZGVfc3RhcnQYDSABKAsyFC5jb21tb24udjEuTm9kZVN0YXJ0SAASJgoIbm9kZV9lbmQYDiABKAsyEi5jb21tb24udjEuTm9kZUVuZEgAEjAKDW1lc3NhZ2VfZGVsdGEYDyABKAsyFy5jb21tb24udjEuTWVzc2FnZURlbHRhSAASNAoPcmVhc29uaW5nX2RlbHRhGBMgASgLMhkuY29tbW9uLnYxLlJlYXNvbmluZ0RlbHRhSAASMwoPdG9vbF9jYWxsX3N0YXJ0GBAgASgLMhguY29tbW9uLnYxLlRvb2xDYWxsU3RhcnRIABI1ChB0b29sX2NhbGxfcmVzdWx0GBEgASgLMhkuY29tbW9uLnYxLlRvb2xDYWxsUmVzdWx0SAASKAoGY3VzdG9tGGQgASgLMhYuY29tbW9uLnYxLkN1c3RvbUV2ZW50SAASNgoQYnVkZ2V0X2V4aGF1c3RlZBhlIAEoCzIaLmNvbW1vbi52MS5CdWRnZXRFeGhhdXN0ZWRIAEIHCgVldmVudCIMCgpBZ2VudFN0YXJ0Ik8KCEFnZW50RW5kEjQKCnNldHRsZW1lbnQYFCABKAsyGy5jb21tb24udjEuQnVkZ2V0U2V0dGxlbWVudEgAiAEBQg0KC19zZXR0bGVtZW50IhAKDkFnZW50Q2FuY2VsbGVkIkYKCkFnZW50RXJyb3ISEgoKZXJyb3JfdHlwZRgBIAEoCRIPCgdtZXNzYWdlGAIgASgJEhMKC3JlY292ZXJhYmxlGAMgASgIIhkKCU5vZGVTdGFydBIMCgRub2RlGAEgASgJIhcKB05vZGVFbmQSDAoEbm9kZRgBIAEoCSIfCgxNZXNzYWdlRGVsdGESDwoHY29udGVudBgBIAEoCSIhCg5SZWFzb25pbmdEZWx0YRIPCgdjb250ZW50GAEgASgJIkwKDVRvb2xDYWxsU3RhcnQSEQoJdG9vbF9uYW1lGAEgASgJEhQKDHRvb2xfY2FsbF9pZBgCIAEoCRISCgp0b29sX2lucHV0GAMgASgMIk4KDlRvb2xDYWxsUmVzdWx0EhEKCXRvb2xfbmFtZRgBIAEoCRITCgt0b29sX3Jlc3VsdBgCIAEoDBIUCgx0b29sX2NhbGxfaWQYAyABKAkiLAoLQ3VzdG9tRXZlbnQSDAoEdHlwZRgBIAEoCRIPCgdwYXlsb2FkGAIgASgMIvIBChBCdWRnZXRTZXR0bGVtZW50EhAKCGNvbnN1bWVkGAEgASgDEjwKBnN0YXR1cxgCIAEoDjIsLmNvbW1vbi52MS5CdWRnZXRTZXR0bGVtZW50LlNldHRsZW1lbnRTdGF0dXMSEgoKcmVxdWVzdF9pZBgDIAEoCRIXCg9wcmljaW5nX3ZlcnNpb24YBCABKAkiYQoQU2V0dGxlbWVudFN0YXR1cxIhCh1TRVRUTEVNRU5UX1NUQVRVU19VTlNQRUNJRklFRBAAEg0KCUNPTVBMRVRFRBABEg0KCUVYSEFVU1RFRBACEgwKCFJFRlVOREVEEAMiNgoPQnVkZ2V0RXhoYXVzdGVkEhAKCGNvbnN1bWVkGAEgASgDEhEKCWxhc3Rfbm9kZRgCIAEoCUInWiVhZ25lcy9wcm90by9nZW4vZ28vY29tbW9uL3YxO2NvbW1vbnYxYgZwcm90bzM");
 
 /**
  * AgentStreamEvent 是所有 Agent 流式 RPC 的统一输出格式。
- * 
+ *
  * 框架事件使用 oneof 强类型；业务自定义事件走 CustomEvent 兜底。
  * BFF 根据 oneof case 决定 SSE event name 和 payload 序列化方式。
  *
@@ -38,6 +38,23 @@ export type AgentStreamEvent = Message<"common.v1.AgentStreamEvent"> & {
    * @generated from field: int64 seq = 2;
    */
   seq: bigint;
+
+  /**
+   * app 端渲染层级提示。
+   * true  → 独立 UI 卡片（card 渲染）
+   * false → 折叠进 Processing 聚合器作为一步显示（事件本身仍下发并入 history）
+   * proto3 默认 false（折叠），仅 standalone 事件才显式置 true。
+   *
+   * @generated from field: bool app_standalone_card = 3;
+   */
+  appStandaloneCard: boolean;
+
+  /**
+   * 事件时间戳（ms epoch）；同一 message_id 的多 chunk 共享首次锁定时刻。
+   *
+   * @generated from field: int64 ts = 4;
+   */
+  ts: bigint;
 
   /**
    * @generated from oneof common.v1.AgentStreamEvent.event
@@ -108,6 +125,12 @@ export type AgentStreamEvent = Message<"common.v1.AgentStreamEvent"> & {
      */
     value: CustomEvent;
     case: "custom";
+  } | {
+    /**
+     * @generated from field: common.v1.BudgetExhausted budget_exhausted = 101;
+     */
+    value: BudgetExhausted;
+    case: "budgetExhausted";
   } | { case: undefined; value?: undefined };
 };
 
@@ -135,6 +158,10 @@ export const AgentStartSchema: GenMessage<AgentStart> = /*@__PURE__*/
  * @generated from message common.v1.AgentEnd
  */
 export type AgentEnd = Message<"common.v1.AgentEnd"> & {
+  /**
+   * @generated from field: optional common.v1.BudgetSettlement settlement = 20;
+   */
+  settlement?: BudgetSettlement;
 };
 
 /**
@@ -335,4 +362,95 @@ export type CustomEvent = Message<"common.v1.CustomEvent"> & {
  */
 export const CustomEventSchema: GenMessage<CustomEvent> = /*@__PURE__*/
   messageDesc(file_common_v1_agent_stream, 11);
+
+/**
+ * @generated from message common.v1.BudgetSettlement
+ */
+export type BudgetSettlement = Message<"common.v1.BudgetSettlement"> & {
+  /**
+   * @generated from field: int64 consumed = 1;
+   */
+  consumed: bigint;
+
+  /**
+   * @generated from field: common.v1.BudgetSettlement.SettlementStatus status = 2;
+   */
+  status: BudgetSettlement_SettlementStatus;
+
+  /**
+   * 幂等键：BFF 据此去重
+   *
+   * @generated from field: string request_id = 3;
+   */
+  requestId: string;
+
+  /**
+   * 审计：本次结算用的定价表版本
+   *
+   * @generated from field: string pricing_version = 4;
+   */
+  pricingVersion: string;
+};
+
+/**
+ * Describes the message common.v1.BudgetSettlement.
+ * Use `create(BudgetSettlementSchema)` to create a new message.
+ */
+export const BudgetSettlementSchema: GenMessage<BudgetSettlement> = /*@__PURE__*/
+  messageDesc(file_common_v1_agent_stream, 12);
+
+/**
+ * @generated from enum common.v1.BudgetSettlement.SettlementStatus
+ */
+export enum BudgetSettlement_SettlementStatus {
+  /**
+   * @generated from enum value: SETTLEMENT_STATUS_UNSPECIFIED = 0;
+   */
+  SETTLEMENT_STATUS_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: COMPLETED = 1;
+   */
+  COMPLETED = 1,
+
+  /**
+   * @generated from enum value: EXHAUSTED = 2;
+   */
+  EXHAUSTED = 2,
+
+  /**
+   * @generated from enum value: REFUNDED = 3;
+   */
+  REFUNDED = 3,
+}
+
+/**
+ * Describes the enum common.v1.BudgetSettlement.SettlementStatus.
+ */
+export const BudgetSettlement_SettlementStatusSchema: GenEnum<BudgetSettlement_SettlementStatus> = /*@__PURE__*/
+  enumDesc(file_common_v1_agent_stream, 12, 0);
+
+/**
+ * @generated from message common.v1.BudgetExhausted
+ */
+export type BudgetExhausted = Message<"common.v1.BudgetExhausted"> & {
+  /**
+   * @generated from field: int64 consumed = 1;
+   */
+  consumed: bigint;
+
+  /**
+   * "agent" 或 "tools"
+   *
+   * @generated from field: string last_node = 2;
+   */
+  lastNode: string;
+};
+
+/**
+ * Describes the message common.v1.BudgetExhausted.
+ * Use `create(BudgetExhaustedSchema)` to create a new message.
+ */
+export const BudgetExhaustedSchema: GenMessage<BudgetExhausted> = /*@__PURE__*/
+  messageDesc(file_common_v1_agent_stream, 13);
 

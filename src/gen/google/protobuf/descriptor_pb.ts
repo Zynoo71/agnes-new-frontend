@@ -160,7 +160,7 @@ export type FileDescriptorProto = Message<"google.protobuf.FileDescriptorProto">
   /**
    * The syntax of the proto file.
    * The supported values are "proto2", "proto3", and "editions".
-   * 
+   *
    * If `edition` is present, this value must be "editions".
    * WARNING: This field should only be used by protobuf plugins or special
    * cases like the proto compiler. Other uses are discouraged and
@@ -529,14 +529,14 @@ export type FieldDescriptorProto = Message<"google.protobuf.FieldDescriptorProto
   /**
    * If true, this is a proto3 "optional". When a proto3 field is optional, it
    * tracks presence regardless of field type.
-   * 
+   *
    * When proto3_optional is true, this field must belong to a oneof to signal
    * to old proto3 clients that presence is tracked for this field. This oneof
    * is known as a "synthetic" oneof, and this field must be its sole member
    * (each proto3 optional field gets its own synthetic oneof). Synthetic oneofs
    * exist in the descriptor only, and do not generate any API. Synthetic oneofs
    * must be ordered after all "real" oneofs.
-   * 
+   *
    * For message fields, proto3_optional doesn't create any semantic change,
    * since non-repeated message fields always track presence. However it still
    * indicates the semantic detail of whether the user wrote "optional" or not.
@@ -545,7 +545,7 @@ export type FieldDescriptorProto = Message<"google.protobuf.FieldDescriptorProto
    * to track presence. This is especially important because the parser can't
    * tell if a field is a message or an enum, so it must always create a
    * synthetic oneof.
-   * 
+   *
    * Proto2 optional fields do not set this flag, because they already indicate
    * optional with `LABEL_OPTIONAL`.
    *
@@ -797,7 +797,7 @@ export const EnumDescriptorProtoSchema: GenMessage<EnumDescriptorProto> = /*@__P
 /**
  * Range of reserved numeric values. Reserved values may not be used by
  * entries in the same enum. Reserved ranges may not overlap.
- * 
+ *
  * Note that this is distinct from DescriptorProto.ReservedRange in that it
  * is inclusive such that it can appropriately represent the entire int32
  * domain.
@@ -985,10 +985,10 @@ export type FileOptions = Message<"google.protobuf.FileOptions"> & {
    * A proto2 file can set this to true to opt in to UTF-8 checking for Java,
    * which will throw an exception if invalid UTF-8 is parsed from the wire or
    * assigned to a string field.
-   * 
+   *
    * TODO: clarify exactly what kinds of field types this option
    * applies to, and update these docs accordingly.
-   * 
+   *
    * Proto3 files already perform these checks. Setting the option explicitly to
    * false has no effect: it cannot be used to opt proto3 files out of UTF-8
    * checks.
@@ -1019,7 +1019,7 @@ export type FileOptions = Message<"google.protobuf.FileOptions"> & {
    * main code generators in each language (without additional plugins).
    * Generic services were the only kind of service generation supported by
    * early versions of google.protobuf.
-   * 
+   *
    * Generic services are now considered deprecated in favor of using plugins
    * that generate code specific to your particular RPC system.  Therefore,
    * these default to false.  Old code which depends on generic services should
@@ -1188,7 +1188,7 @@ export type MessageOptions = Message<"google.protobuf.MessageOptions"> & {
    * This is provided for backwards-compatibility with the MessageSet wire
    * format.  You should not use this for any other reason:  It's less
    * efficient, has fewer features, and is more complicated.
-   * 
+   *
    * The message must be defined exactly as follows:
    *   message Foo {
    *     option message_set_wire_format = true;
@@ -1196,10 +1196,10 @@ export type MessageOptions = Message<"google.protobuf.MessageOptions"> & {
    *   }
    * Note that the message cannot have any defined fields; MessageSets only
    * have extensions.
-   * 
+   *
    * All extensions of your type must be singular messages; e.g. they cannot
    * be int32s, enums, or repeated messages.
-   * 
+   *
    * Because this is an option, the above two restrictions are not enforced by
    * the protocol compiler.
    *
@@ -1229,7 +1229,7 @@ export type MessageOptions = Message<"google.protobuf.MessageOptions"> & {
   /**
    * Whether the message is an automatically generated map entry type for the
    * maps field.
-   * 
+   *
    * For maps fields:
    *     map<KeyType, ValueType> map_field = 1;
    * The parsed descriptor looks like:
@@ -1239,12 +1239,12 @@ export type MessageOptions = Message<"google.protobuf.MessageOptions"> & {
    *         optional ValueType value = 2;
    *     }
    *     repeated MapFieldEntry map_field = 1;
-   * 
+   *
    * Implementations may choose not to generate the map_entry=true message, but
    * use a native map in the target language to hold the keys and values.
    * The reflection APIs in such implementations still need to work as
    * if the field is a repeated message field.
-   * 
+   *
    * NOTE: Do not set the option in .proto files. Always use the maps syntax
    * instead. The option should only be implicitly set by the proto compiler
    * parser.
@@ -1258,10 +1258,10 @@ export type MessageOptions = Message<"google.protobuf.MessageOptions"> & {
    * and strips underscored from the fields before comparison in proto3 only.
    * The new behavior takes `json_name` into account and applies to proto2 as
    * well.
-   * 
+   *
    * This should only be used as a temporary measure against broken builds due
    * to the change in behavior for JSON field name conflicts.
-   * 
+   *
    * TODO This is legacy behavior we plan to remove once downstream
    * teams have had time to migrate.
    *
@@ -1334,7 +1334,7 @@ export type FieldOptions = Message<"google.protobuf.FieldOptions"> & {
    * Specifying JS_NUMBER for the jstype causes the generated JavaScript code to
    * use the JavaScript "number" type.  The behavior of the default option
    * JS_NORMAL is implementation dependent.
-   * 
+   *
    * This option is an enum to permit additional types to be added, e.g.
    * goog.math.Integer.
    *
@@ -1347,19 +1347,19 @@ export type FieldOptions = Message<"google.protobuf.FieldOptions"> & {
    * fields.  It means that when the outer message is initially parsed, the
    * inner message's contents will not be parsed but instead stored in encoded
    * form.  The inner message will actually be parsed when it is first accessed.
-   * 
+   *
    * This is only a hint.  Implementations are free to choose whether to use
    * eager or lazy parsing regardless of the value of this option.  However,
    * setting this option true suggests that the protocol author believes that
    * using lazy parsing on this field is worth the additional bookkeeping
    * overhead typically needed to implement it.
-   * 
+   *
    * This option does not affect the public interface of any generated code;
    * all method signatures remain the same.  Furthermore, thread-safety of the
    * interface is not affected by this option; const methods remain safe to
    * call from multiple threads concurrently, while non-const methods continue
    * to require exclusive access.
-   * 
+   *
    * Note that lazy message fields are still eagerly verified to check
    * ill-formed wireformat or missing required fields. Calling IsInitialized()
    * on the outer message would fail if the inner message has missing required
@@ -2428,7 +2428,7 @@ export type SourceCodeInfo = Message<"google.protobuf.SourceCodeInfo"> & {
    * corresponds to a particular definition.  This information is intended
    * to be useful to IDEs, code indexers, documentation generators, and similar
    * tools.
-   * 
+   *
    * For example, say we have a file like:
    *   message Foo {
    *     optional string foo = 1;
@@ -2444,7 +2444,7 @@ export type SourceCodeInfo = Message<"google.protobuf.SourceCodeInfo"> & {
    *   [c,d)  [ 4, 0, 2, 0, 5 ]  The type (string).
    *   [e,f)  [ 4, 0, 2, 0, 1 ]  The name (foo).
    *   [g,h)  [ 4, 0, 2, 0, 3 ]  The number (1).
-   * 
+   *
    * Notes:
    * - A location may refer to a repeated field itself (i.e. not to any
    *   particular index within it).  This is used whenever a set of elements are
@@ -2487,7 +2487,7 @@ export type SourceCodeInfo_Location = Message<"google.protobuf.SourceCodeInfo.Lo
   /**
    * Identifies which part of the FileDescriptorProto was defined at this
    * location.
-   * 
+   *
    * Each element is a field number or an index.  They form a path from
    * the root FileDescriptorProto to the place where the definition appears.
    * For example, this path:
@@ -2502,7 +2502,7 @@ export type SourceCodeInfo_Location = Message<"google.protobuf.SourceCodeInfo.Lo
    *   repeated FieldDescriptorProto field = 2;
    * and FieldDescriptorProto.name has field number 1:
    *   optional string name = 1;
-   * 
+   *
    * Thus, the above path gives the location of a field name.  If we removed
    * the last element:
    *   [ 4, 3, 2, 7 ]
@@ -2528,41 +2528,41 @@ export type SourceCodeInfo_Location = Message<"google.protobuf.SourceCodeInfo.Lo
    * If this SourceCodeInfo represents a complete declaration, these are any
    * comments appearing before and after the declaration which appear to be
    * attached to the declaration.
-   * 
+   *
    * A series of line comments appearing on consecutive lines, with no other
    * tokens appearing on those lines, will be treated as a single comment.
-   * 
+   *
    * leading_detached_comments will keep paragraphs of comments that appear
    * before (but not connected to) the current element. Each paragraph,
    * separated by empty lines, will be one comment element in the repeated
    * field.
-   * 
+   *
    * Only the comment content is provided; comment markers (e.g. //) are
    * stripped out.  For block comments, leading whitespace and an asterisk
    * will be stripped from the beginning of each line other than the first.
    * Newlines are included in the output.
-   * 
+   *
    * Examples:
-   * 
+   *
    *   optional int32 foo = 1;  // Comment attached to foo.
    *   // Comment attached to bar.
    *   optional int32 bar = 2;
-   * 
+   *
    *   optional string baz = 3;
    *   // Comment attached to baz.
    *   // Another line attached to baz.
-   * 
+   *
    *   // Comment attached to moo.
    *   //
    *   // Another line attached to moo.
    *   optional double moo = 4;
-   * 
+   *
    *   // Detached comment for corge. This is not leading or trailing comments
    *   // to moo or corge because there are blank lines separating it from
    *   // both.
-   * 
+   *
    *   // Detached comment for corge paragraph 2.
-   * 
+   *
    *   optional string corge = 5;
    *   /* Block comment attached
    *    * to corge.  Leading asterisks
@@ -2570,7 +2570,7 @@ export type SourceCodeInfo_Location = Message<"google.protobuf.SourceCodeInfo.Lo
    *   /* Block comment attached to
    *    * grault. *\/
    *   optional int32 grault = 6;
-   * 
+   *
    *   // ignored detached comments.
    *
    * @generated from field: optional string leading_comments = 3;
