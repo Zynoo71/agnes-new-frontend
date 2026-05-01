@@ -10,6 +10,7 @@ const VALID_ALIASES = new Set<string>([
   "agnes-1.5-flash",
   "gemini-3-flash",
   "claude-opus-4-6",
+  "grok-4.1-fast-non-reasoning",
 ]);
 
 function loadInitial(): string {

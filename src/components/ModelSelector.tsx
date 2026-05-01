@@ -17,6 +17,7 @@ const MODEL_OPTIONS: Option[] = [
   { label: "Agnes 1.5 Flash", alias: "agnes-1.5-flash" },
   { label: "Gemini 3 Flash", alias: "gemini-3-flash" },
   { label: "Claude Opus 4.6", alias: "claude-opus-4-6" },
+  { label: "Grok 4.1 Fast (Non-Reasoning)", alias: "grok-4.1-fast-non-reasoning" },
 ];
 
 function labelFor(alias: string): string {
