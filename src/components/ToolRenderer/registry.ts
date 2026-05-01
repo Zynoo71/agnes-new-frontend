@@ -15,6 +15,7 @@ import { SportsResultsRenderer } from "./renderers/SportsResultsRenderer";
 import { YoutubeVideosRenderer } from "./renderers/YoutubeVideosRenderer";
 import { StockQuoteRenderer } from "./renderers/StockQuoteRenderer";
 import { ReportCardRenderer } from "./renderers/ReportCardRenderer";
+import { VisualRecognitionRenderer } from "./renderers/VisualRecognitionRenderer";
 
 export interface ToolRenderProps {
   toolName: string;
@@ -52,6 +53,7 @@ const TOOL_RENDERERS: Record<string, FC<ToolRenderProps>> = {
   show_sports_card: SportsResultsRenderer,
   show_youtube_videos: YoutubeVideosRenderer,
   show_stock_card: StockQuoteRenderer,
+  visual_recognition: VisualRecognitionRenderer,
   // Sheet Agent v3 (R21) tools
   plan_analysis: SheetToolRenderer,
   profile_data: SheetToolRenderer,
