@@ -1380,7 +1380,14 @@ function SlideDesignSystemBlock({ data }: { data: SlideDesignSystemData }) {
         </div>
         <span className="text-sm font-semibold text-text-primary">Design System</span>
       </div>
-      <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-line">{data.summary}</p>
+      <div className="rounded-lg border border-violet-200/50 bg-surface/80 p-3 max-h-[min(48vh,420px)] overflow-y-auto overflow-x-auto">
+        <div className="prose-agent text-xs text-text-secondary leading-relaxed break-words">
+          <Markdown
+            remarkPlugins={REMARK_PLUGINS}
+            components={MARKDOWN_COMPONENTS}
+          >{data.summary}</Markdown>
+        </div>
+      </div>
     </div>
   );
 }
