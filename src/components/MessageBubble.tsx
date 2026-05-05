@@ -299,6 +299,8 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
           const firstSwarmIdx = message.blocks.findIndex(
             (b) => b.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(b.data.toolName),
           );
+          const shouldRenderWorkerSwarmFallback =
+            firstSwarmIdx < 0 && Object.keys(message.workers).length > 0;
 
           // GenerationArtifact: when a kind's artifact is present in this
           // message, suppress the matching tool's ToolCallStart skeleton so
@@ -370,6 +372,12 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
           return (
             <>
               {rendered}
+              {shouldRenderWorkerSwarmFallback && (
+                <AgentSwarmPanel
+                  liveWorkers={message.workers}
+                  spawnToolCalls={[]}
+                />
+              )}
               {message.sources.length > 0 && <CitationSources sources={message.sources} />}
             </>
           );
