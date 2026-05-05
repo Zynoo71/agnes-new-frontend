@@ -283,7 +283,7 @@ export const PLANNING_TOOL_NAMES = new Set([
 ]);
 
 export const SWARM_TOOL_NAMES = new Set([
-  "spawn_worker", "delegate_to_image_studio", "spawn_data_worker", "delegate_to_slide_agent",
+  "spawn_worker", "delegate_to_image_studio", "spawn_data_worker",
   "delegate_to_sheet_agent",
 ]);
 
