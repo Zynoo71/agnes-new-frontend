@@ -11,7 +11,7 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file kw_statem_service/v1/kw_statem_service.proto.
  */
 export const file_kw_statem_service_v1_kw_statem_service: GenFile = /*@__PURE__*/
-  fileDesc("Cixrd19zdGF0ZW1fc2VydmljZS92MS9rd19zdGF0ZW1fc2VydmljZS5wcm90bxIUa3dfc3RhdGVtX3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSIgCgxHcm91cFJlcXVlc3QSEAoIZ3JvdXBfaWQYASABKAkiXAoQU3RhcnRHYW1lUmVxdWVzdBIQCghncm91cF9pZBgBIAEoCRIRCglnYW1lX3R5cGUYAiABKAkSDAoEdGV4dBgDIAEoCRIVCg1sYW5ndWFnZV9jb2RlGAQgASgJIlQKGFN0YXJ0T2ZmaWNpYWxHYW1lUmVxdWVzdBIQCghncm91cF9pZBgBIAEoCRIPCgdnYW1lX2lkGAIgASgJEhUKDWxhbmd1YWdlX2NvZGUYAyABKAkiYAoSU2VuZE1lc3NhZ2VSZXF1ZXN0EhAKCGdyb3VwX2lkGAEgASgJEgwKBHRleHQYAiABKAkSEwoLcGxheWVyX25hbWUYAyABKAkSFQoNbGFuZ3VhZ2VfY29kZRgEIAEoCSJ/ChVTZW5kTWVzc2FnZVNTRVJlcXVlc3QSEAoIZ3JvdXBfaWQYASABKAkSDAoEdGV4dBgCIAEoCRITCgtwbGF5ZXJfbmFtZRgDIAEoCRIxChBjdXN0b21fdmFyaWFibGVzGAQgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCI1CgxSdW50aW1lUmVwbHkSJQoEZGF0YRgBIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiJAoPR2FtZUNvZGVSZXF1ZXN0EhEKCWdhbWVfY29kZRgBIAEoCSL/AQoXSW1wb3J0R2FtZUNvbmZpZ1JlcXVlc3QSEQoJZ2FtZV90eXBlGAEgASgJEhMKC3NjcmlwdF9uYW1lGAIgASgJEhIKCmludHJvX3J1bGUYAyABKAkSGAoQc3RvcnlfYmFja2dyb3VuZBgEIAEoCRIZChFjaGFyYWN0ZXJfc2V0dGluZxgFIAEoCRIeChZjaGFyYWN0ZXJfcmVsYXRpb25zaGlwGAYgASgJEhUKDWxlYWRfbnBjX25hbWUYByABKAkSFQoNbGFuZ3VhZ2VfY29kZRgIIAEoCRISCgpjcmVhdGVkX2J5GAkgASgJEhEKCWdhbWVfY29kZRgKIAEoCSKTAQoVSW1wb3J0R2FtZUNvbmZpZ1JlcGx5EhEKCWdhbWVfY29kZRgBIAEoCRIOCgZzdGF0dXMYAiABKAkSFgoOb3V0bGluZV9zdGF0dXMYAyABKAkSFwoPb3V0bGluZV92ZXJzaW9uGAQgASgFEg8KB291dGxpbmUYBSABKAkSFQoNZXJyb3JfbWVzc2FnZRgGIAEoCSJjChZMaXN0R2FtZUNvbmZpZ3NSZXF1ZXN0EgwKBHBhZ2UYASABKAUSEQoJcGFnZV9zaXplGAIgASgFEhEKCWdhbWVfdHlwZRgDIAEoCRIVCg1jb25maWdfc3RhdHVzGAQgASgJIncKFExpc3RHYW1lQ29uZmlnc1JlcGx5Ei8KBWl0ZW1zGAEgAygLMiAua3dfc3RhdGVtX3NlcnZpY2UudjEuR2FtZUNvbmZpZxINCgV0b3RhbBgCIAEoBRIMCgRwYWdlGAMgASgFEhEKCXBhZ2Vfc2l6ZRgEIAEoBSJDCg9HYW1lQ29uZmlnUmVwbHkSMAoGY29uZmlnGAEgASgLMiAua3dfc3RhdGVtX3NlcnZpY2UudjEuR2FtZUNvbmZpZyI6ChVEZWxldGVHYW1lQ29uZmlnUmVwbHkSEQoJZ2FtZV9jb2RlGAEgASgJEg4KBnN0YXR1cxgCIAEoCSLABgoKR2FtZUNvbmZpZxIKCgJpZBgBIAEoAxIRCglnYW1lX2NvZGUYAiABKAkSEQoJZ2FtZV90eXBlGAMgASgJEhMKC3NjcmlwdF9uYW1lGAQgASgJEhUKDWxhbmd1YWdlX2NvZGUYBSABKAkSEgoKaW50cm9fcnVsZRgGIAEoCRIYChBzdG9yeV9iYWNrZ3JvdW5kGAcgASgJEhkKEWNoYXJhY3Rlcl9zZXR0aW5nGAggASgJEh4KFmNoYXJhY3Rlcl9yZWxhdGlvbnNoaXAYCSABKAkSFQoNbGVhZF9ucGNfbmFtZRgKIAEoCRIvCg5zb3VyY2VfcGF5bG9hZBgLIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSMgoRbm9ybWFsaXplZF9wcm9tcHQYDCABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EhYKDm91dGxpbmVfc3RhdHVzGA0gASgJEhcKD291dGxpbmVfdmVyc2lvbhgOIAEoBRIUCgxvdXRsaW5lX3RleHQYDyABKAkSHQoVb3V0bGluZV9lcnJvcl9tZXNzYWdlGBAgASgJEhsKE291dGxpbmVfcmV0cnlfY291bnQYESABKAUSGQoRZ2VuZXJhdGlvbl9zdGF0dXMYEiABKAkSGgoSZ2VuZXJhdGlvbl92ZXJzaW9uGBMgASgFEh4KFmdlbmVyYXRpb25fcmV0cnlfY291bnQYFCABKAUSJwoGc2NyaXB0GBUgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBImCgV3b3JsZBgWIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSJwoGcmVzdWx0GBcgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBIgChhnZW5lcmF0aW9uX2Vycm9yX21lc3NhZ2UYGCABKAkSFQoNY29uZmlnX3N0YXR1cxgZIAEoCRISCgpjcmVhdGVkX2J5GBogASgJEhIKCnVwZGF0ZWRfYnkYGyABKAkSEgoKY3JlYXRlZF9hdBgcIAEoCRISCgp1cGRhdGVkX2F0GB0gASgJEhIKCmlzX2RlbGV0ZWQYHiABKAgihAEKFkdhbWVDb25maWdPdXRsaW5lUmVwbHkSEQoJZ2FtZV9jb2RlGAEgASgJEhYKDm91dGxpbmVfc3RhdHVzGAIgASgJEhcKD291dGxpbmVfdmVyc2lvbhgDIAEoBRIPCgdvdXRsaW5lGAQgASgJEhUKDWVycm9yX21lc3NhZ2UYBSABKAkibQoeVXBkYXRlR2FtZUNvbmZpZ091dGxpbmVSZXF1ZXN0EhEKCWdhbWVfY29kZRgBIAEoCRIXCg9vdXRsaW5lX3ZlcnNpb24YAiABKAUSDwoHb3V0bGluZRgDIAEoCRIOCgZlZGl0b3IYBCABKAkicgocVXBkYXRlR2FtZUNvbmZpZ091dGxpbmVSZXBseRIRCglnYW1lX2NvZGUYASABKAkSFgoOb3V0bGluZV9zdGF0dXMYAiABKAkSFwoPb3V0bGluZV92ZXJzaW9uGAMgASgFEg4KBnN0YXR1cxgEIAEoCSJjCh9Db25maXJtR2FtZUNvbmZpZ091dGxpbmVSZXF1ZXN0EhEKCWdhbWVfY29kZRgBIAEoCRIXCg9vdXRsaW5lX3ZlcnNpb24YAiABKAUSFAoMY29uZmlybWVkX2J5GAMgASgJIl0KHUNvbmZpcm1HYW1lQ29uZmlnT3V0bGluZVJlcGx5EhEKCWdhbWVfY29kZRgBIAEoCRIOCgZzdGF0dXMYAiABKAkSGQoRZ2VuZXJhdGlvbl9zdGF0dXMYAyABKAki9gEKGUdhbWVDb25maWdHZW5lcmF0aW9uUmVwbHkSEQoJZ2FtZV9jb2RlGAEgASgJEhkKEWdlbmVyYXRpb25fc3RhdHVzGAIgASgJEhoKEmdlbmVyYXRpb25fdmVyc2lvbhgDIAEoBRInCgZzY3JpcHQYBCABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EiYKBXdvcmxkGAUgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBInCgZyZXN1bHQYBiABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EhUKDWVycm9yX21lc3NhZ2UYByABKAky2Q0KFkt3U3RhdGVtU2VydmljZVNlcnZpY2USSgoEUGluZxIhLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLlBpbmdSZXF1ZXN0Gh8ua3dfc3RhdGVtX3NlcnZpY2UudjEuUGluZ1JlcGx5ElMKCUdldFN0YXR1cxIiLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkdyb3VwUmVxdWVzdBoiLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLlJ1bnRpbWVSZXBseRJXCglTdGFydEdhbWUSJi5rd19zdGF0ZW1fc2VydmljZS52MS5TdGFydEdhbWVSZXF1ZXN0GiIua3dfc3RhdGVtX3NlcnZpY2UudjEuUnVudGltZVJlcGx5EmcKEVN0YXJ0T2ZmaWNpYWxHYW1lEi4ua3dfc3RhdGVtX3NlcnZpY2UudjEuU3RhcnRPZmZpY2lhbEdhbWVSZXF1ZXN0GiIua3dfc3RhdGVtX3NlcnZpY2UudjEuUnVudGltZVJlcGx5ElsKC1NlbmRNZXNzYWdlEigua3dfc3RhdGVtX3NlcnZpY2UudjEuU2VuZE1lc3NhZ2VSZXF1ZXN0GiIua3dfc3RhdGVtX3NlcnZpY2UudjEuUnVudGltZVJlcGx5EmEKDlNlbmRNZXNzYWdlU1NFEisua3dfc3RhdGVtX3NlcnZpY2UudjEuU2VuZE1lc3NhZ2VTU0VSZXF1ZXN0GiIua3dfc3RhdGVtX3NlcnZpY2UudjEuUnVudGltZVJlcGx5ElEKB0VuZEdhbWUSIi5rd19zdGF0ZW1fc2VydmljZS52MS5Hcm91cFJlcXVlc3QaIi5rd19zdGF0ZW1fc2VydmljZS52MS5SdW50aW1lUmVwbHkSWwoRR2V0TmFycmF0aXZlU3RhdGUSIi5rd19zdGF0ZW1fc2VydmljZS52MS5Hcm91cFJlcXVlc3QaIi5rd19zdGF0ZW1fc2VydmljZS52MS5SdW50aW1lUmVwbHkSWQoPR2V0TmFycmF0aXZlTG9nEiIua3dfc3RhdGVtX3NlcnZpY2UudjEuR3JvdXBSZXF1ZXN0GiIua3dfc3RhdGVtX3NlcnZpY2UudjEuUnVudGltZVJlcGx5Em4KEEltcG9ydEdhbWVDb25maWcSLS5rd19zdGF0ZW1fc2VydmljZS52MS5JbXBvcnRHYW1lQ29uZmlnUmVxdWVzdBorLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkltcG9ydEdhbWVDb25maWdSZXBseRJrCg9MaXN0R2FtZUNvbmZpZ3MSLC5rd19zdGF0ZW1fc2VydmljZS52MS5MaXN0R2FtZUNvbmZpZ3NSZXF1ZXN0Gioua3dfc3RhdGVtX3NlcnZpY2UudjEuTGlzdEdhbWVDb25maWdzUmVwbHkSXQoNR2V0R2FtZUNvbmZpZxIlLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkdhbWVDb2RlUmVxdWVzdBolLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkdhbWVDb25maWdSZXBseRJmChBEZWxldGVHYW1lQ29uZmlnEiUua3dfc3RhdGVtX3NlcnZpY2UudjEuR2FtZUNvZGVSZXF1ZXN0Gisua3dfc3RhdGVtX3NlcnZpY2UudjEuRGVsZXRlR2FtZUNvbmZpZ1JlcGx5EmsKFEdldEdhbWVDb25maWdPdXRsaW5lEiUua3dfc3RhdGVtX3NlcnZpY2UudjEuR2FtZUNvZGVSZXF1ZXN0Giwua3dfc3RhdGVtX3NlcnZpY2UudjEuR2FtZUNvbmZpZ091dGxpbmVSZXBseRKDAQoXVXBkYXRlR2FtZUNvbmZpZ091dGxpbmUSNC5rd19zdGF0ZW1fc2VydmljZS52MS5VcGRhdGVHYW1lQ29uZmlnT3V0bGluZVJlcXVlc3QaMi5rd19zdGF0ZW1fc2VydmljZS52MS5VcGRhdGVHYW1lQ29uZmlnT3V0bGluZVJlcGx5EoYBChhDb25maXJtR2FtZUNvbmZpZ091dGxpbmUSNS5rd19zdGF0ZW1fc2VydmljZS52MS5Db25maXJtR2FtZUNvbmZpZ091dGxpbmVSZXF1ZXN0GjMua3dfc3RhdGVtX3NlcnZpY2UudjEuQ29uZmlybUdhbWVDb25maWdPdXRsaW5lUmVwbHkScQoXR2V0R2FtZUNvbmZpZ0dlbmVyYXRpb24SJS5rd19zdGF0ZW1fc2VydmljZS52MS5HYW1lQ29kZVJlcXVlc3QaLy5rd19zdGF0ZW1fc2VydmljZS52MS5HYW1lQ29uZmlnR2VuZXJhdGlvblJlcGx5Qj5aPGFnbmVzL3Byb3RvL2dlbi9nby9rd19zdGF0ZW1fc2VydmljZS92MTtrd19zdGF0ZW1fc2VydmljZV92MWIGcHJvdG8z", [file_google_protobuf_struct]);
+  fileDesc("Cixrd19zdGF0ZW1fc2VydmljZS92MS9rd19zdGF0ZW1fc2VydmljZS5wcm90bxIUa3dfc3RhdGVtX3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSIgCgxHcm91cFJlcXVlc3QSEAoIZ3JvdXBfaWQYASABKAkiXAoQU3RhcnRHYW1lUmVxdWVzdBIQCghncm91cF9pZBgBIAEoCRIRCglnYW1lX3R5cGUYAiABKAkSDAoEdGV4dBgDIAEoCRIVCg1sYW5ndWFnZV9jb2RlGAQgASgJIlQKGFN0YXJ0T2ZmaWNpYWxHYW1lUmVxdWVzdBIQCghncm91cF9pZBgBIAEoCRIPCgdnYW1lX2lkGAIgASgJEhUKDWxhbmd1YWdlX2NvZGUYAyABKAkiSgogT2ZmaWNpYWxHYW1lQWdlbnRJbml0RGF0YVJlcXVlc3QSDwoHZ2FtZV9pZBgBIAEoCRIVCg1sYW5ndWFnZV9jb2RlGAIgASgJIlAKHE9mZmljaWFsR2FtZUFnZW50SW5pdENoYXB0ZXISDQoFdGl0bGUYASABKAkSDAoEZ29hbBgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCSLXAwoeT2ZmaWNpYWxHYW1lQWdlbnRJbml0RGF0YVJlcGx5Eg8KB3N1Y2Nlc3MYASABKAgSDQoFZXJyb3IYAiABKAkSDwoHZ2FtZV9pZBgDIAEoCRIRCglnYW1lX3R5cGUYBCABKAkSEgoKZ2FtZV9nZW5yZRgFIAEoCRIVCg1sYW5ndWFnZV9jb2RlGAYgASgJEicKBmFzc2V0cxgHIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSLgoNaW5pdGlhbF9zdGF0ZRgIIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSRAoIY2hhcHRlcnMYCSADKAsyMi5rd19zdGF0ZW1fc2VydmljZS52MS5PZmZpY2lhbEdhbWVBZ2VudEluaXRDaGFwdGVyEhkKEWNoYXJhY3Rlcl9zZXR0aW5nGAogASgJEh4KFmNoYXJhY3Rlcl9yZWxhdGlvbnNoaXAYCyABKAkSGAoQc3RvcnlfYmFja2dyb3VuZBgMIAEoCRIVCg1sZWFkX25wY19uYW1lGA0gASgJEhMKC2FpX21lc3NhZ2VzGA4gAygJEiYKBXdvcmxkGA8gASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCJgChJTZW5kTWVzc2FnZVJlcXVlc3QSEAoIZ3JvdXBfaWQYASABKAkSDAoEdGV4dBgCIAEoCRITCgtwbGF5ZXJfbmFtZRgDIAEoCRIVCg1sYW5ndWFnZV9jb2RlGAQgASgJIn8KFVNlbmRNZXNzYWdlU1NFUmVxdWVzdBIQCghncm91cF9pZBgBIAEoCRIMCgR0ZXh0GAIgASgJEhMKC3BsYXllcl9uYW1lGAMgASgJEjEKEGN1c3RvbV92YXJpYWJsZXMYBCABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IjUKDFJ1bnRpbWVSZXBseRIlCgRkYXRhGAEgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCIkCg9HYW1lQ29kZVJlcXVlc3QSEQoJZ2FtZV9jb2RlGAEgASgJIpcCChdJbXBvcnRHYW1lQ29uZmlnUmVxdWVzdBIRCglnYW1lX3R5cGUYASABKAkSEwoLc2NyaXB0X25hbWUYAiABKAkSEgoKaW50cm9fcnVsZRgDIAEoCRIYChBzdG9yeV9iYWNrZ3JvdW5kGAQgASgJEhkKEWNoYXJhY3Rlcl9zZXR0aW5nGAUgASgJEh4KFmNoYXJhY3Rlcl9yZWxhdGlvbnNoaXAYBiABKAkSFQoNbGVhZF9ucGNfbmFtZRgHIAEoCRIVCg1sYW5ndWFnZV9jb2RlGAggASgJEhIKCmNyZWF0ZWRfYnkYCSABKAkSEQoJZ2FtZV9jb2RlGAogASgJEhYKDnNlcnZpY2Vfc291cmNlGAsgASgFIpMBChVJbXBvcnRHYW1lQ29uZmlnUmVwbHkSEQoJZ2FtZV9jb2RlGAEgASgJEg4KBnN0YXR1cxgCIAEoCRIWCg5vdXRsaW5lX3N0YXR1cxgDIAEoCRIXCg9vdXRsaW5lX3ZlcnNpb24YBCABKAUSDwoHb3V0bGluZRgFIAEoCRIVCg1lcnJvcl9tZXNzYWdlGAYgASgJImMKFkxpc3RHYW1lQ29uZmlnc1JlcXVlc3QSDAoEcGFnZRgBIAEoBRIRCglwYWdlX3NpemUYAiABKAUSEQoJZ2FtZV90eXBlGAMgASgJEhUKDWNvbmZpZ19zdGF0dXMYBCABKAkidwoUTGlzdEdhbWVDb25maWdzUmVwbHkSLwoFaXRlbXMYASADKAsyIC5rd19zdGF0ZW1fc2VydmljZS52MS5HYW1lQ29uZmlnEg0KBXRvdGFsGAIgASgFEgwKBHBhZ2UYAyABKAUSEQoJcGFnZV9zaXplGAQgASgFIkMKD0dhbWVDb25maWdSZXBseRIwCgZjb25maWcYASABKAsyIC5rd19zdGF0ZW1fc2VydmljZS52MS5HYW1lQ29uZmlnIjoKFURlbGV0ZUdhbWVDb25maWdSZXBseRIRCglnYW1lX2NvZGUYASABKAkSDgoGc3RhdHVzGAIgASgJItgGCgpHYW1lQ29uZmlnEgoKAmlkGAEgASgDEhEKCWdhbWVfY29kZRgCIAEoCRIRCglnYW1lX3R5cGUYAyABKAkSEwoLc2NyaXB0X25hbWUYBCABKAkSFQoNbGFuZ3VhZ2VfY29kZRgFIAEoCRISCgppbnRyb19ydWxlGAYgASgJEhgKEHN0b3J5X2JhY2tncm91bmQYByABKAkSGQoRY2hhcmFjdGVyX3NldHRpbmcYCCABKAkSHgoWY2hhcmFjdGVyX3JlbGF0aW9uc2hpcBgJIAEoCRIVCg1sZWFkX25wY19uYW1lGAogASgJEi8KDnNvdXJjZV9wYXlsb2FkGAsgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBIyChFub3JtYWxpemVkX3Byb21wdBgMIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSFgoOb3V0bGluZV9zdGF0dXMYDSABKAkSFwoPb3V0bGluZV92ZXJzaW9uGA4gASgFEhQKDG91dGxpbmVfdGV4dBgPIAEoCRIdChVvdXRsaW5lX2Vycm9yX21lc3NhZ2UYECABKAkSGwoTb3V0bGluZV9yZXRyeV9jb3VudBgRIAEoBRIZChFnZW5lcmF0aW9uX3N0YXR1cxgSIAEoCRIaChJnZW5lcmF0aW9uX3ZlcnNpb24YEyABKAUSHgoWZ2VuZXJhdGlvbl9yZXRyeV9jb3VudBgUIAEoBRInCgZzY3JpcHQYFSABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EiYKBXdvcmxkGBYgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBInCgZyZXN1bHQYFyABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EiAKGGdlbmVyYXRpb25fZXJyb3JfbWVzc2FnZRgYIAEoCRIVCg1jb25maWdfc3RhdHVzGBkgASgJEhIKCmNyZWF0ZWRfYnkYGiABKAkSEgoKdXBkYXRlZF9ieRgbIAEoCRISCgpjcmVhdGVkX2F0GBwgASgJEhIKCnVwZGF0ZWRfYXQYHSABKAkSEgoKaXNfZGVsZXRlZBgeIAEoCBIWCg5zZXJ2aWNlX3NvdXJjZRgfIAEoBSKEAQoWR2FtZUNvbmZpZ091dGxpbmVSZXBseRIRCglnYW1lX2NvZGUYASABKAkSFgoOb3V0bGluZV9zdGF0dXMYAiABKAkSFwoPb3V0bGluZV92ZXJzaW9uGAMgASgFEg8KB291dGxpbmUYBCABKAkSFQoNZXJyb3JfbWVzc2FnZRgFIAEoCSJtCh5VcGRhdGVHYW1lQ29uZmlnT3V0bGluZVJlcXVlc3QSEQoJZ2FtZV9jb2RlGAEgASgJEhcKD291dGxpbmVfdmVyc2lvbhgCIAEoBRIPCgdvdXRsaW5lGAMgASgJEg4KBmVkaXRvchgEIAEoCSJyChxVcGRhdGVHYW1lQ29uZmlnT3V0bGluZVJlcGx5EhEKCWdhbWVfY29kZRgBIAEoCRIWCg5vdXRsaW5lX3N0YXR1cxgCIAEoCRIXCg9vdXRsaW5lX3ZlcnNpb24YAyABKAUSDgoGc3RhdHVzGAQgASgJImMKH0NvbmZpcm1HYW1lQ29uZmlnT3V0bGluZVJlcXVlc3QSEQoJZ2FtZV9jb2RlGAEgASgJEhcKD291dGxpbmVfdmVyc2lvbhgCIAEoBRIUCgxjb25maXJtZWRfYnkYAyABKAkiXQodQ29uZmlybUdhbWVDb25maWdPdXRsaW5lUmVwbHkSEQoJZ2FtZV9jb2RlGAEgASgJEg4KBnN0YXR1cxgCIAEoCRIZChFnZW5lcmF0aW9uX3N0YXR1cxgDIAEoCSL2AQoZR2FtZUNvbmZpZ0dlbmVyYXRpb25SZXBseRIRCglnYW1lX2NvZGUYASABKAkSGQoRZ2VuZXJhdGlvbl9zdGF0dXMYAiABKAkSGgoSZ2VuZXJhdGlvbl92ZXJzaW9uGAMgASgFEicKBnNjcmlwdBgEIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSJgoFd29ybGQYBSABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EicKBnJlc3VsdBgGIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSFQoNZXJyb3JfbWVzc2FnZRgHIAEoCTLoDgoWS3dTdGF0ZW1TZXJ2aWNlU2VydmljZRJKCgRQaW5nEiEua3dfc3RhdGVtX3NlcnZpY2UudjEuUGluZ1JlcXVlc3QaHy5rd19zdGF0ZW1fc2VydmljZS52MS5QaW5nUmVwbHkSUwoJR2V0U3RhdHVzEiIua3dfc3RhdGVtX3NlcnZpY2UudjEuR3JvdXBSZXF1ZXN0GiIua3dfc3RhdGVtX3NlcnZpY2UudjEuUnVudGltZVJlcGx5ElcKCVN0YXJ0R2FtZRImLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLlN0YXJ0R2FtZVJlcXVlc3QaIi5rd19zdGF0ZW1fc2VydmljZS52MS5SdW50aW1lUmVwbHkSZwoRU3RhcnRPZmZpY2lhbEdhbWUSLi5rd19zdGF0ZW1fc2VydmljZS52MS5TdGFydE9mZmljaWFsR2FtZVJlcXVlc3QaIi5rd19zdGF0ZW1fc2VydmljZS52MS5SdW50aW1lUmVwbHkSjAEKHEdldE9mZmljaWFsR2FtZUFnZW50SW5pdERhdGESNi5rd19zdGF0ZW1fc2VydmljZS52MS5PZmZpY2lhbEdhbWVBZ2VudEluaXREYXRhUmVxdWVzdBo0Lmt3X3N0YXRlbV9zZXJ2aWNlLnYxLk9mZmljaWFsR2FtZUFnZW50SW5pdERhdGFSZXBseRJbCgtTZW5kTWVzc2FnZRIoLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLlNlbmRNZXNzYWdlUmVxdWVzdBoiLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLlJ1bnRpbWVSZXBseRJhCg5TZW5kTWVzc2FnZVNTRRIrLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLlNlbmRNZXNzYWdlU1NFUmVxdWVzdBoiLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLlJ1bnRpbWVSZXBseRJRCgdFbmRHYW1lEiIua3dfc3RhdGVtX3NlcnZpY2UudjEuR3JvdXBSZXF1ZXN0GiIua3dfc3RhdGVtX3NlcnZpY2UudjEuUnVudGltZVJlcGx5ElsKEUdldE5hcnJhdGl2ZVN0YXRlEiIua3dfc3RhdGVtX3NlcnZpY2UudjEuR3JvdXBSZXF1ZXN0GiIua3dfc3RhdGVtX3NlcnZpY2UudjEuUnVudGltZVJlcGx5ElkKD0dldE5hcnJhdGl2ZUxvZxIiLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkdyb3VwUmVxdWVzdBoiLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLlJ1bnRpbWVSZXBseRJuChBJbXBvcnRHYW1lQ29uZmlnEi0ua3dfc3RhdGVtX3NlcnZpY2UudjEuSW1wb3J0R2FtZUNvbmZpZ1JlcXVlc3QaKy5rd19zdGF0ZW1fc2VydmljZS52MS5JbXBvcnRHYW1lQ29uZmlnUmVwbHkSawoPTGlzdEdhbWVDb25maWdzEiwua3dfc3RhdGVtX3NlcnZpY2UudjEuTGlzdEdhbWVDb25maWdzUmVxdWVzdBoqLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkxpc3RHYW1lQ29uZmlnc1JlcGx5El0KDUdldEdhbWVDb25maWcSJS5rd19zdGF0ZW1fc2VydmljZS52MS5HYW1lQ29kZVJlcXVlc3QaJS5rd19zdGF0ZW1fc2VydmljZS52MS5HYW1lQ29uZmlnUmVwbHkSZgoQRGVsZXRlR2FtZUNvbmZpZxIlLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkdhbWVDb2RlUmVxdWVzdBorLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkRlbGV0ZUdhbWVDb25maWdSZXBseRJrChRHZXRHYW1lQ29uZmlnT3V0bGluZRIlLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkdhbWVDb2RlUmVxdWVzdBosLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkdhbWVDb25maWdPdXRsaW5lUmVwbHkSgwEKF1VwZGF0ZUdhbWVDb25maWdPdXRsaW5lEjQua3dfc3RhdGVtX3NlcnZpY2UudjEuVXBkYXRlR2FtZUNvbmZpZ091dGxpbmVSZXF1ZXN0GjIua3dfc3RhdGVtX3NlcnZpY2UudjEuVXBkYXRlR2FtZUNvbmZpZ091dGxpbmVSZXBseRKGAQoYQ29uZmlybUdhbWVDb25maWdPdXRsaW5lEjUua3dfc3RhdGVtX3NlcnZpY2UudjEuQ29uZmlybUdhbWVDb25maWdPdXRsaW5lUmVxdWVzdBozLmt3X3N0YXRlbV9zZXJ2aWNlLnYxLkNvbmZpcm1HYW1lQ29uZmlnT3V0bGluZVJlcGx5EnEKF0dldEdhbWVDb25maWdHZW5lcmF0aW9uEiUua3dfc3RhdGVtX3NlcnZpY2UudjEuR2FtZUNvZGVSZXF1ZXN0Gi8ua3dfc3RhdGVtX3NlcnZpY2UudjEuR2FtZUNvbmZpZ0dlbmVyYXRpb25SZXBseUI+WjxhZ25lcy9wcm90by9nZW4vZ28va3dfc3RhdGVtX3NlcnZpY2UvdjE7a3dfc3RhdGVtX3NlcnZpY2VfdjFiBnByb3RvMw", [file_google_protobuf_struct]);
 
 /**
  * @generated from message kw_statem_service.v1.PingRequest
@@ -124,6 +124,142 @@ export const StartOfficialGameRequestSchema: GenMessage<StartOfficialGameRequest
   messageDesc(file_kw_statem_service_v1_kw_statem_service, 4);
 
 /**
+ * @generated from message kw_statem_service.v1.OfficialGameAgentInitDataRequest
+ */
+export type OfficialGameAgentInitDataRequest = Message<"kw_statem_service.v1.OfficialGameAgentInitDataRequest"> & {
+  /**
+   * @generated from field: string game_id = 1;
+   */
+  gameId: string;
+
+  /**
+   * @generated from field: string language_code = 2;
+   */
+  languageCode: string;
+};
+
+/**
+ * Describes the message kw_statem_service.v1.OfficialGameAgentInitDataRequest.
+ * Use `create(OfficialGameAgentInitDataRequestSchema)` to create a new message.
+ */
+export const OfficialGameAgentInitDataRequestSchema: GenMessage<OfficialGameAgentInitDataRequest> = /*@__PURE__*/
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 5);
+
+/**
+ * @generated from message kw_statem_service.v1.OfficialGameAgentInitChapter
+ */
+export type OfficialGameAgentInitChapter = Message<"kw_statem_service.v1.OfficialGameAgentInitChapter"> & {
+  /**
+   * @generated from field: string title = 1;
+   */
+  title: string;
+
+  /**
+   * @generated from field: string goal = 2;
+   */
+  goal: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+};
+
+/**
+ * Describes the message kw_statem_service.v1.OfficialGameAgentInitChapter.
+ * Use `create(OfficialGameAgentInitChapterSchema)` to create a new message.
+ */
+export const OfficialGameAgentInitChapterSchema: GenMessage<OfficialGameAgentInitChapter> = /*@__PURE__*/
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 6);
+
+/**
+ * @generated from message kw_statem_service.v1.OfficialGameAgentInitDataReply
+ */
+export type OfficialGameAgentInitDataReply = Message<"kw_statem_service.v1.OfficialGameAgentInitDataReply"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+
+  /**
+   * @generated from field: string error = 2;
+   */
+  error: string;
+
+  /**
+   * @generated from field: string game_id = 3;
+   */
+  gameId: string;
+
+  /**
+   * @generated from field: string game_type = 4;
+   */
+  gameType: string;
+
+  /**
+   * @generated from field: string game_genre = 5;
+   */
+  gameGenre: string;
+
+  /**
+   * @generated from field: string language_code = 6;
+   */
+  languageCode: string;
+
+  /**
+   * @generated from field: google.protobuf.Struct assets = 7;
+   */
+  assets?: JsonObject;
+
+  /**
+   * @generated from field: google.protobuf.Struct initial_state = 8;
+   */
+  initialState?: JsonObject;
+
+  /**
+   * @generated from field: repeated kw_statem_service.v1.OfficialGameAgentInitChapter chapters = 9;
+   */
+  chapters: OfficialGameAgentInitChapter[];
+
+  /**
+   * @generated from field: string character_setting = 10;
+   */
+  characterSetting: string;
+
+  /**
+   * @generated from field: string character_relationship = 11;
+   */
+  characterRelationship: string;
+
+  /**
+   * @generated from field: string story_background = 12;
+   */
+  storyBackground: string;
+
+  /**
+   * @generated from field: string lead_npc_name = 13;
+   */
+  leadNpcName: string;
+
+  /**
+   * @generated from field: repeated string ai_messages = 14;
+   */
+  aiMessages: string[];
+
+  /**
+   * @generated from field: google.protobuf.Struct world = 15;
+   */
+  world?: JsonObject;
+};
+
+/**
+ * Describes the message kw_statem_service.v1.OfficialGameAgentInitDataReply.
+ * Use `create(OfficialGameAgentInitDataReplySchema)` to create a new message.
+ */
+export const OfficialGameAgentInitDataReplySchema: GenMessage<OfficialGameAgentInitDataReply> = /*@__PURE__*/
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 7);
+
+/**
  * @generated from message kw_statem_service.v1.SendMessageRequest
  */
 export type SendMessageRequest = Message<"kw_statem_service.v1.SendMessageRequest"> & {
@@ -153,7 +289,7 @@ export type SendMessageRequest = Message<"kw_statem_service.v1.SendMessageReques
  * Use `create(SendMessageRequestSchema)` to create a new message.
  */
 export const SendMessageRequestSchema: GenMessage<SendMessageRequest> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 5);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 8);
 
 /**
  * @generated from message kw_statem_service.v1.SendMessageSSERequest
@@ -185,7 +321,7 @@ export type SendMessageSSERequest = Message<"kw_statem_service.v1.SendMessageSSE
  * Use `create(SendMessageSSERequestSchema)` to create a new message.
  */
 export const SendMessageSSERequestSchema: GenMessage<SendMessageSSERequest> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 6);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 9);
 
 /**
  * @generated from message kw_statem_service.v1.RuntimeReply
@@ -202,7 +338,7 @@ export type RuntimeReply = Message<"kw_statem_service.v1.RuntimeReply"> & {
  * Use `create(RuntimeReplySchema)` to create a new message.
  */
 export const RuntimeReplySchema: GenMessage<RuntimeReply> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 7);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 10);
 
 /**
  * @generated from message kw_statem_service.v1.GameCodeRequest
@@ -219,7 +355,7 @@ export type GameCodeRequest = Message<"kw_statem_service.v1.GameCodeRequest"> & 
  * Use `create(GameCodeRequestSchema)` to create a new message.
  */
 export const GameCodeRequestSchema: GenMessage<GameCodeRequest> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 8);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 11);
 
 /**
  * @generated from message kw_statem_service.v1.ImportGameConfigRequest
@@ -274,6 +410,11 @@ export type ImportGameConfigRequest = Message<"kw_statem_service.v1.ImportGameCo
    * @generated from field: string game_code = 10;
    */
   gameCode: string;
+
+  /**
+   * @generated from field: int32 service_source = 11;
+   */
+  serviceSource: number;
 };
 
 /**
@@ -281,7 +422,7 @@ export type ImportGameConfigRequest = Message<"kw_statem_service.v1.ImportGameCo
  * Use `create(ImportGameConfigRequestSchema)` to create a new message.
  */
 export const ImportGameConfigRequestSchema: GenMessage<ImportGameConfigRequest> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 9);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 12);
 
 /**
  * @generated from message kw_statem_service.v1.ImportGameConfigReply
@@ -323,7 +464,7 @@ export type ImportGameConfigReply = Message<"kw_statem_service.v1.ImportGameConf
  * Use `create(ImportGameConfigReplySchema)` to create a new message.
  */
 export const ImportGameConfigReplySchema: GenMessage<ImportGameConfigReply> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 10);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 13);
 
 /**
  * @generated from message kw_statem_service.v1.ListGameConfigsRequest
@@ -355,7 +496,7 @@ export type ListGameConfigsRequest = Message<"kw_statem_service.v1.ListGameConfi
  * Use `create(ListGameConfigsRequestSchema)` to create a new message.
  */
 export const ListGameConfigsRequestSchema: GenMessage<ListGameConfigsRequest> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 11);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 14);
 
 /**
  * @generated from message kw_statem_service.v1.ListGameConfigsReply
@@ -387,7 +528,7 @@ export type ListGameConfigsReply = Message<"kw_statem_service.v1.ListGameConfigs
  * Use `create(ListGameConfigsReplySchema)` to create a new message.
  */
 export const ListGameConfigsReplySchema: GenMessage<ListGameConfigsReply> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 12);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 15);
 
 /**
  * @generated from message kw_statem_service.v1.GameConfigReply
@@ -404,7 +545,7 @@ export type GameConfigReply = Message<"kw_statem_service.v1.GameConfigReply"> & 
  * Use `create(GameConfigReplySchema)` to create a new message.
  */
 export const GameConfigReplySchema: GenMessage<GameConfigReply> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 13);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 16);
 
 /**
  * @generated from message kw_statem_service.v1.DeleteGameConfigReply
@@ -426,7 +567,7 @@ export type DeleteGameConfigReply = Message<"kw_statem_service.v1.DeleteGameConf
  * Use `create(DeleteGameConfigReplySchema)` to create a new message.
  */
 export const DeleteGameConfigReplySchema: GenMessage<DeleteGameConfigReply> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 14);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 17);
 
 /**
  * @generated from message kw_statem_service.v1.GameConfig
@@ -581,6 +722,11 @@ export type GameConfig = Message<"kw_statem_service.v1.GameConfig"> & {
    * @generated from field: bool is_deleted = 30;
    */
   isDeleted: boolean;
+
+  /**
+   * @generated from field: int32 service_source = 31;
+   */
+  serviceSource: number;
 };
 
 /**
@@ -588,7 +734,7 @@ export type GameConfig = Message<"kw_statem_service.v1.GameConfig"> & {
  * Use `create(GameConfigSchema)` to create a new message.
  */
 export const GameConfigSchema: GenMessage<GameConfig> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 15);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 18);
 
 /**
  * @generated from message kw_statem_service.v1.GameConfigOutlineReply
@@ -625,7 +771,7 @@ export type GameConfigOutlineReply = Message<"kw_statem_service.v1.GameConfigOut
  * Use `create(GameConfigOutlineReplySchema)` to create a new message.
  */
 export const GameConfigOutlineReplySchema: GenMessage<GameConfigOutlineReply> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 16);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 19);
 
 /**
  * @generated from message kw_statem_service.v1.UpdateGameConfigOutlineRequest
@@ -657,7 +803,7 @@ export type UpdateGameConfigOutlineRequest = Message<"kw_statem_service.v1.Updat
  * Use `create(UpdateGameConfigOutlineRequestSchema)` to create a new message.
  */
 export const UpdateGameConfigOutlineRequestSchema: GenMessage<UpdateGameConfigOutlineRequest> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 17);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 20);
 
 /**
  * @generated from message kw_statem_service.v1.UpdateGameConfigOutlineReply
@@ -689,7 +835,7 @@ export type UpdateGameConfigOutlineReply = Message<"kw_statem_service.v1.UpdateG
  * Use `create(UpdateGameConfigOutlineReplySchema)` to create a new message.
  */
 export const UpdateGameConfigOutlineReplySchema: GenMessage<UpdateGameConfigOutlineReply> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 18);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 21);
 
 /**
  * @generated from message kw_statem_service.v1.ConfirmGameConfigOutlineRequest
@@ -716,7 +862,7 @@ export type ConfirmGameConfigOutlineRequest = Message<"kw_statem_service.v1.Conf
  * Use `create(ConfirmGameConfigOutlineRequestSchema)` to create a new message.
  */
 export const ConfirmGameConfigOutlineRequestSchema: GenMessage<ConfirmGameConfigOutlineRequest> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 19);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 22);
 
 /**
  * @generated from message kw_statem_service.v1.ConfirmGameConfigOutlineReply
@@ -743,7 +889,7 @@ export type ConfirmGameConfigOutlineReply = Message<"kw_statem_service.v1.Confir
  * Use `create(ConfirmGameConfigOutlineReplySchema)` to create a new message.
  */
 export const ConfirmGameConfigOutlineReplySchema: GenMessage<ConfirmGameConfigOutlineReply> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 20);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 23);
 
 /**
  * @generated from message kw_statem_service.v1.GameConfigGenerationReply
@@ -790,7 +936,7 @@ export type GameConfigGenerationReply = Message<"kw_statem_service.v1.GameConfig
  * Use `create(GameConfigGenerationReplySchema)` to create a new message.
  */
 export const GameConfigGenerationReplySchema: GenMessage<GameConfigGenerationReply> = /*@__PURE__*/
-  messageDesc(file_kw_statem_service_v1_kw_statem_service, 21);
+  messageDesc(file_kw_statem_service_v1_kw_statem_service, 24);
 
 /**
  * @generated from service kw_statem_service.v1.KwStatemServiceService
@@ -827,6 +973,14 @@ export const KwStatemServiceService: GenService<{
     methodKind: "unary";
     input: typeof StartOfficialGameRequestSchema;
     output: typeof RuntimeReplySchema;
+  },
+  /**
+   * @generated from rpc kw_statem_service.v1.KwStatemServiceService.GetOfficialGameAgentInitData
+   */
+  getOfficialGameAgentInitData: {
+    methodKind: "unary";
+    input: typeof OfficialGameAgentInitDataRequestSchema;
+    output: typeof OfficialGameAgentInitDataReplySchema;
   },
   /**
    * @generated from rpc kw_statem_service.v1.KwStatemServiceService.SendMessage

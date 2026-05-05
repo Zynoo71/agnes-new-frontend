@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, memo } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
@@ -6,9 +6,11 @@ import type {
   Message,
   ContentBlock,
   HumanReviewData,
+  HitlResumeData,
   ToolCallData,
   FileData,
   MemoryUpdateData,
+  PromptEnhancedData,
   SlideOutlineData,
   SlideDesignSystemData,
 } from "@/stores/conversationStore";
@@ -18,6 +20,7 @@ import { ToolCallBlock } from "./ToolRenderer/ToolCallBlock";
 import { AgentSwarmPanel } from "./AgentSwarmPanel";
 import { TaskListPanel } from "./TaskListPanel";
 import { SheetArtifactCard } from "./SheetArtifactCard";
+import { GenerationArtifactCard } from "./GenerationArtifactCard";
 // R21: SheetPlanPanel 已下线（Agent Swarm 卡片完整覆盖其信息）
 // import { SheetPlanPanel } from "./SheetPlanPanel";
 import { CodeBlock } from "./CodeBlock";
@@ -45,41 +48,6 @@ function formatNaturalDuration(durationMs: number): string {
 
 function formatTtft(durationMs: number): string {
   return `${(Math.max(0, durationMs) / 1000).toFixed(2)}s`;
-}
-
-function localDeckOutlineUrl(conversationId: string): string {
-  return `/__local_slide_workspace/${encodeURIComponent(conversationId)}/deck/deck_outline.json`;
-}
-
-function useLocalDeckAvailable(conversationId: string | null, enabled: boolean, isStreaming?: boolean) {
-  const [availability, setAvailability] = useState<{ conversationId: string | null; available: boolean }>({
-    conversationId: null,
-    available: false,
-  });
-
-  const streamingDone = enabled && isStreaming === false;
-
-  useEffect(() => {
-    if (!enabled || !conversationId) return;
-
-    const controller = new AbortController();
-
-    void fetch(localDeckOutlineUrl(conversationId), {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then((response) => {
-        setAvailability({ conversationId, available: response.ok });
-      })
-      .catch((error: unknown) => {
-        if ((error as { name?: string })?.name === "AbortError") return;
-        setAvailability({ conversationId, available: false });
-      });
-
-    return () => controller.abort();
-  }, [conversationId, enabled, streamingDone]);
-
-  return Boolean(enabled && conversationId && availability.conversationId === conversationId && availability.available);
 }
 
 function MarkdownImage({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
@@ -126,7 +94,7 @@ const MARKDOWN_COMPONENTS = {
 interface MessageBubbleProps {
   message: Message;
   isLast?: boolean;
-  onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onHitlResume?: (action: "approve" | "modify", feedback?: string, data?: Record<string, unknown>) => void;
   onEditResend?: (newQuery: string) => void;
   onRegenerate?: () => void;
   isStreaming?: boolean;
@@ -156,6 +124,10 @@ function UserAvatar() {
 
 export const MessageBubble = memo(function MessageBubble({ message, isLast, onHitlResume, onEditResend, onRegenerate, isStreaming, animate = true }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  // §8.9: a user turn whose only payload is a HitlResume block has its
+  // visual representation merged into the linked HumanReview card above —
+  // skip rendering the otherwise-empty user bubble entirely.
+  const allHitlResume = message.blocks.length > 0 && message.blocks.every((b) => b.type === "HitlResume");
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
   const [copied, setCopied] = useState(false);
@@ -171,9 +143,14 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
         .reverse()
         .find((block): block is { type: "SlideOutline"; data: SlideOutlineData } => block.type === "SlideOutline")
     : undefined;
-  const shouldCheckLocalPreview = !isUser && !!isLast && !!conversationId;
-  const hasLocalDeck = useLocalDeckAvailable(conversationId, shouldCheckLocalPreview, isStreaming);
-  const shouldShowLocalPreview = shouldCheckLocalPreview && (agentType === "slide" || hasLocalDeck);
+  const hasSlideDelegateCall = !isUser && message.blocks.some(
+    (block) => block.type === "ToolCallStart" && block.data.toolName === "delegate_to_slide_agent",
+  );
+  const isSlidePreviewTurn =
+    !isUser &&
+    !!isLast &&
+    (agentType === "slide" || (agentType === "super" && hasSlideDelegateCall));
+  const shouldShowLocalPreview = isSlidePreviewTurn && !!conversationId && !isStreaming;
   const canOpenLocalPreview = shouldShowLocalPreview && !isStreaming && !!conversationId;
 
   const handleCopy = useCallback(() => {
@@ -208,6 +185,8 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
     setEditing(false);
     setEditText("");
   };
+
+  if (isUser && allHitlResume) return null;
 
   if (isUser) {
     return (
@@ -321,6 +300,19 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
             (b) => b.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(b.data.toolName),
           );
 
+          // GenerationArtifact: when a kind's artifact is present in this
+          // message, suppress the matching tool's ToolCallStart skeleton so
+          // we don't double-render skeleton + final card. Covers live (race),
+          // history replay (both blocks persist), and reload edge cases.
+          const supersededTools = new Set<string>();
+          for (const b of message.blocks) {
+            if (b.type !== "GenerationArtifact") continue;
+            if (b.data.kind === "report") supersededTools.add("write_report");
+            else if (b.data.kind === "image") supersededTools.add("generate_image");
+            else if (b.data.kind === "video") supersededTools.add("generate_video");
+            else if (b.data.kind === "slide") supersededTools.add("delegate_to_slide_agent");
+          }
+
           const rendered = message.blocks.map((block, i) => {
             const isSwarm = block.type === "ToolCallStart" && SWARM_TOOL_NAMES.has(block.data.toolName);
 
@@ -337,6 +329,11 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
 
             // Planning tools & cite_sources → filter out
             if (block.type === "ToolCallStart" && (PLANNING_TOOL_NAMES.has(block.data.toolName) || block.data.toolName === "cite_sources")) {
+              return null;
+            }
+
+            // Tool skeleton superseded by its GenerationArtifact card.
+            if (block.type === "ToolCallStart" && supersededTools.has(block.data.toolName)) {
               return null;
             }
 
@@ -412,12 +409,10 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, onHi
                 <p className="text-sm font-semibold text-text-primary">本地预览</p>
                 <p className="truncate text-xs text-text-secondary">
                   {canOpenLocalPreview
-                    ? "流式输出结束后可直接查看本地生成的整套 slides"
+                    ? "会直接加载 sandbox 里生成的整套 slides，并持续读取最新文件"
                     : isStreaming
-                      ? "正在等待本地 slides 生成完成"
-                      : hasLocalDeck
-                        ? "本地 slides 已就绪，点击打开预览"
-                        : "当前会话还没有落出本地 slides，点开后可继续检查生成结果"}
+                      ? "正在等待 slides 生成完成"
+                      : "当前会话还没有可预览的 slides，点开后也可以检查最新生成结果"}
                 </p>
               </div>
             </div>
@@ -478,7 +473,7 @@ const BlockRenderer = memo(function BlockRenderer({
   autoCollapse,
 }: {
   block: ContentBlock;
-  onHitlResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onHitlResume?: (action: "approve" | "modify", feedback?: string, data?: Record<string, unknown>) => void;
   isStreaming?: boolean;
   autoCollapse?: boolean;
 }) {
@@ -510,12 +505,20 @@ const BlockRenderer = memo(function BlockRenderer({
           disabled={isStreaming}
         />
       );
+    case "HitlResume":
+      // §8.9: HitlResume info is merged into the linked HumanReview card
+      // (action badge + feedback) — no separate user-side chip.
+      return null;
     case "TaskList":
       return <TaskListPanel />;
     case "ContextCompacting":
       return <ContextCompactingBlock done={block.done || !isStreaming} />;
     case "MemoryUpdate":
       return <MemoryUpdateBlock data={block.data} />;
+    case "PromptEnhanced":
+      return <PromptEnhancedCard data={block.data} />;
+    case "GenerationArtifact":
+      return <div className="my-3"><GenerationArtifactCard data={block.data} /></div>;
     case "SlideOutline":
       return <SlideOutlineBlock data={block.data} />;
     case "SlideDesignSystem":
@@ -616,14 +619,17 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
 
 // ── Agent thinking placeholder ──
 
-const PHASE_COLOR: Record<string, string> = {
-  thinking: "text-amber-500",
-  ingesting_uploads: "text-cyan-500",
-  scanning_workspace: "text-sky-500",
-  planning: "text-violet-500",
-  profiling: "text-sky-500",
-  executing: "text-emerald-500",
-  delivering: "text-rose-500",
+const PHASE_STYLE: Record<string, { text: string; dot: string }> = {
+  thinking: { text: "text-amber-500", dot: "bg-amber-500" },
+  ingesting_uploads: { text: "text-cyan-500", dot: "bg-cyan-500" },
+  scanning_workspace: { text: "text-sky-500", dot: "bg-sky-500" },
+  planning: { text: "text-violet-500", dot: "bg-violet-500" },
+  profiling: { text: "text-sky-500", dot: "bg-sky-500" },
+  executing: { text: "text-emerald-500", dot: "bg-emerald-500" },
+  delivering: { text: "text-rose-500", dot: "bg-rose-500" },
+  slide_outline_generating: { text: "text-teal-500", dot: "bg-teal-500" },
+  slide_design_generating: { text: "text-violet-500", dot: "bg-violet-500" },
+  slide_workers_allocating: { text: "text-orange-500", dot: "bg-orange-500" },
 };
 
 function AgentThinkingBlock({
@@ -636,9 +642,10 @@ function AgentThinkingBlock({
   items?: string[];
 }) {
   const list = items ?? [];
-  const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
-  const dotColor = colorCls.replace("text-", "bg-");
+  const phaseStyle = PHASE_STYLE[phase ?? "thinking"] ?? PHASE_STYLE.thinking;
   const currentText = hint || (list.length === 0 ? "" : "");
+  const [currentTitle, ...currentDetailParts] = currentText.split("\n");
+  const currentDetail = currentDetailParts.join("\n");
 
   // R20-F: 超 5 行折叠（默认收起，留最后 3 行 + 折叠提示）
   const COLLAPSE_THRESHOLD = 5;
@@ -680,8 +687,16 @@ function AgentThinkingBlock({
       ))}
       {currentText && (
         <div className="flex items-start gap-2 leading-5">
-          <span className={`mt-[7px] inline-block w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0 animate-pulse`} />
-          <span className={colorCls}>{currentText}</span>
+          <span className="relative mt-[7px] inline-flex h-1.5 w-1.5 flex-shrink-0">
+            <span className={`absolute inline-flex h-full w-full rounded-full ${phaseStyle.dot} opacity-60 animate-ping`} />
+            <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${phaseStyle.dot} animate-pulse`} />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className={phaseStyle.text}>{currentTitle}</span>
+            {currentDetail && (
+              <span className="text-text-tertiary whitespace-pre-line">{currentDetail}</span>
+            )}
+          </span>
         </div>
       )}
     </div>
@@ -746,13 +761,74 @@ function MemoryUpdateBlock({ data }: { data: MemoryUpdateData }) {
   );
 }
 
+// ── Prompt enhanced (informational, no confirmation) ──
+
+function PromptEnhancedCard({ data }: { data: PromptEnhancedData }) {
+  const { originalPrompt, enhancedPrompt, message, mediaType, style } = data;
+  const styleLabel = style?.startsWith("custom:") ? style.slice(7) : style;
+
+  return (
+    <div className="my-3 rounded-xl border border-accent/20 bg-accent/[0.03] p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-5 h-5 rounded-md bg-accent/15 flex items-center justify-center shrink-0">
+          <svg className="w-3 h-3 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+          </svg>
+        </div>
+        <span className="text-sm font-semibold text-text-primary">Prompt Enhancement</span>
+      </div>
+      {message && (
+        <p className="text-xs text-text-secondary mb-3 leading-relaxed">{message}</p>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="rounded-lg bg-surface border border-border-light p-3">
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Original</div>
+          <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{originalPrompt}</p>
+        </div>
+        <div className="rounded-lg bg-accent/5 border border-accent/20 p-3">
+          <div className="text-[10px] font-medium text-accent uppercase tracking-wide mb-1.5">Enhanced</div>
+          <p className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap">{enhancedPrompt}</p>
+        </div>
+      </div>
+      {(mediaType || styleLabel) && (
+        <div className="flex items-center gap-2 flex-wrap mt-3">
+          {mediaType && (
+            <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+              {mediaType}
+            </span>
+          )}
+          {styleLabel && (
+            <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
+              {styleLabel}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Review type display config ──
 const REVIEW_TYPE_CONFIG: Record<string, { title: string; description: string }> = {
   research_plan: { title: "Research Plan", description: "Review the proposed tasks before execution" },
-  prompt_enhancement: { title: "Prompt Enhancement", description: "Review the enhanced prompt before generation" },
   material_supplement: { title: "Material Confirmation", description: "Confirm materials to use for generation" },
   batch_generation_plan: { title: "Generation Plan", description: "Review the batch generation plan" },
 };
+
+// §8.9: HitlResume action → small corner badge merged into the HumanReview card.
+function ResumeActionBadge({ action }: { action: HitlResumeData["action"] }) {
+  const config = action === "approve"
+    ? { icon: "✓", label: "Approved", cls: "bg-success/10 text-success border-success/30" }
+    : action === "reject"
+      ? { icon: "✕", label: "Rejected", cls: "bg-error/10 text-error border-error/30" }
+      : { icon: "✎", label: "Modified", cls: "bg-accent/10 text-accent border-accent/30" };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${config.cls}`}>
+      <span className="font-bold leading-none">{config.icon}</span>
+      <span>{config.label}</span>
+    </span>
+  );
+}
 
 function HumanReviewBlock({
   data,
@@ -760,7 +836,7 @@ function HumanReviewBlock({
   disabled,
 }: {
   data: HumanReviewData;
-  onResume?: (action: "approve" | "modify", feedback?: string) => void;
+  onResume?: (action: "approve" | "modify", feedback?: string, data?: Record<string, unknown>) => void;
   disabled?: boolean;
 }) {
   const reviewType = data.payload.review_type as string | undefined;
@@ -772,28 +848,98 @@ function HumanReviewBlock({
     description: "The agent is waiting for your decision",
   };
 
+  const isPending = data.state === "pending";
+
+  // §8.9 structured-modify: per-slot selection state for material_supplement.
+  // Initialised from agent's pre-selection; changes flip the action button to
+  // "Confirm Selection" which submits {action: "modify", data: {slots: [...]}}.
+  const slots = useMemo<Array<{ selected_index: number | null; candidates: unknown[] }>>(() => {
+    if (reviewType !== "material_supplement" || !reviewData) return [];
+    return (reviewData.slots as Array<{ selected_index: number | null; candidates: unknown[] }> | undefined) ?? [];
+  }, [reviewType, reviewData]);
+  const initialSelections = useMemo(
+    () => slots.map((s) => s.selected_index ?? 0),
+    [slots],
+  );
+  const [localSelections, setLocalSelections] = useState<number[]>(initialSelections);
+  // Re-sync if a Resume replays the review or candidates change.
+  useEffect(() => { setLocalSelections(initialSelections); }, [initialSelections]);
+  const selectionChanged = localSelections.some((v, i) => v !== initialSelections[i]);
+  const handleSlotSelect = (slotIdx: number, candIdx: number) => {
+    setLocalSelections((prev) => {
+      const next = [...prev];
+      next[slotIdx] = candIdx;
+      return next;
+    });
+  };
+  const handleConfirm = () => {
+    if (!onResume) return;
+    if (!selectionChanged) {
+      onResume("approve");
+      return;
+    }
+    const modifyData = { slots: localSelections.map((selected_index) => ({ selected_index })) };
+    onResume("modify", undefined, modifyData);
+  };
+
+  // §8.9: inline modify composer. Hidden by default; user clicks Modify to
+  // expand. Submits onResume("modify", text). Only available for non-structured
+  // review types (material_supplement uses the slot picker above).
+  const [modifyOpen, setModifyOpen] = useState(false);
+  const [modifyText, setModifyText] = useState("");
+  const canInlineModify = reviewType !== "material_supplement";
+  const handleSubmitModify = () => {
+    const trimmed = modifyText.trim();
+    if (!onResume || !trimmed) return;
+    onResume("modify", trimmed);
+    setModifyOpen(false);
+    setModifyText("");
+  };
+
+  // Inject local selection + click handler into MaterialSupplementRenderer.
+  const reviewDataForRender = reviewType === "material_supplement" && reviewData && isPending
+    ? { ...reviewData, slots: slots.map((s, i) => ({ ...s, selected_index: localSelections[i] })) }
+    : reviewData;
+  const onSlotSelect = reviewType === "material_supplement" && isPending && !disabled
+    ? handleSlotSelect
+    : undefined;
+
+  const isDimmed = data.state === "ignored" || data.state === "cancelled";
+  const containerClass = isDimmed
+    ? "my-3 rounded-xl border border-border-light bg-surface-muted/40 p-4 opacity-70"
+    : "my-3 rounded-xl border border-warning/30 bg-warning-light/50 p-4";
+
   return (
-    <div className="my-3 rounded-xl border border-warning/30 bg-warning-light/50 p-4">
+    <div className={containerClass}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-warning/20 flex items-center justify-center shrink-0">
-            <span className="text-warning text-xs font-bold">?</span>
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+            isDimmed ? "bg-text-tertiary/20" : "bg-warning/20"
+          }`}>
+            <span className={`text-xs font-bold ${isDimmed ? "text-text-tertiary" : "text-warning"}`}>?</span>
           </div>
           <div>
             <span className="text-sm font-semibold text-text-primary">{config.title}</span>
             <p className="text-[11px] text-text-tertiary mt-0.5">{config.description}</p>
           </div>
         </div>
-        {timeoutSeconds && !data.resolved && (
+        {timeoutSeconds && isPending && (
           <CountdownBadge seconds={timeoutSeconds} defaultAction={defaultAction} onTimeout={() => onResume?.(defaultAction as "approve")} />
         )}
+        {data.state === "decided" && data.resumeAction && <ResumeActionBadge action={data.resumeAction} />}
+        {data.state === "ignored" && <StatusChip label="Ignored" />}
+        {data.state === "cancelled" && <StatusChip label="Cancelled" />}
       </div>
 
       {/* Review content */}
-      {reviewData && (
+      {reviewDataForRender && (
         <div className="mb-3">
-          <ReviewDataDisplay reviewType={reviewType} data={reviewData} />
+          <ReviewDataDisplay
+            reviewType={reviewType}
+            data={reviewDataForRender}
+            onSlotSelect={onSlotSelect}
+          />
         </div>
       )}
 
@@ -810,28 +956,95 @@ function HumanReviewBlock({
         </details>
       )}
 
-      {/* Actions */}
-      {data.resolved ? (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-medium">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-          </svg>
-          Resolved
+      {/* Modify feedback (free-text user note) */}
+      {data.state === "decided" && data.resumeAction === "modify" && data.resumeFeedback && (
+        <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 px-3 py-2">
+          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider mb-1">User's note</div>
+          <div className="text-[12px] text-text-primary leading-snug whitespace-pre-wrap break-words">{data.resumeFeedback}</div>
         </div>
+      )}
+
+      {/* Actions */}
+      {!isPending ? (
+        // Decided/ignored/cancelled: only show fallback "Resolved" tick for
+        // legacy `decided` data without resumeAction.
+        data.state === "decided" && !data.resumeAction && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-success font-medium">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            Resolved
+          </div>
+        )
       ) : (
         onResume && (
           <div className="mt-4 space-y-3">
-            <button
-              onClick={() => onResume("approve")}
-              disabled={disabled}
-              className="rounded-lg bg-success text-white px-4 py-1.5 text-xs font-medium
-                         hover:bg-success/90 active:scale-[0.97] disabled:opacity-40 transition-all"
-            >
-              Approve
-            </button>
-            <p className="text-[11px] text-text-tertiary">
-              Or type in the chat input to provide feedback
-            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleConfirm}
+                disabled={disabled}
+                className={`rounded-lg text-white px-4 py-1.5 text-xs font-medium
+                           active:scale-[0.97] disabled:opacity-40 transition-all ${
+                             selectionChanged
+                               ? "bg-accent hover:bg-accent-hover"
+                               : "bg-success hover:bg-success/90"
+                           }`}
+              >
+                {selectionChanged ? "Confirm Selection" : "Approve"}
+              </button>
+              {canInlineModify && !modifyOpen && (
+                <button
+                  onClick={() => setModifyOpen(true)}
+                  disabled={disabled}
+                  className="rounded-lg px-4 py-1.5 text-xs font-medium border border-border-light
+                             text-text-secondary hover:text-text-primary hover:bg-surface-muted
+                             active:scale-[0.97] disabled:opacity-40 transition-all"
+                >
+                  Modify
+                </button>
+              )}
+            </div>
+            {canInlineModify && modifyOpen && (
+              <div className="rounded-lg border border-accent/30 bg-surface p-2 space-y-2">
+                <textarea
+                  autoFocus
+                  value={modifyText}
+                  onChange={(e) => setModifyText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      handleSubmitModify();
+                    }
+                  }}
+                  placeholder="Describe what to change…"
+                  rows={3}
+                  className="w-full resize-none bg-transparent text-[13px] text-text-primary
+                             placeholder:text-text-tertiary outline-none"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-text-tertiary">⌘/Ctrl+Enter to submit</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => { setModifyOpen(false); setModifyText(""); }}
+                      className="rounded-md px-2.5 py-1 text-xs text-text-secondary hover:bg-surface-muted"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmitModify}
+                      disabled={disabled || !modifyText.trim()}
+                      className="rounded-md bg-accent hover:bg-accent-hover text-white px-3 py-1
+                                 text-xs font-medium active:scale-[0.97] disabled:opacity-40 transition-all"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!modifyOpen && selectionChanged && (
+              <p className="text-[11px] text-text-tertiary">Submitting your selection above</p>
+            )}
           </div>
         )
       )}
@@ -839,11 +1052,24 @@ function HumanReviewBlock({
   );
 }
 
+function StatusChip({ label }: { label: string }) {
+  return (
+    <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary
+                     border border-border-light rounded-full px-2 py-0.5 shrink-0">
+      {label}
+    </span>
+  );
+}
+
 // ── Review data renderer ──
 
 // ── Review data renderers (registry pattern) ──
 
-type ReviewRenderer = (data: Record<string, unknown>) => React.ReactNode;
+interface ReviewRendererProps {
+  /** §8.9: when provided, material_supplement candidates become clickable. */
+  onSlotSelect?: (slotIdx: number, candIdx: number) => void;
+}
+type ReviewRenderer = (data: Record<string, unknown>, props?: ReviewRendererProps) => React.ReactNode;
 
 interface ReviewTask {
   id: number;
@@ -880,44 +1106,6 @@ function ResearchPlanRenderer(data: Record<string, unknown>) {
   );
 }
 
-function PromptEnhancementRenderer(data: Record<string, unknown>) {
-  const original = (data.original_prompt as string) ?? "";
-  const enhanced = (data.enhanced_prompt as string) ?? "";
-  const mediaType = (data.media_type as string) ?? "image";
-  const style = (data.style as string) ?? "";
-  const message = (data.message as string) ?? "";
-
-  return (
-    <div className="space-y-3">
-      {message && (
-        <p className="text-xs text-text-secondary leading-relaxed">{message}</p>
-      )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <div className="rounded-lg bg-surface border border-border-light p-3">
-          <div className="text-[10px] font-medium text-text-tertiary uppercase tracking-wide mb-1.5">Original</div>
-          <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{original}</p>
-        </div>
-        <div className="rounded-lg bg-accent/5 border border-accent/20 p-3">
-          <div className="text-[10px] font-medium text-accent uppercase tracking-wide mb-1.5">Enhanced</div>
-          <p className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap">{enhanced}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        {mediaType && (
-          <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
-            {mediaType}
-          </span>
-        )}
-        {style && (
-          <span className="text-[10px] font-medium text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded">
-            {style.startsWith("custom:") ? style.slice(7) : style}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 interface MaterialCandidate {
   url: string;
   source: string;
@@ -933,10 +1121,12 @@ interface MaterialSlot {
   selected_index: number | null;
 }
 
-function MaterialSupplementRenderer(data: Record<string, unknown>) {
+function MaterialSupplementRenderer(data: Record<string, unknown>, props?: ReviewRendererProps) {
   const slots = (data.slots as MaterialSlot[]) ?? [];
   const contextSummary = (data.context_summary as string) ?? "";
   const message = (data.message as string) ?? "";
+  const onSlotSelect = props?.onSlotSelect;
+  const interactive = !!onSlotSelect;
 
   return (
     <div className="space-y-3">
@@ -962,15 +1152,16 @@ function MaterialSupplementRenderer(data: Record<string, unknown>) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {slot.candidates.map((c, ci) => {
                     const isSelected = slot.selected_index === ci;
-                    return (
-                      <div
-                        key={ci}
-                        className={`rounded-lg border overflow-hidden ${
-                          isSelected
-                            ? "border-accent ring-2 ring-accent/30"
-                            : "border-border-light"
-                        }`}
-                      >
+                    const baseCls = `rounded-lg border overflow-hidden text-left transition-all ${
+                      isSelected
+                        ? "border-accent ring-2 ring-accent/30"
+                        : "border-border-light"
+                    }`;
+                    const interactiveCls = interactive
+                      ? "cursor-pointer hover:border-accent/60 hover:shadow-sm active:scale-[0.98]"
+                      : "";
+                    const inner = (
+                      <>
                         {c.type === "video" ? (
                           <div className="w-full h-24 bg-surface-hover flex items-center justify-center">
                             <span className="text-[10px] text-text-tertiary">VIDEO</span>
@@ -991,6 +1182,20 @@ function MaterialSupplementRenderer(data: Record<string, unknown>) {
                             )}
                           </div>
                         </div>
+                      </>
+                    );
+                    return interactive ? (
+                      <button
+                        key={ci}
+                        type="button"
+                        onClick={() => onSlotSelect(si, ci)}
+                        className={`${baseCls} ${interactiveCls} block w-full bg-transparent`}
+                      >
+                        {inner}
+                      </button>
+                    ) : (
+                      <div key={ci} className={baseCls}>
+                        {inner}
                       </div>
                     );
                   })}
@@ -1086,14 +1291,21 @@ function BatchGenerationPlanRenderer(data: Record<string, unknown>) {
 
 const REVIEW_RENDERERS: Record<string, ReviewRenderer> = {
   research_plan: ResearchPlanRenderer,
-  prompt_enhancement: PromptEnhancementRenderer,
   material_supplement: MaterialSupplementRenderer,
   batch_generation_plan: BatchGenerationPlanRenderer,
 };
 
-function ReviewDataDisplay({ reviewType, data }: { reviewType?: string; data: Record<string, unknown> }) {
+function ReviewDataDisplay({
+  reviewType,
+  data,
+  onSlotSelect,
+}: {
+  reviewType?: string;
+  data: Record<string, unknown>;
+  onSlotSelect?: (slotIdx: number, candIdx: number) => void;
+}) {
   const renderer = reviewType ? REVIEW_RENDERERS[reviewType] : undefined;
-  const content = renderer?.(data);
+  const content = renderer?.(data, { onSlotSelect });
   if (content) return <>{content}</>;
 
   return (
@@ -1180,7 +1392,14 @@ function SlideDesignSystemBlock({ data }: { data: SlideDesignSystemData }) {
         </div>
         <span className="text-sm font-semibold text-text-primary">Design System</span>
       </div>
-      <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-line">{data.summary}</p>
+      <div className="rounded-lg border border-violet-200/50 bg-surface/80 p-3 max-h-[min(48vh,420px)] overflow-y-auto overflow-x-auto">
+        <div className="prose-agent text-xs text-text-secondary leading-relaxed break-words">
+          <Markdown
+            remarkPlugins={REMARK_PLUGINS}
+            components={MARKDOWN_COMPONENTS}
+          >{data.summary}</Markdown>
+        </div>
+      </div>
     </div>
   );
 }

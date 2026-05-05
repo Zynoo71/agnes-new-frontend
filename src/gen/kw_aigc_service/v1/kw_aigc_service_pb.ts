@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kw_aigc_service/v1/kw_aigc_service.proto.
  */
 export const file_kw_aigc_service_v1_kw_aigc_service: GenFile = /*@__PURE__*/
-  fileDesc("Cihrd19haWdjX3NlcnZpY2UvdjEva3dfYWlnY19zZXJ2aWNlLnByb3RvEhJrd19haWdjX3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSInChRHZXRUYXNrU3RhdHVzUmVxdWVzdBIPCgd0YXNrX2lkGAEgASgJItYBChVHZXRUYXNrU3RhdHVzUmVzcG9uc2USDQoFZm91bmQYASABKAgSDwoHdGFza19pZBgCIAEoCRIOCgZzdGF0dXMYAyABKAkSEgoKcmVzdWx0X3VyaRgEIAEoCRIRCgllcnJvcl9tc2cYBSABKAkSFAoMY29tcGxldGVkX2F0GAYgASgJEhYKDnN1YnNjcmliZXJfdGFnGAcgASgJEiEKGXN1YnNjcmliZXJfY29uc3VtZXJfZ3JvdXAYCCABKAkSFQoNc3Vic2NyaWJlcl9pcBgJIAEoCSI+ChhHZXRBaWdjVGFza1N0YXR1c1JlcXVlc3QSDwoHdGFza19pZBgBIAEoCRIRCgl0YXNrX3R5cGUYAiABKAkicwoZR2V0QWlnY1Rhc2tTdGF0dXNSZXNwb25zZRINCgVmb3VuZBgBIAEoCBIPCgd0YXNrX2lkGAIgASgJEg4KBnN0YXR1cxgDIAEoCRIRCgl0YXNrX3R5cGUYBCABKAkSEwoLcmVzdWx0X2pzb24YBSABKAkiSQoaUmVjb2duaXplSW1hZ2VNYXRjaFJlcXVlc3QSEQoJaW1hZ2VfdXJsGAEgASgJEhgKEG9iamVjdF9kZXRlY3Rpb24YAiABKAkiQAobUmVjb2duaXplSW1hZ2VNYXRjaFJlc3BvbnNlEhAKCGlzX21hdGNoGAEgASgIEg8KB21lc3NhZ2UYAiABKAkiNgofQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvUmVxdWVzdBITCgttb2RlbF9jb2RlcxgBIAMoCSJbChBNb2RlbERpc3BsYXlJbmZvEhIKCm1vZGVsX2NvZGUYASABKAkSDAoEbmFtZRgCIAEoCRITCgttb2RlbF9pbnRybxgDIAEoCRIQCghpY29uX3VybBgEIAEoCSJYCiBCYXRjaEdldE1vZGVsRGlzcGxheUluZm9SZXNwb25zZRI0CgZtb2RlbHMYASADKAsyJC5rd19haWdjX3NlcnZpY2UudjEuTW9kZWxEaXNwbGF5SW5mbyJFChtHZXRNb2RlbENhcGFiaWxpdGllc1JlcXVlc3QSEgoKbW9kZWxfY29kZRgBIAEoCRISCgptb2RlbF90eXBlGAIgASgJIlMKHEdldE1vZGVsQ2FwYWJpbGl0aWVzUmVzcG9uc2USMwoGbW9kZWxzGAEgAygLMiMua3dfYWlnY19zZXJ2aWNlLnYxLk1vZGVsQ2FwYWJpbGl0eSLcAgoPTW9kZWxDYXBhYmlsaXR5EhIKCm1vZGVsX2NvZGUYASABKAkSEgoKbW9kZWxfbmFtZRgCIAEoCRITCgttb2RlbF9hbGlhcxgDIAEoCRINCgVpbnRybxgEIAEoCRIQCghpY29uX3VybBgFIAEoCRISCgptb2RlbF90eXBlGAYgASgJEjIKBWltYWdlGAogASgLMiMua3dfYWlnY19zZXJ2aWNlLnYxLkltYWdlQ2FwYWJpbGl0eRIyCgV2aWRlbxgLIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5WaWRlb0NhcGFiaWxpdHkSMgoFYXVkaW8YDCABKAsyIy5rd19haWdjX3NlcnZpY2UudjEuQXVkaW9DYXBhYmlsaXR5EjsKCnZpZGVvX2VkaXQYDSABKAsyJy5rd19haWdjX3NlcnZpY2UudjEuVmlkZW9FZGl0Q2FwYWJpbGl0eSJXCg9JbWFnZUNhcGFiaWxpdHkSFQoNYXNwZWN0X3JhdGlvcxgBIAMoCRITCgtyZXNvbHV0aW9ucxgCIAMoCRIYChBtYXhfYmF0Y2hfaW1hZ2VzGAMgASgFIqIBCg9WaWRlb0NhcGFiaWxpdHkSEAoIZHVyYXRpb24YASADKAUSHQoVc3VwcG9ydGVkX3Jlc29sdXRpb25zGAIgAygJEhUKDWFzcGVjdF9yYXRpb3MYAyADKAkSIQoZc3VwcG9ydHNfYXVkaW9fZ2VuZXJhdGlvbhgEIAEoCBIkChxzdXBwb3J0c19jdXN0b21fYXVkaW9fdXBsb2FkGAUgASgIInUKE1ZpZGVvRWRpdENhcGFiaWxpdHkSHAoUbWluX2R1cmF0aW9uX3NlY29uZHMYASABKAUSHAoUbWF4X2R1cmF0aW9uX3NlY29uZHMYAiABKAUSIgoac3VwcG9ydGVkX2R1cmF0aW9uX3NlY29uZHMYAyADKAUiEQoPQXVkaW9DYXBhYmlsaXR5IpcCChRTeW50aGVzaXplVFRTUmVxdWVzdBIMCgR0ZXh0GAEgASgJEhIKCm1vZGVsX25hbWUYAiABKAkSEAoIdHJhY2VfaWQYAyABKAkSDwoHdGFza19pZBgEIAEoCRIOCgZzb3VyY2UYBSABKAkSOgoNdm9pY2Vfc2V0dGluZxgKIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5UVFNWb2ljZVNldHRpbmcSOgoNYXVkaW9fc2V0dGluZxgLIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5UVFNBdWRpb1NldHRpbmcSFgoObGFuZ3VhZ2VfYm9vc3QYDCABKAkSEQoEc3luYxgNIAEoCEgAiAEBQgcKBV9zeW5jIk4KD1RUU1ZvaWNlU2V0dGluZxIQCgh2b2ljZV9pZBgBIAEoCRINCgVzcGVlZBgCIAEoAhILCgN2b2wYAyABKAISDQoFcGl0Y2gYBCABKAUiWAoPVFRTQXVkaW9TZXR0aW5nEhMKC3NhbXBsZV9yYXRlGAEgASgFEg8KB2JpdHJhdGUYAiABKAUSDgoGZm9ybWF0GAMgASgJEg8KB2NoYW5uZWwYBCABKAUitwEKFVN5bnRoZXNpemVUVFNSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg8KB21lc3NhZ2UYAiABKAkSEAoIdHJhY2VfaWQYAyABKAkSDwoHdGFza19pZBgEIAEoCRISCgptb2RlbF9uYW1lGAUgASgJEhIKCmVycm9yX2NvZGUYBiABKAkSMQoGcmVzdWx0GAogASgLMiEua3dfYWlnY19zZXJ2aWNlLnYxLlRUU1Jlc3VsdEl0ZW0i1gEKFkdlbmVyYXRlR2FtZVRUU1JlcXVlc3QSDQoFc2NlbmUYASABKAkSDAoEdGV4dBgCIAEoCRIQCgh2b2ljZV9pZBgDIAEoCRIMCgRuYW1lGAQgASgJEg4KBmdlbmRlchgFIAEoCRIPCgdzZXR0aW5nGAYgASgJEgwKBGluZm8YByABKAkSCwoDdXJsGAggASgJEg4KBnJ1bl9pZBgLIAEoCRIQCgh0cmFjZV9pZBgMIAEoCUoECAkQCkoECAoQC1IKc2Vzc2lvbl9pZFIJaXNfZmluaXNoIqQCChdHZW5lcmF0ZUdhbWVUVFNSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg8KB21lc3NhZ2UYAiABKAkSDgoGcnVuX2lkGAMgASgJEg8KB3Rhc2tfaWQYBCABKAkSDQoFc2NlbmUYBSABKAkSCwoDdXJpGAogASgJEhAKCGR1cmF0aW9uGAsgASgBEhMKC3NhbXBsZV9yYXRlGAwgASgJEg8KB2JpdHJhdGUYDSABKAkSDgoGZm9ybWF0GA4gASgJEhAKCHRyYWNlX2lkGA8gASgJEhAKCHZvaWNlX2lkGBAgASgJEhIKCnZvaWNlX25hbWUYESABKAlKBAgSEBNKBAgTEBRKBAgUEBVSCnNlc3Npb25faWRSBWluZGV4UgVzdGFnZSJ7Cg1UVFNSZXN1bHRJdGVtEg8KB3N1Y2Nlc3MYASABKAgSDwoHbWVzc2FnZRgCIAEoCRIPCgd0YXNrX2lkGAMgASgJEhEKCWF1ZGlvX3VybBgEIAEoCRIQCghkdXJhdGlvbhgFIAEoAhISCgphdWRpb19zaXplGAYgASgDMoMHChRLd0FpZ2NTZXJ2aWNlU2VydmljZRJGCgRQaW5nEh8ua3dfYWlnY19zZXJ2aWNlLnYxLlBpbmdSZXF1ZXN0Gh0ua3dfYWlnY19zZXJ2aWNlLnYxLlBpbmdSZXBseRJkCg1HZXRUYXNrU3RhdHVzEigua3dfYWlnY19zZXJ2aWNlLnYxLkdldFRhc2tTdGF0dXNSZXF1ZXN0Gikua3dfYWlnY19zZXJ2aWNlLnYxLkdldFRhc2tTdGF0dXNSZXNwb25zZRJwChFHZXRBaWdjVGFza1N0YXR1cxIsLmt3X2FpZ2Nfc2VydmljZS52MS5HZXRBaWdjVGFza1N0YXR1c1JlcXVlc3QaLS5rd19haWdjX3NlcnZpY2UudjEuR2V0QWlnY1Rhc2tTdGF0dXNSZXNwb25zZRJ2ChNSZWNvZ25pemVJbWFnZU1hdGNoEi4ua3dfYWlnY19zZXJ2aWNlLnYxLlJlY29nbml6ZUltYWdlTWF0Y2hSZXF1ZXN0Gi8ua3dfYWlnY19zZXJ2aWNlLnYxLlJlY29nbml6ZUltYWdlTWF0Y2hSZXNwb25zZRKFAQoYQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvEjMua3dfYWlnY19zZXJ2aWNlLnYxLkJhdGNoR2V0TW9kZWxEaXNwbGF5SW5mb1JlcXVlc3QaNC5rd19haWdjX3NlcnZpY2UudjEuQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvUmVzcG9uc2USeQoUR2V0TW9kZWxDYXBhYmlsaXRpZXMSLy5rd19haWdjX3NlcnZpY2UudjEuR2V0TW9kZWxDYXBhYmlsaXRpZXNSZXF1ZXN0GjAua3dfYWlnY19zZXJ2aWNlLnYxLkdldE1vZGVsQ2FwYWJpbGl0aWVzUmVzcG9uc2USZAoNU3ludGhlc2l6ZVRUUxIoLmt3X2FpZ2Nfc2VydmljZS52MS5TeW50aGVzaXplVFRTUmVxdWVzdBopLmt3X2FpZ2Nfc2VydmljZS52MS5TeW50aGVzaXplVFRTUmVzcG9uc2USagoPR2VuZXJhdGVHYW1lVFRTEioua3dfYWlnY19zZXJ2aWNlLnYxLkdlbmVyYXRlR2FtZVRUU1JlcXVlc3QaKy5rd19haWdjX3NlcnZpY2UudjEuR2VuZXJhdGVHYW1lVFRTUmVzcG9uc2VCOlo4YWduZXMvcHJvdG8vZ2VuL2dvL2t3X2FpZ2Nfc2VydmljZS92MTtrd19haWdjX3NlcnZpY2VfdjFiBnByb3RvMw");
+  fileDesc("Cihrd19haWdjX3NlcnZpY2UvdjEva3dfYWlnY19zZXJ2aWNlLnByb3RvEhJrd19haWdjX3NlcnZpY2UudjEiHgoLUGluZ1JlcXVlc3QSDwoHbWVzc2FnZRgBIAEoCSIcCglQaW5nUmVwbHkSDwoHbWVzc2FnZRgBIAEoCSInChRHZXRUYXNrU3RhdHVzUmVxdWVzdBIPCgd0YXNrX2lkGAEgASgJItYBChVHZXRUYXNrU3RhdHVzUmVzcG9uc2USDQoFZm91bmQYASABKAgSDwoHdGFza19pZBgCIAEoCRIOCgZzdGF0dXMYAyABKAkSEgoKcmVzdWx0X3VyaRgEIAEoCRIRCgllcnJvcl9tc2cYBSABKAkSFAoMY29tcGxldGVkX2F0GAYgASgJEhYKDnN1YnNjcmliZXJfdGFnGAcgASgJEiEKGXN1YnNjcmliZXJfY29uc3VtZXJfZ3JvdXAYCCABKAkSFQoNc3Vic2NyaWJlcl9pcBgJIAEoCSI+ChhHZXRBaWdjVGFza1N0YXR1c1JlcXVlc3QSDwoHdGFza19pZBgBIAEoCRIRCgl0YXNrX3R5cGUYAiABKAkicwoZR2V0QWlnY1Rhc2tTdGF0dXNSZXNwb25zZRINCgVmb3VuZBgBIAEoCBIPCgd0YXNrX2lkGAIgASgJEg4KBnN0YXR1cxgDIAEoCRIRCgl0YXNrX3R5cGUYBCABKAkSEwoLcmVzdWx0X2pzb24YBSABKAkiSQoaUmVjb2duaXplSW1hZ2VNYXRjaFJlcXVlc3QSEQoJaW1hZ2VfdXJsGAEgASgJEhgKEG9iamVjdF9kZXRlY3Rpb24YAiABKAkiQAobUmVjb2duaXplSW1hZ2VNYXRjaFJlc3BvbnNlEhAKCGlzX21hdGNoGAEgASgIEg8KB21lc3NhZ2UYAiABKAkiOAoNVG9vbE1lZGlhSXRlbRIMCgR0eXBlGAEgASgJEgsKA3VybBgCIAEoCRIMCgRyb2xlGAMgASgJIiwKD1Rvb2xNZWRpYU91dHB1dBIMCgR0eXBlGAEgASgJEgsKA3VybBgCIAEoCSKMAQoTUnVuSW1hZ2VUb29sUmVxdWVzdBISCgptb2RlbF9jb2RlGAEgASgJEjAKBW1lZGlhGAIgAygLMiEua3dfYWlnY19zZXJ2aWNlLnYxLlRvb2xNZWRpYUl0ZW0SDgoGcHJvbXB0GAMgASgJEg8KB3Rhc2tfaWQYBCABKAkSDgoGc291cmNlGAUgASgJIrkBChRSdW5JbWFnZVRvb2xSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg8KB21lc3NhZ2UYAiABKAkSEAoIdHJhY2VfaWQYAyABKAkSDwoHdGFza19pZBgEIAEoCRISCgplcnJvcl9jb2RlGAUgASgJEhIKCm1vZGVsX2NvZGUYBiABKAkSNAoHb3V0cHV0cxgKIAMoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5Ub29sTWVkaWFPdXRwdXQiNgofQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvUmVxdWVzdBITCgttb2RlbF9jb2RlcxgBIAMoCSJuChBNb2RlbERpc3BsYXlJbmZvEhIKCm1vZGVsX2NvZGUYASABKAkSDAoEbmFtZRgCIAEoCRITCgttb2RlbF9pbnRybxgDIAEoCRIQCghpY29uX3VybBgEIAEoCRIRCglpc19vbmxpbmUYBSABKAgiWAogQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvUmVzcG9uc2USNAoGbW9kZWxzGAEgAygLMiQua3dfYWlnY19zZXJ2aWNlLnYxLk1vZGVsRGlzcGxheUluZm8iFgoUTGlzdEFsbE1vZGVsc1JlcXVlc3QifwoMQWxsTW9kZWxJbmZvEhIKCm1vZGVsX2NvZGUYASABKAkSEwoLbW9kZWxfYWxpYXMYAiABKAkSDQoFaW50cm8YAyABKAkSEAoIaWNvbl91cmwYBCABKAkSEgoKbW9kZWxfdHlwZRgFIAEoCRIRCglpc19vbmxpbmUYBiABKAgiSQoVTGlzdEFsbE1vZGVsc1Jlc3BvbnNlEjAKBm1vZGVscxgBIAMoCzIgLmt3X2FpZ2Nfc2VydmljZS52MS5BbGxNb2RlbEluZm8iRQobR2V0TW9kZWxDYXBhYmlsaXRpZXNSZXF1ZXN0EhIKCm1vZGVsX2NvZGUYASABKAkSEgoKbW9kZWxfdHlwZRgCIAEoCSJTChxHZXRNb2RlbENhcGFiaWxpdGllc1Jlc3BvbnNlEjMKBm1vZGVscxgBIAMoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5Nb2RlbENhcGFiaWxpdHki7wIKD01vZGVsQ2FwYWJpbGl0eRISCgptb2RlbF9jb2RlGAEgASgJEhIKCm1vZGVsX25hbWUYAiABKAkSEwoLbW9kZWxfYWxpYXMYAyABKAkSDQoFaW50cm8YBCABKAkSEAoIaWNvbl91cmwYBSABKAkSEgoKbW9kZWxfdHlwZRgGIAEoCRIRCglpc19vbmxpbmUYByABKAgSMgoFaW1hZ2UYCiABKAsyIy5rd19haWdjX3NlcnZpY2UudjEuSW1hZ2VDYXBhYmlsaXR5EjIKBXZpZGVvGAsgASgLMiMua3dfYWlnY19zZXJ2aWNlLnYxLlZpZGVvQ2FwYWJpbGl0eRIyCgVhdWRpbxgMIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5BdWRpb0NhcGFiaWxpdHkSOwoKdmlkZW9fZWRpdBgNIAEoCzInLmt3X2FpZ2Nfc2VydmljZS52MS5WaWRlb0VkaXRDYXBhYmlsaXR5IlcKD0ltYWdlQ2FwYWJpbGl0eRIVCg1hc3BlY3RfcmF0aW9zGAEgAygJEhMKC3Jlc29sdXRpb25zGAIgAygJEhgKEG1heF9iYXRjaF9pbWFnZXMYAyABKAUiogEKD1ZpZGVvQ2FwYWJpbGl0eRIQCghkdXJhdGlvbhgBIAMoBRIdChVzdXBwb3J0ZWRfcmVzb2x1dGlvbnMYAiADKAkSFQoNYXNwZWN0X3JhdGlvcxgDIAMoCRIhChlzdXBwb3J0c19hdWRpb19nZW5lcmF0aW9uGAQgASgIEiQKHHN1cHBvcnRzX2N1c3RvbV9hdWRpb191cGxvYWQYBSABKAgisQEKE1ZpZGVvRWRpdENhcGFiaWxpdHkSHAoUbWluX2R1cmF0aW9uX3NlY29uZHMYASABKAUSHAoUbWF4X2R1cmF0aW9uX3NlY29uZHMYAiABKAUSIgoac3VwcG9ydGVkX2R1cmF0aW9uX3NlY29uZHMYAyADKAUSEgoKbWF4X2ltYWdlcxgEIAEoBRISCgptYXhfdmlkZW9zGAUgASgFEhIKCm1heF9hdWRpb3MYBiABKAUiEQoPQXVkaW9DYXBhYmlsaXR5IpcCChRTeW50aGVzaXplVFRTUmVxdWVzdBIMCgR0ZXh0GAEgASgJEhIKCm1vZGVsX2NvZGUYAiABKAkSEAoIdHJhY2VfaWQYAyABKAkSDwoHdGFza19pZBgEIAEoCRIOCgZzb3VyY2UYBSABKAkSOgoNdm9pY2Vfc2V0dGluZxgKIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5UVFNWb2ljZVNldHRpbmcSOgoNYXVkaW9fc2V0dGluZxgLIAEoCzIjLmt3X2FpZ2Nfc2VydmljZS52MS5UVFNBdWRpb1NldHRpbmcSFgoObGFuZ3VhZ2VfYm9vc3QYDCABKAkSEQoEc3luYxgNIAEoCEgAiAEBQgcKBV9zeW5jIk4KD1RUU1ZvaWNlU2V0dGluZxIQCgh2b2ljZV9pZBgBIAEoCRINCgVzcGVlZBgCIAEoAhILCgN2b2wYAyABKAISDQoFcGl0Y2gYBCABKAUiWAoPVFRTQXVkaW9TZXR0aW5nEhMKC3NhbXBsZV9yYXRlGAEgASgFEg8KB2JpdHJhdGUYAiABKAUSDgoGZm9ybWF0GAMgASgJEg8KB2NoYW5uZWwYBCABKAUitwEKFVN5bnRoZXNpemVUVFNSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg8KB21lc3NhZ2UYAiABKAkSEAoIdHJhY2VfaWQYAyABKAkSDwoHdGFza19pZBgEIAEoCRISCgptb2RlbF9uYW1lGAUgASgJEhIKCmVycm9yX2NvZGUYBiABKAkSMQoGcmVzdWx0GAogASgLMiEua3dfYWlnY19zZXJ2aWNlLnYxLlRUU1Jlc3VsdEl0ZW0i5QEKFkdlbmVyYXRlR2FtZVRUU1JlcXVlc3QSDQoFc2NlbmUYASABKAkSDAoEdGV4dBgCIAEoCRIQCgh2b2ljZV9pZBgDIAEoCRIMCgRuYW1lGAQgASgJEg4KBmdlbmRlchgFIAEoCRIPCgdzZXR0aW5nGAYgASgJEgwKBGluZm8YByABKAkSCwoDdXJsGAggASgJEg4KBnJ1bl9pZBgLIAEoCRIQCgh0cmFjZV9pZBgMIAEoCRINCgVtb2RlbBgNIAEoCUoECAkQCkoECAoQC1IKc2Vzc2lvbl9pZFIJaXNfZmluaXNoIqQCChdHZW5lcmF0ZUdhbWVUVFNSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg8KB21lc3NhZ2UYAiABKAkSDgoGcnVuX2lkGAMgASgJEg8KB3Rhc2tfaWQYBCABKAkSDQoFc2NlbmUYBSABKAkSCwoDdXJpGAogASgJEhAKCGR1cmF0aW9uGAsgASgBEhMKC3NhbXBsZV9yYXRlGAwgASgJEg8KB2JpdHJhdGUYDSABKAkSDgoGZm9ybWF0GA4gASgJEhAKCHRyYWNlX2lkGA8gASgJEhAKCHZvaWNlX2lkGBAgASgJEhIKCnZvaWNlX25hbWUYESABKAlKBAgSEBNKBAgTEBRKBAgUEBVSCnNlc3Npb25faWRSBWluZGV4UgVzdGFnZSJTChlSZWNvZ25pemVJbWFnZVRleHRSZXF1ZXN0EhEKCWltYWdlX3VybBgBIAEoCUoECAIQA0oECAMQBFIIdHJhY2VfaWRSDWxhbmd1YWdlX2hpbnQiTgoPSW1hZ2VPQ1JFbGVtZW50EgoKAmlkGAEgASgJEgwKBHR5cGUYAiABKAkSDwoHY29udGVudBgDIAEoCRIQCghwb3NpdGlvbhgEIAEoCSKQAQoaUmVjb2duaXplSW1hZ2VUZXh0UmVzcG9uc2USDwoHc3VjY2VzcxgBIAEoCBIPCgdtZXNzYWdlGAIgASgJEhkKEWltYWdlX2Rlc2NyaXB0aW9uGAMgASgJEjUKCGVsZW1lbnRzGAQgAygLMiMua3dfYWlnY19zZXJ2aWNlLnYxLkltYWdlT0NSRWxlbWVudCJhChxSZWNvZ25pemVJbWFnZUVsZW1lbnRSZXF1ZXN0EhEKCWltYWdlX3VybBgBIAEoCRIPCgdjbGlja194GAIgASgBEg8KB2NsaWNrX3kYAyABKAESDAoEdHlwZRgEIAEoCSI7CgRCQm94EgkKAXgYASABKAESCQoBeRgCIAEoARINCgV3aWR0aBgDIAEoARIOCgZoZWlnaHQYBCABKAEiqgEKEEltYWdlRWxlbWVudEl0ZW0SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSDAoEa2luZBgDIAEoCRImCgRiYm94GAQgASgLMhgua3dfYWlnY19zZXJ2aWNlLnYxLkJCb3gSEQoJYm94X2NvbG9yGAUgASgJEhoKEm9iamVjdF9kZXNjcmlwdGlvbhgGIAEoCRIWCg5jcm9wcGVkX2Jhc2U2NBgHIAEoCSJ2Ch1SZWNvZ25pemVJbWFnZUVsZW1lbnRSZXNwb25zZRIPCgdzdWNjZXNzGAEgASgIEg8KB21lc3NhZ2UYAiABKAkSMwoFaXRlbXMYAyADKAsyJC5rd19haWdjX3NlcnZpY2UudjEuSW1hZ2VFbGVtZW50SXRlbSJ7Cg1UVFNSZXN1bHRJdGVtEg8KB3N1Y2Nlc3MYASABKAgSDwoHbWVzc2FnZRgCIAEoCRIPCgd0YXNrX2lkGAMgASgJEhEKCWF1ZGlvX3VybBgEIAEoCRIQCghkdXJhdGlvbhgFIAEoAhISCgphdWRpb19zaXplGAYgASgDIkEKHUxpc3RIYWlsdW9TeXN0ZW1Wb2ljZXNSZXF1ZXN0EhAKCHRyYWNlX2lkGAEgASgJEg4KBnJ1bl9pZBgCIAEoCSJpChVIYWlsdW9TeXN0ZW1Wb2ljZUl0ZW0SEAoIdm9pY2VfaWQYASABKAkSEgoKdm9pY2VfbmFtZRgCIAEoCRIUCgxjcmVhdGVkX3RpbWUYAyABKAkSFAoMZGVzY3JpcHRpb25zGAQgAygJIo8BCh5MaXN0SGFpbHVvU3lzdGVtVm9pY2VzUmVzcG9uc2USDwoHc3VjY2VzcxgBIAEoCBIPCgdtZXNzYWdlGAIgASgJEhAKCHRyYWNlX2lkGAMgASgJEjkKBnZvaWNlcxgKIAMoCzIpLmt3X2FpZ2Nfc2VydmljZS52MS5IYWlsdW9TeXN0ZW1Wb2ljZUl0ZW0ywAsKFEt3QWlnY1NlcnZpY2VTZXJ2aWNlEkYKBFBpbmcSHy5rd19haWdjX3NlcnZpY2UudjEuUGluZ1JlcXVlc3QaHS5rd19haWdjX3NlcnZpY2UudjEuUGluZ1JlcGx5EmQKDUdldFRhc2tTdGF0dXMSKC5rd19haWdjX3NlcnZpY2UudjEuR2V0VGFza1N0YXR1c1JlcXVlc3QaKS5rd19haWdjX3NlcnZpY2UudjEuR2V0VGFza1N0YXR1c1Jlc3BvbnNlEnAKEUdldEFpZ2NUYXNrU3RhdHVzEiwua3dfYWlnY19zZXJ2aWNlLnYxLkdldEFpZ2NUYXNrU3RhdHVzUmVxdWVzdBotLmt3X2FpZ2Nfc2VydmljZS52MS5HZXRBaWdjVGFza1N0YXR1c1Jlc3BvbnNlEnYKE1JlY29nbml6ZUltYWdlTWF0Y2gSLi5rd19haWdjX3NlcnZpY2UudjEuUmVjb2duaXplSW1hZ2VNYXRjaFJlcXVlc3QaLy5rd19haWdjX3NlcnZpY2UudjEuUmVjb2duaXplSW1hZ2VNYXRjaFJlc3BvbnNlEmEKDFJ1bkltYWdlVG9vbBInLmt3X2FpZ2Nfc2VydmljZS52MS5SdW5JbWFnZVRvb2xSZXF1ZXN0Gigua3dfYWlnY19zZXJ2aWNlLnYxLlJ1bkltYWdlVG9vbFJlc3BvbnNlEoUBChhCYXRjaEdldE1vZGVsRGlzcGxheUluZm8SMy5rd19haWdjX3NlcnZpY2UudjEuQmF0Y2hHZXRNb2RlbERpc3BsYXlJbmZvUmVxdWVzdBo0Lmt3X2FpZ2Nfc2VydmljZS52MS5CYXRjaEdldE1vZGVsRGlzcGxheUluZm9SZXNwb25zZRJkCg1MaXN0QWxsTW9kZWxzEigua3dfYWlnY19zZXJ2aWNlLnYxLkxpc3RBbGxNb2RlbHNSZXF1ZXN0Gikua3dfYWlnY19zZXJ2aWNlLnYxLkxpc3RBbGxNb2RlbHNSZXNwb25zZRJ5ChRHZXRNb2RlbENhcGFiaWxpdGllcxIvLmt3X2FpZ2Nfc2VydmljZS52MS5HZXRNb2RlbENhcGFiaWxpdGllc1JlcXVlc3QaMC5rd19haWdjX3NlcnZpY2UudjEuR2V0TW9kZWxDYXBhYmlsaXRpZXNSZXNwb25zZRJkCg1TeW50aGVzaXplVFRTEigua3dfYWlnY19zZXJ2aWNlLnYxLlN5bnRoZXNpemVUVFNSZXF1ZXN0Gikua3dfYWlnY19zZXJ2aWNlLnYxLlN5bnRoZXNpemVUVFNSZXNwb25zZRJqCg9HZW5lcmF0ZUdhbWVUVFMSKi5rd19haWdjX3NlcnZpY2UudjEuR2VuZXJhdGVHYW1lVFRTUmVxdWVzdBorLmt3X2FpZ2Nfc2VydmljZS52MS5HZW5lcmF0ZUdhbWVUVFNSZXNwb25zZRJzChJSZWNvZ25pemVJbWFnZVRleHQSLS5rd19haWdjX3NlcnZpY2UudjEuUmVjb2duaXplSW1hZ2VUZXh0UmVxdWVzdBouLmt3X2FpZ2Nfc2VydmljZS52MS5SZWNvZ25pemVJbWFnZVRleHRSZXNwb25zZRJ8ChVSZWNvZ25pemVJbWFnZUVsZW1lbnQSMC5rd19haWdjX3NlcnZpY2UudjEuUmVjb2duaXplSW1hZ2VFbGVtZW50UmVxdWVzdBoxLmt3X2FpZ2Nfc2VydmljZS52MS5SZWNvZ25pemVJbWFnZUVsZW1lbnRSZXNwb25zZRJ/ChZMaXN0SGFpbHVvU3lzdGVtVm9pY2VzEjEua3dfYWlnY19zZXJ2aWNlLnYxLkxpc3RIYWlsdW9TeXN0ZW1Wb2ljZXNSZXF1ZXN0GjIua3dfYWlnY19zZXJ2aWNlLnYxLkxpc3RIYWlsdW9TeXN0ZW1Wb2ljZXNSZXNwb25zZUI6WjhhZ25lcy9wcm90by9nZW4vZ28va3dfYWlnY19zZXJ2aWNlL3YxO2t3X2FpZ2Nfc2VydmljZV92MWIGcHJvdG8z");
 
 /**
  * @generated from message kw_aigc_service.v1.PingRequest
@@ -232,6 +232,163 @@ export const RecognizeImageMatchResponseSchema: GenMessage<RecognizeImageMatchRe
   messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 7);
 
 /**
+ * 单条媒体输入（与 agnes_core.aigc.schema.MediaItem 对齐）。
+ *
+ * @generated from message kw_aigc_service.v1.ToolMediaItem
+ */
+export type ToolMediaItem = Message<"kw_aigc_service.v1.ToolMediaItem"> & {
+  /**
+   * 媒体大类：image / video / audio
+   *
+   * @generated from field: string type = 1;
+   */
+  type: string;
+
+  /**
+   * 媒体地址（HTTP / 对象存储 URL 等）
+   *
+   * @generated from field: string url = 2;
+   */
+  url: string;
+
+  /**
+   * 可选：同类多槽时用于区分（例如 source/reference）
+   *
+   * @generated from field: string role = 3;
+   */
+  role: string;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.ToolMediaItem.
+ * Use `create(ToolMediaItemSchema)` to create a new message.
+ */
+export const ToolMediaItemSchema: GenMessage<ToolMediaItem> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 8);
+
+/**
+ * 单条媒体输出（与 agnes_core.aigc.schema.MediaOutput 对齐）。
+ *
+ * @generated from message kw_aigc_service.v1.ToolMediaOutput
+ */
+export type ToolMediaOutput = Message<"kw_aigc_service.v1.ToolMediaOutput"> & {
+  /**
+   * @generated from field: string type = 1;
+   */
+  type: string;
+
+  /**
+   * @generated from field: string url = 2;
+   */
+  url: string;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.ToolMediaOutput.
+ * Use `create(ToolMediaOutputSchema)` to create a new message.
+ */
+export const ToolMediaOutputSchema: GenMessage<ToolMediaOutput> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 9);
+
+/**
+ * @generated from message kw_aigc_service.v1.RunImageToolRequest
+ */
+export type RunImageToolRequest = Message<"kw_aigc_service.v1.RunImageToolRequest"> & {
+  /**
+   * 逻辑工具标识（必填），如 self-remove-bg / self-enhance-clarity
+   *
+   * @generated from field: string model_code = 1;
+   */
+  modelCode: string;
+
+  /**
+   * 输入媒体列表（必填），支持批量
+   *
+   * @generated from field: repeated kw_aigc_service.v1.ToolMediaItem media = 2;
+   */
+  media: ToolMediaItem[];
+
+  /**
+   * 预埋提示词字段，当前未使用；后续工具若需要提示词走此字段
+   *
+   * @generated from field: string prompt = 3;
+   */
+  prompt: string;
+
+  /**
+   * 业务任务 ID（可选）
+   *
+   * @generated from field: string task_id = 4;
+   */
+  taskId: string;
+
+  /**
+   * 调用来源标识（可选）
+   *
+   * @generated from field: string source = 5;
+   */
+  source: string;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.RunImageToolRequest.
+ * Use `create(RunImageToolRequestSchema)` to create a new message.
+ */
+export const RunImageToolRequestSchema: GenMessage<RunImageToolRequest> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 10);
+
+/**
+ * @generated from message kw_aigc_service.v1.RunImageToolResponse
+ */
+export type RunImageToolResponse = Message<"kw_aigc_service.v1.RunImageToolResponse"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message: string;
+
+  /**
+   * @generated from field: string trace_id = 3;
+   */
+  traceId: string;
+
+  /**
+   * @generated from field: string task_id = 4;
+   */
+  taskId: string;
+
+  /**
+   * @generated from field: string error_code = 5;
+   */
+  errorCode: string;
+
+  /**
+   * 实际执行的逻辑工具标识
+   *
+   * @generated from field: string model_code = 6;
+   */
+  modelCode: string;
+
+  /**
+   * 输出媒体列表（成功时返回），支持批量
+   *
+   * @generated from field: repeated kw_aigc_service.v1.ToolMediaOutput outputs = 10;
+   */
+  outputs: ToolMediaOutput[];
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.RunImageToolResponse.
+ * Use `create(RunImageToolResponseSchema)` to create a new message.
+ */
+export const RunImageToolResponseSchema: GenMessage<RunImageToolResponse> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 11);
+
+/**
  * @generated from message kw_aigc_service.v1.BatchGetModelDisplayInfoRequest
  */
 export type BatchGetModelDisplayInfoRequest = Message<"kw_aigc_service.v1.BatchGetModelDisplayInfoRequest"> & {
@@ -246,7 +403,7 @@ export type BatchGetModelDisplayInfoRequest = Message<"kw_aigc_service.v1.BatchG
  * Use `create(BatchGetModelDisplayInfoRequestSchema)` to create a new message.
  */
 export const BatchGetModelDisplayInfoRequestSchema: GenMessage<BatchGetModelDisplayInfoRequest> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 8);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 12);
 
 /**
  * @generated from message kw_aigc_service.v1.ModelDisplayInfo
@@ -273,6 +430,11 @@ export type ModelDisplayInfo = Message<"kw_aigc_service.v1.ModelDisplayInfo"> & 
    * @generated from field: string icon_url = 4;
    */
   iconUrl: string;
+
+  /**
+   * @generated from field: bool is_online = 5;
+   */
+  isOnline: boolean;
 };
 
 /**
@@ -280,7 +442,7 @@ export type ModelDisplayInfo = Message<"kw_aigc_service.v1.ModelDisplayInfo"> & 
  * Use `create(ModelDisplayInfoSchema)` to create a new message.
  */
 export const ModelDisplayInfoSchema: GenMessage<ModelDisplayInfo> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 9);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 13);
 
 /**
  * @generated from message kw_aigc_service.v1.BatchGetModelDisplayInfoResponse
@@ -297,7 +459,79 @@ export type BatchGetModelDisplayInfoResponse = Message<"kw_aigc_service.v1.Batch
  * Use `create(BatchGetModelDisplayInfoResponseSchema)` to create a new message.
  */
 export const BatchGetModelDisplayInfoResponseSchema: GenMessage<BatchGetModelDisplayInfoResponse> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 10);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 14);
+
+/**
+ * @generated from message kw_aigc_service.v1.ListAllModelsRequest
+ */
+export type ListAllModelsRequest = Message<"kw_aigc_service.v1.ListAllModelsRequest"> & {
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.ListAllModelsRequest.
+ * Use `create(ListAllModelsRequestSchema)` to create a new message.
+ */
+export const ListAllModelsRequestSchema: GenMessage<ListAllModelsRequest> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 15);
+
+/**
+ * @generated from message kw_aigc_service.v1.AllModelInfo
+ */
+export type AllModelInfo = Message<"kw_aigc_service.v1.AllModelInfo"> & {
+  /**
+   * @generated from field: string model_code = 1;
+   */
+  modelCode: string;
+
+  /**
+   * @generated from field: string model_alias = 2;
+   */
+  modelAlias: string;
+
+  /**
+   * @generated from field: string intro = 3;
+   */
+  intro: string;
+
+  /**
+   * @generated from field: string icon_url = 4;
+   */
+  iconUrl: string;
+
+  /**
+   * @generated from field: string model_type = 5;
+   */
+  modelType: string;
+
+  /**
+   * @generated from field: bool is_online = 6;
+   */
+  isOnline: boolean;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.AllModelInfo.
+ * Use `create(AllModelInfoSchema)` to create a new message.
+ */
+export const AllModelInfoSchema: GenMessage<AllModelInfo> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 16);
+
+/**
+ * @generated from message kw_aigc_service.v1.ListAllModelsResponse
+ */
+export type ListAllModelsResponse = Message<"kw_aigc_service.v1.ListAllModelsResponse"> & {
+  /**
+   * @generated from field: repeated kw_aigc_service.v1.AllModelInfo models = 1;
+   */
+  models: AllModelInfo[];
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.ListAllModelsResponse.
+ * Use `create(ListAllModelsResponseSchema)` to create a new message.
+ */
+export const ListAllModelsResponseSchema: GenMessage<ListAllModelsResponse> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 17);
 
 /**
  * @generated from message kw_aigc_service.v1.GetModelCapabilitiesRequest
@@ -323,7 +557,7 @@ export type GetModelCapabilitiesRequest = Message<"kw_aigc_service.v1.GetModelCa
  * Use `create(GetModelCapabilitiesRequestSchema)` to create a new message.
  */
 export const GetModelCapabilitiesRequestSchema: GenMessage<GetModelCapabilitiesRequest> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 11);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 18);
 
 /**
  * @generated from message kw_aigc_service.v1.GetModelCapabilitiesResponse
@@ -340,7 +574,7 @@ export type GetModelCapabilitiesResponse = Message<"kw_aigc_service.v1.GetModelC
  * Use `create(GetModelCapabilitiesResponseSchema)` to create a new message.
  */
 export const GetModelCapabilitiesResponseSchema: GenMessage<GetModelCapabilitiesResponse> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 12);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 19);
 
 /**
  * @generated from message kw_aigc_service.v1.ModelCapability
@@ -379,6 +613,11 @@ export type ModelCapability = Message<"kw_aigc_service.v1.ModelCapability"> & {
   modelType: string;
 
   /**
+   * @generated from field: bool is_online = 7;
+   */
+  isOnline: boolean;
+
+  /**
    * 能力（按类型填充）
    *
    * @generated from field: kw_aigc_service.v1.ImageCapability image = 10;
@@ -406,7 +645,7 @@ export type ModelCapability = Message<"kw_aigc_service.v1.ModelCapability"> & {
  * Use `create(ModelCapabilitySchema)` to create a new message.
  */
 export const ModelCapabilitySchema: GenMessage<ModelCapability> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 13);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 20);
 
 /**
  * @generated from message kw_aigc_service.v1.ImageCapability
@@ -439,7 +678,7 @@ export type ImageCapability = Message<"kw_aigc_service.v1.ImageCapability"> & {
  * Use `create(ImageCapabilitySchema)` to create a new message.
  */
 export const ImageCapabilitySchema: GenMessage<ImageCapability> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 14);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 21);
 
 /**
  * @generated from message kw_aigc_service.v1.VideoCapability
@@ -486,7 +725,7 @@ export type VideoCapability = Message<"kw_aigc_service.v1.VideoCapability"> & {
  * Use `create(VideoCapabilitySchema)` to create a new message.
  */
 export const VideoCapabilitySchema: GenMessage<VideoCapability> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 15);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 22);
 
 /**
  * @generated from message kw_aigc_service.v1.VideoEditCapability
@@ -512,6 +751,27 @@ export type VideoEditCapability = Message<"kw_aigc_service.v1.VideoEditCapabilit
    * @generated from field: repeated int32 supported_duration_seconds = 3;
    */
   supportedDurationSeconds: number[];
+
+  /**
+   * 最大可输入图片数量
+   *
+   * @generated from field: int32 max_images = 4;
+   */
+  maxImages: number;
+
+  /**
+   * 最大可输入视频数量
+   *
+   * @generated from field: int32 max_videos = 5;
+   */
+  maxVideos: number;
+
+  /**
+   * 最大可输入音频数量
+   *
+   * @generated from field: int32 max_audios = 6;
+   */
+  maxAudios: number;
 };
 
 /**
@@ -519,7 +779,7 @@ export type VideoEditCapability = Message<"kw_aigc_service.v1.VideoEditCapabilit
  * Use `create(VideoEditCapabilitySchema)` to create a new message.
  */
 export const VideoEditCapabilitySchema: GenMessage<VideoEditCapability> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 16);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 23);
 
 /**
  * TODO: 待后续实现
@@ -534,7 +794,7 @@ export type AudioCapability = Message<"kw_aigc_service.v1.AudioCapability"> & {
  * Use `create(AudioCapabilitySchema)` to create a new message.
  */
 export const AudioCapabilitySchema: GenMessage<AudioCapability> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 17);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 24);
 
 /**
  * @generated from message kw_aigc_service.v1.SynthesizeTTSRequest
@@ -548,11 +808,11 @@ export type SynthesizeTTSRequest = Message<"kw_aigc_service.v1.SynthesizeTTSRequ
   text: string;
 
   /**
-   * 目标逻辑模型名（可选，默认 tts-2.8-hd）
+   * 目标逻辑模型代码（可选，空则服务默认 minimax-2.8-turbo）
    *
-   * @generated from field: string model_name = 2;
+   * @generated from field: string model_code = 2;
    */
-  modelName: string;
+  modelCode: string;
 
   /**
    * 分布式追踪 ID（可选）
@@ -609,14 +869,14 @@ export type SynthesizeTTSRequest = Message<"kw_aigc_service.v1.SynthesizeTTSRequ
  * Use `create(SynthesizeTTSRequestSchema)` to create a new message.
  */
 export const SynthesizeTTSRequestSchema: GenMessage<SynthesizeTTSRequest> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 18);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 25);
 
 /**
  * @generated from message kw_aigc_service.v1.TTSVoiceSetting
  */
 export type TTSVoiceSetting = Message<"kw_aigc_service.v1.TTSVoiceSetting"> & {
   /**
-   * 音色 ID（默认 male-qn-jingying）
+   * 音色 ID（可空；各 TTS 厂商 client 在发上游请求前补自身默认）
    *
    * @generated from field: string voice_id = 1;
    */
@@ -649,7 +909,7 @@ export type TTSVoiceSetting = Message<"kw_aigc_service.v1.TTSVoiceSetting"> & {
  * Use `create(TTSVoiceSettingSchema)` to create a new message.
  */
 export const TTSVoiceSettingSchema: GenMessage<TTSVoiceSetting> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 19);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 26);
 
 /**
  * @generated from message kw_aigc_service.v1.TTSAudioSetting
@@ -689,7 +949,7 @@ export type TTSAudioSetting = Message<"kw_aigc_service.v1.TTSAudioSetting"> & {
  * Use `create(TTSAudioSettingSchema)` to create a new message.
  */
 export const TTSAudioSettingSchema: GenMessage<TTSAudioSetting> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 20);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 27);
 
 /**
  * @generated from message kw_aigc_service.v1.SynthesizeTTSResponse
@@ -750,7 +1010,7 @@ export type SynthesizeTTSResponse = Message<"kw_aigc_service.v1.SynthesizeTTSRes
  * Use `create(SynthesizeTTSResponseSchema)` to create a new message.
  */
 export const SynthesizeTTSResponseSchema: GenMessage<SynthesizeTTSResponse> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 21);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 28);
 
 /**
  * @generated from message kw_aigc_service.v1.GenerateGameTTSRequest
@@ -825,6 +1085,13 @@ export type GenerateGameTTSRequest = Message<"kw_aigc_service.v1.GenerateGameTTS
    * @generated from field: string trace_id = 12;
    */
   traceId: string;
+
+  /**
+   * TTS 逻辑模型标识（与 TTSModel / 调用方约定一致）；空则服务端使用 minimax-2.8-turbo
+   *
+   * @generated from field: string model = 13;
+   */
+  model: string;
 };
 
 /**
@@ -832,7 +1099,7 @@ export type GenerateGameTTSRequest = Message<"kw_aigc_service.v1.GenerateGameTTS
  * Use `create(GenerateGameTTSRequestSchema)` to create a new message.
  */
 export const GenerateGameTTSRequestSchema: GenMessage<GenerateGameTTSRequest> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 22);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 29);
 
 /**
  * @generated from message kw_aigc_service.v1.GenerateGameTTSResponse
@@ -909,7 +1176,269 @@ export type GenerateGameTTSResponse = Message<"kw_aigc_service.v1.GenerateGameTT
  * Use `create(GenerateGameTTSResponseSchema)` to create a new message.
  */
 export const GenerateGameTTSResponseSchema: GenMessage<GenerateGameTTSResponse> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 23);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 30);
+
+/**
+ * @generated from message kw_aigc_service.v1.RecognizeImageTextRequest
+ */
+export type RecognizeImageTextRequest = Message<"kw_aigc_service.v1.RecognizeImageTextRequest"> & {
+  /**
+   * 可访问的图片 URL（HTTPS/GCS 等），必填；与 agnes-backend ImageOCRRequest 一致，无其它入参。
+   * trace 由调用方 gRPC metadata x-trace-id 透传，不在 message 内。
+   *
+   * @generated from field: string image_url = 1;
+   */
+  imageUrl: string;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.RecognizeImageTextRequest.
+ * Use `create(RecognizeImageTextRequestSchema)` to create a new message.
+ */
+export const RecognizeImageTextRequestSchema: GenMessage<RecognizeImageTextRequest> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 31);
+
+/**
+ * @generated from message kw_aigc_service.v1.ImageOCRElement
+ */
+export type ImageOCRElement = Message<"kw_aigc_service.v1.ImageOCRElement"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * 如 text
+   *
+   * @generated from field: string type = 2;
+   */
+  type: string;
+
+  /**
+   * 图中原文（保留语言）
+   *
+   * @generated from field: string content = 3;
+   */
+  content: string;
+
+  /**
+   * 归一化坐标字符串等，如 "(0.566, 0.655)"
+   *
+   * @generated from field: string position = 4;
+   */
+  position: string;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.ImageOCRElement.
+ * Use `create(ImageOCRElementSchema)` to create a new message.
+ */
+export const ImageOCRElementSchema: GenMessage<ImageOCRElement> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 32);
+
+/**
+ * @generated from message kw_aigc_service.v1.RecognizeImageTextResponse
+ */
+export type RecognizeImageTextResponse = Message<"kw_aigc_service.v1.RecognizeImageTextResponse"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message: string;
+
+  /**
+   * @generated from field: string image_description = 3;
+   */
+  imageDescription: string;
+
+  /**
+   * @generated from field: repeated kw_aigc_service.v1.ImageOCRElement elements = 4;
+   */
+  elements: ImageOCRElement[];
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.RecognizeImageTextResponse.
+ * Use `create(RecognizeImageTextResponseSchema)` to create a new message.
+ */
+export const RecognizeImageTextResponseSchema: GenMessage<RecognizeImageTextResponse> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 33);
+
+/**
+ * @generated from message kw_aigc_service.v1.RecognizeImageElementRequest
+ */
+export type RecognizeImageElementRequest = Message<"kw_aigc_service.v1.RecognizeImageElementRequest"> & {
+  /**
+   * 可访问的图片 URL（HTTPS/GCS 等），必填
+   *
+   * @generated from field: string image_url = 1;
+   */
+  imageUrl: string;
+
+  /**
+   * 点击位置归一化 x 坐标（0–1，(0,0) 为左上角）
+   *
+   * @generated from field: double click_x = 2;
+   */
+  clickX: number;
+
+  /**
+   * 点击位置归一化 y 坐标（0–1）
+   *
+   * @generated from field: double click_y = 3;
+   */
+  clickY: number;
+
+  /**
+   * 识别类型：smart_edit（默认）或 smart_crop
+   *
+   * @generated from field: string type = 4;
+   */
+  type: string;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.RecognizeImageElementRequest.
+ * Use `create(RecognizeImageElementRequestSchema)` to create a new message.
+ */
+export const RecognizeImageElementRequestSchema: GenMessage<RecognizeImageElementRequest> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 34);
+
+/**
+ * 归一化边界框（所有值 0–1）
+ *
+ * @generated from message kw_aigc_service.v1.BBox
+ */
+export type BBox = Message<"kw_aigc_service.v1.BBox"> & {
+  /**
+   * 左上角 x
+   *
+   * @generated from field: double x = 1;
+   */
+  x: number;
+
+  /**
+   * 左上角 y
+   *
+   * @generated from field: double y = 2;
+   */
+  y: number;
+
+  /**
+   * 宽度
+   *
+   * @generated from field: double width = 3;
+   */
+  width: number;
+
+  /**
+   * 高度
+   *
+   * @generated from field: double height = 4;
+   */
+  height: number;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.BBox.
+ * Use `create(BBoxSchema)` to create a new message.
+ */
+export const BBoxSchema: GenMessage<BBox> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 35);
+
+/**
+ * 单个识别元素（层级：part → object → object combination）
+ *
+ * @generated from message kw_aigc_service.v1.ImageElementItem
+ */
+export type ImageElementItem = Message<"kw_aigc_service.v1.ImageElementItem"> & {
+  /**
+   * UUID，服务端自动生成
+   *
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * UI 短标签（语言随用户交互语言）
+   *
+   * @generated from field: string label = 2;
+   */
+  label: string;
+
+  /**
+   * part / object / object combination
+   *
+   * @generated from field: string kind = 3;
+   */
+  kind: string;
+
+  /**
+   * 归一化边界框
+   *
+   * @generated from field: kw_aigc_service.v1.BBox bbox = 4;
+   */
+  bbox?: BBox;
+
+  /**
+   * 对比色：Red / Orange / Yellow / Green / Black / Blue / Purple
+   *
+   * @generated from field: string box_color = 5;
+   */
+  boxColor: string;
+
+  /**
+   * 中文详细描述（含位置、品牌、数量、颜色）
+   *
+   * @generated from field: string object_description = 6;
+   */
+  objectDescription: string;
+
+  /**
+   * 裁剪后 base64（识别阶段为空，裁剪接口填充）
+   *
+   * @generated from field: string cropped_base64 = 7;
+   */
+  croppedBase64: string;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.ImageElementItem.
+ * Use `create(ImageElementItemSchema)` to create a new message.
+ */
+export const ImageElementItemSchema: GenMessage<ImageElementItem> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 36);
+
+/**
+ * @generated from message kw_aigc_service.v1.RecognizeImageElementResponse
+ */
+export type RecognizeImageElementResponse = Message<"kw_aigc_service.v1.RecognizeImageElementResponse"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message: string;
+
+  /**
+   * @generated from field: repeated kw_aigc_service.v1.ImageElementItem items = 3;
+   */
+  items: ImageElementItem[];
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.RecognizeImageElementResponse.
+ * Use `create(RecognizeImageElementResponseSchema)` to create a new message.
+ */
+export const RecognizeImageElementResponseSchema: GenMessage<RecognizeImageElementResponse> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 37);
 
 /**
  * @generated from message kw_aigc_service.v1.TTSResultItem
@@ -963,7 +1492,95 @@ export type TTSResultItem = Message<"kw_aigc_service.v1.TTSResultItem"> & {
  * Use `create(TTSResultItemSchema)` to create a new message.
  */
 export const TTSResultItemSchema: GenMessage<TTSResultItem> = /*@__PURE__*/
-  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 24);
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 38);
+
+/**
+ * @generated from message kw_aigc_service.v1.ListHailuoSystemVoicesRequest
+ */
+export type ListHailuoSystemVoicesRequest = Message<"kw_aigc_service.v1.ListHailuoSystemVoicesRequest"> & {
+  /**
+   * @generated from field: string trace_id = 1;
+   */
+  traceId: string;
+
+  /**
+   * @generated from field: string run_id = 2;
+   */
+  runId: string;
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.ListHailuoSystemVoicesRequest.
+ * Use `create(ListHailuoSystemVoicesRequestSchema)` to create a new message.
+ */
+export const ListHailuoSystemVoicesRequestSchema: GenMessage<ListHailuoSystemVoicesRequest> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 39);
+
+/**
+ * @generated from message kw_aigc_service.v1.HailuoSystemVoiceItem
+ */
+export type HailuoSystemVoiceItem = Message<"kw_aigc_service.v1.HailuoSystemVoiceItem"> & {
+  /**
+   * @generated from field: string voice_id = 1;
+   */
+  voiceId: string;
+
+  /**
+   * @generated from field: string voice_name = 2;
+   */
+  voiceName: string;
+
+  /**
+   * @generated from field: string created_time = 3;
+   */
+  createdTime: string;
+
+  /**
+   * 上游 description 可能为数组或标量，已规范化为多条字符串
+   *
+   * @generated from field: repeated string descriptions = 4;
+   */
+  descriptions: string[];
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.HailuoSystemVoiceItem.
+ * Use `create(HailuoSystemVoiceItemSchema)` to create a new message.
+ */
+export const HailuoSystemVoiceItemSchema: GenMessage<HailuoSystemVoiceItem> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 40);
+
+/**
+ * @generated from message kw_aigc_service.v1.ListHailuoSystemVoicesResponse
+ */
+export type ListHailuoSystemVoicesResponse = Message<"kw_aigc_service.v1.ListHailuoSystemVoicesResponse"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message: string;
+
+  /**
+   * @generated from field: string trace_id = 3;
+   */
+  traceId: string;
+
+  /**
+   * @generated from field: repeated kw_aigc_service.v1.HailuoSystemVoiceItem voices = 10;
+   */
+  voices: HailuoSystemVoiceItem[];
+};
+
+/**
+ * Describes the message kw_aigc_service.v1.ListHailuoSystemVoicesResponse.
+ * Use `create(ListHailuoSystemVoicesResponseSchema)` to create a new message.
+ */
+export const ListHailuoSystemVoicesResponseSchema: GenMessage<ListHailuoSystemVoicesResponse> = /*@__PURE__*/
+  messageDesc(file_kw_aigc_service_v1_kw_aigc_service, 41);
 
 /**
  * @generated from service kw_aigc_service.v1.KwAigcServiceService
@@ -1004,6 +1621,16 @@ export const KwAigcServiceService: GenService<{
     output: typeof RecognizeImageMatchResponseSchema;
   },
   /**
+   * 通用图像工具入口（去背景 / 变清晰等）：按 model_code 路由，media 支持批量输入，outputs 支持批量输出。
+   *
+   * @generated from rpc kw_aigc_service.v1.KwAigcServiceService.RunImageTool
+   */
+  runImageTool: {
+    methodKind: "unary";
+    input: typeof RunImageToolRequestSchema;
+    output: typeof RunImageToolResponseSchema;
+  },
+  /**
    * 按 model_code 批量查询展示信息（别名、简介、图标），供 Pixa 等编排层使用
    *
    * @generated from rpc kw_aigc_service.v1.KwAigcServiceService.BatchGetModelDisplayInfo
@@ -1012,6 +1639,16 @@ export const KwAigcServiceService: GenService<{
     methodKind: "unary";
     input: typeof BatchGetModelDisplayInfoRequestSchema;
     output: typeof BatchGetModelDisplayInfoResponseSchema;
+  },
+  /**
+   * 查询全部 AIGC 模型（包含已下线，不包含物理删除）
+   *
+   * @generated from rpc kw_aigc_service.v1.KwAigcServiceService.ListAllModels
+   */
+  listAllModels: {
+    methodKind: "unary";
+    input: typeof ListAllModelsRequestSchema;
+    output: typeof ListAllModelsResponseSchema;
   },
   /**
    * 查询模型能力
@@ -1042,6 +1679,36 @@ export const KwAigcServiceService: GenService<{
     methodKind: "unary";
     input: typeof GenerateGameTTSRequestSchema;
     output: typeof GenerateGameTTSResponseSchema;
+  },
+  /**
+   * 图中改字前置：多模态 OCR（读图抽字 + 归一化位置），不经 agent；语义对齐 agnes-backend AIGCImageOCRResponse
+   *
+   * @generated from rpc kw_aigc_service.v1.KwAigcServiceService.RecognizeImageText
+   */
+  recognizeImageText: {
+    methodKind: "unary";
+    input: typeof RecognizeImageTextRequestSchema;
+    output: typeof RecognizeImageTextResponseSchema;
+  },
+  /**
+   * 智能编辑：点选元素识别（多模态 LLM），不经 agent；语义对齐 agnes-backend AIGCImageElementRecognitionResponse
+   *
+   * @generated from rpc kw_aigc_service.v1.KwAigcServiceService.RecognizeImageElement
+   */
+  recognizeImageElement: {
+    methodKind: "unary";
+    input: typeof RecognizeImageElementRequestSchema;
+    output: typeof RecognizeImageElementResponseSchema;
+  },
+  /**
+   * Hailuo / MiniMax 系统音色列表（上游 POST /v1/get_voice，与 HailuoVoiceUtil 对齐）
+   *
+   * @generated from rpc kw_aigc_service.v1.KwAigcServiceService.ListHailuoSystemVoices
+   */
+  listHailuoSystemVoices: {
+    methodKind: "unary";
+    input: typeof ListHailuoSystemVoicesRequestSchema;
+    output: typeof ListHailuoSystemVoicesResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_kw_aigc_service_v1_kw_aigc_service, 0);
