@@ -619,17 +619,17 @@ function ReasoningBlock({ content, isStreaming, autoCollapse }: { content: strin
 
 // ── Agent thinking placeholder ──
 
-const PHASE_COLOR: Record<string, string> = {
-  thinking: "text-amber-500",
-  ingesting_uploads: "text-cyan-500",
-  scanning_workspace: "text-sky-500",
-  planning: "text-violet-500",
-  profiling: "text-sky-500",
-  executing: "text-emerald-500",
-  delivering: "text-rose-500",
-  slide_outline_generating: "text-teal-500",
-  slide_design_generating: "text-violet-500",
-  slide_workers_allocating: "text-orange-500",
+const PHASE_STYLE: Record<string, { text: string; dot: string }> = {
+  thinking: { text: "text-amber-500", dot: "bg-amber-500" },
+  ingesting_uploads: { text: "text-cyan-500", dot: "bg-cyan-500" },
+  scanning_workspace: { text: "text-sky-500", dot: "bg-sky-500" },
+  planning: { text: "text-violet-500", dot: "bg-violet-500" },
+  profiling: { text: "text-sky-500", dot: "bg-sky-500" },
+  executing: { text: "text-emerald-500", dot: "bg-emerald-500" },
+  delivering: { text: "text-rose-500", dot: "bg-rose-500" },
+  slide_outline_generating: { text: "text-teal-500", dot: "bg-teal-500" },
+  slide_design_generating: { text: "text-violet-500", dot: "bg-violet-500" },
+  slide_workers_allocating: { text: "text-orange-500", dot: "bg-orange-500" },
 };
 
 function AgentThinkingBlock({
@@ -642,8 +642,7 @@ function AgentThinkingBlock({
   items?: string[];
 }) {
   const list = items ?? [];
-  const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
-  const dotColor = colorCls.replace("text-", "bg-");
+  const phaseStyle = PHASE_STYLE[phase ?? "thinking"] ?? PHASE_STYLE.thinking;
   const currentText = hint || (list.length === 0 ? "" : "");
   const [currentTitle, ...currentDetailParts] = currentText.split("\n");
   const currentDetail = currentDetailParts.join("\n");
@@ -688,9 +687,12 @@ function AgentThinkingBlock({
       ))}
       {currentText && (
         <div className="flex items-start gap-2 leading-5">
-          <span className={`mt-[7px] inline-block w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0 animate-pulse`} />
+          <span className="relative mt-[7px] inline-flex h-1.5 w-1.5 flex-shrink-0">
+            <span className={`absolute inline-flex h-full w-full rounded-full ${phaseStyle.dot} opacity-60 animate-ping`} />
+            <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${phaseStyle.dot} animate-pulse`} />
+          </span>
           <span className="flex min-w-0 flex-col">
-            <span className={colorCls}>{currentTitle}</span>
+            <span className={phaseStyle.text}>{currentTitle}</span>
             {currentDetail && (
               <span className="text-text-tertiary whitespace-pre-line">{currentDetail}</span>
             )}
