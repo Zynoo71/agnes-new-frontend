@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kw_settings_service/v1/kw_settings_service.proto.
  */
 export const file_kw_settings_service_v1_kw_settings_service: GenFile = /*@__PURE__*/
-  fileDesc("CjBrd19zZXR0aW5nc19zZXJ2aWNlL3YxL2t3X3NldHRpbmdzX3NlcnZpY2UucHJvdG8SFmt3X3NldHRpbmdzX3NlcnZpY2UudjEiTwoWQ2hlY2tBcHBWZXJzaW9uUmVxdWVzdBIcChRjdXJyZW50X3ZlcnNpb25fY29kZRgBIAEoBRIXCg9jdXJyZW50X3ZlcnNpb24YAiABKAkibAoRTGF0ZXN0VmVyc2lvbkluZm8SFAoMdmVyc2lvbl9uYW1lGAEgASgJEhQKDHZlcnNpb25fY29kZRgCIAEoBRIUCgxkb3dubG9hZF91cmwYAyABKAkSFQoNcmVsZWFzZV9ub3RlcxgEIAEoCSKIAQoUQ2hlY2tBcHBWZXJzaW9uUmVwbHkSFAoMZm9yY2VfdXBkYXRlGAEgASgIEhcKD2hhc19uZXdfdmVyc2lvbhgCIAEoCBJBCg5sYXRlc3RfdmVyc2lvbhgDIAEoCzIpLmt3X3NldHRpbmdzX3NlcnZpY2UudjEuTGF0ZXN0VmVyc2lvbkluZm8iKQoXR2V0VGVuYW50QnlBcHBJZFJlcXVlc3QSDgoGYXBwX2lkGAEgASgFIk0KGEdldFRlbmFudEJ5QXBwSWRSZXNwb25zZRIOCgZhcHBfaWQYASABKAUSEQoJdGVuYW50X2lkGAIgASgFEg4KBnJlbWFyaxgDIAEoCSIZChdHZXRBbGxBcHBUZW5hbnRzUmVxdWVzdCJCCg1BcHBUZW5hbnRJdGVtEg4KBmFwcF9pZBgBIAEoBRIRCgl0ZW5hbnRfaWQYAiABKAUSDgoGcmVtYXJrGAMgASgJIlAKGEdldEFsbEFwcFRlbmFudHNSZXNwb25zZRI0CgVpdGVtcxgBIAMoCzIlLmt3X3NldHRpbmdzX3NlcnZpY2UudjEuQXBwVGVuYW50SXRlbTLTAwoUUGxhdGZvcm1BZG1pblNlcnZpY2USbwoPQ2hlY2tBcHBWZXJzaW9uEi4ua3dfc2V0dGluZ3Nfc2VydmljZS52MS5DaGVja0FwcFZlcnNpb25SZXF1ZXN0Giwua3dfc2V0dGluZ3Nfc2VydmljZS52MS5DaGVja0FwcFZlcnNpb25SZXBseRJ1ChBHZXRUZW5hbnRCeUFwcElkEi8ua3dfc2V0dGluZ3Nfc2VydmljZS52MS5HZXRUZW5hbnRCeUFwcElkUmVxdWVzdBowLmt3X3NldHRpbmdzX3NlcnZpY2UudjEuR2V0VGVuYW50QnlBcHBJZFJlc3BvbnNlEnUKEEdldEFsbEFwcFRlbmFudHMSLy5rd19zZXR0aW5nc19zZXJ2aWNlLnYxLkdldEFsbEFwcFRlbmFudHNSZXF1ZXN0GjAua3dfc2V0dGluZ3Nfc2VydmljZS52MS5HZXRBbGxBcHBUZW5hbnRzUmVzcG9uc2USXAoOTGFuZUNoYWluQ2hlY2sSJS5kZW1vX2NvbW1vbi52MS5MYW5lQ2hhaW5DaGVja1JlcXVlc3QaIy5kZW1vX2NvbW1vbi52MS5MYW5lQ2hhaW5DaGVja1JlcGx5QjZaNGFnbmVzL3Byb3RvL2dlbi9nby9rd19zZXR0aW5nc19zZXJ2aWNlL3YxO3NldHRpbmdzdjFiBnByb3RvMw", [file_demo_common_v1_demo_common]);
+  fileDesc("CjBrd19zZXR0aW5nc19zZXJ2aWNlL3YxL2t3X3NldHRpbmdzX3NlcnZpY2UucHJvdG8SFmt3X3NldHRpbmdzX3NlcnZpY2UudjEiTwoWQ2hlY2tBcHBWZXJzaW9uUmVxdWVzdBIcChRjdXJyZW50X3ZlcnNpb25fY29kZRgBIAEoBRIXCg9jdXJyZW50X3ZlcnNpb24YAiABKAkibAoRTGF0ZXN0VmVyc2lvbkluZm8SFAoMdmVyc2lvbl9uYW1lGAEgASgJEhQKDHZlcnNpb25fY29kZRgCIAEoBRIUCgxkb3dubG9hZF91cmwYAyABKAkSFQoNcmVsZWFzZV9ub3RlcxgEIAEoCSKIAQoUQ2hlY2tBcHBWZXJzaW9uUmVwbHkSFAoMZm9yY2VfdXBkYXRlGAEgASgIEhcKD2hhc19uZXdfdmVyc2lvbhgCIAEoCBJBCg5sYXRlc3RfdmVyc2lvbhgDIAEoCzIpLmt3X3NldHRpbmdzX3NlcnZpY2UudjEuTGF0ZXN0VmVyc2lvbkluZm8i6AEKDkFwcFZlcnNpb25JdGVtEgoKAmlkGAEgASgDEg4KBmFwcF9pZBgCIAEoCRIQCghwbGF0Zm9ybRgDIAEoCRIUCgx2ZXJzaW9uX25hbWUYBCABKAkSFAoMdmVyc2lvbl9jb2RlGAUgASgFEhcKD2lzX2ZvcmNlX3VwZGF0ZRgGIAEoCBIOCgZzdGF0dXMYByABKAkSFAoMZG93bmxvYWRfdXJsGAggASgJEhUKDXJlbGVhc2Vfbm90ZXMYCSABKAkSEgoKY3JlYXRlZF9hdBgKIAEoCRISCgp1cGRhdGVkX2F0GAsgASgJIq0BChdDcmVhdGVBcHBWZXJzaW9uUmVxdWVzdBIQCghwbGF0Zm9ybRgBIAEoCRIUCgx2ZXJzaW9uX25hbWUYAiABKAkSFAoMdmVyc2lvbl9jb2RlGAMgASgFEhcKD2lzX2ZvcmNlX3VwZGF0ZRgEIAEoCBIOCgZzdGF0dXMYBSABKAkSFAoMZG93bmxvYWRfdXJsGAYgASgJEhUKDXJlbGVhc2Vfbm90ZXMYByABKAkiTQoVQ3JlYXRlQXBwVmVyc2lvblJlcGx5EjQKBGl0ZW0YASABKAsyJi5rd19zZXR0aW5nc19zZXJ2aWNlLnYxLkFwcFZlcnNpb25JdGVtIlsKFkxpc3RBcHBWZXJzaW9uc1JlcXVlc3QSEAoIcGxhdGZvcm0YASABKAkSDgoGc3RhdHVzGAIgASgJEgwKBHBhZ2UYAyABKAUSEQoJcGFnZV9zaXplGAQgASgFIn0KFExpc3RBcHBWZXJzaW9uc1JlcGx5EjUKBWl0ZW1zGAEgAygLMiYua3dfc2V0dGluZ3Nfc2VydmljZS52MS5BcHBWZXJzaW9uSXRlbRINCgV0b3RhbBgCIAEoBRIMCgRwYWdlGAMgASgFEhEKCXBhZ2Vfc2l6ZRgEIAEoBSIiChRHZXRBcHBWZXJzaW9uUmVxdWVzdBIKCgJpZBgBIAEoAyJKChJHZXRBcHBWZXJzaW9uUmVwbHkSNAoEaXRlbRgBIAEoCzImLmt3X3NldHRpbmdzX3NlcnZpY2UudjEuQXBwVmVyc2lvbkl0ZW0izQIKF1VwZGF0ZUFwcFZlcnNpb25SZXF1ZXN0EgoKAmlkGAEgASgDEhUKCHBsYXRmb3JtGAIgASgJSACIAQESGQoMdmVyc2lvbl9uYW1lGAMgASgJSAGIAQESGQoMdmVyc2lvbl9jb2RlGAQgASgFSAKIAQESHAoPaXNfZm9yY2VfdXBkYXRlGAUgASgISAOIAQESEwoGc3RhdHVzGAYgASgJSASIAQESGQoMZG93bmxvYWRfdXJsGAcgASgJSAWIAQESGgoNcmVsZWFzZV9ub3RlcxgIIAEoCUgGiAEBQgsKCV9wbGF0Zm9ybUIPCg1fdmVyc2lvbl9uYW1lQg8KDV92ZXJzaW9uX2NvZGVCEgoQX2lzX2ZvcmNlX3VwZGF0ZUIJCgdfc3RhdHVzQg8KDV9kb3dubG9hZF91cmxCEAoOX3JlbGVhc2Vfbm90ZXMiTQoVVXBkYXRlQXBwVmVyc2lvblJlcGx5EjQKBGl0ZW0YASABKAsyJi5rd19zZXR0aW5nc19zZXJ2aWNlLnYxLkFwcFZlcnNpb25JdGVtIiUKF0RlbGV0ZUFwcFZlcnNpb25SZXF1ZXN0EgoKAmlkGAEgASgDIhcKFURlbGV0ZUFwcFZlcnNpb25SZXBseSIpChdHZXRUZW5hbnRCeUFwcElkUmVxdWVzdBIOCgZhcHBfaWQYASABKAUiTQoYR2V0VGVuYW50QnlBcHBJZFJlc3BvbnNlEg4KBmFwcF9pZBgBIAEoBRIRCgl0ZW5hbnRfaWQYAiABKAUSDgoGcmVtYXJrGAMgASgJIhkKF0dldEFsbEFwcFRlbmFudHNSZXF1ZXN0IkIKDUFwcFRlbmFudEl0ZW0SDgoGYXBwX2lkGAEgASgFEhEKCXRlbmFudF9pZBgCIAEoBRIOCgZyZW1hcmsYAyABKAkiUAoYR2V0QWxsQXBwVGVuYW50c1Jlc3BvbnNlEjQKBWl0ZW1zGAEgAygLMiUua3dfc2V0dGluZ3Nfc2VydmljZS52MS5BcHBUZW5hbnRJdGVtMosIChRQbGF0Zm9ybUFkbWluU2VydmljZRJvCg9DaGVja0FwcFZlcnNpb24SLi5rd19zZXR0aW5nc19zZXJ2aWNlLnYxLkNoZWNrQXBwVmVyc2lvblJlcXVlc3QaLC5rd19zZXR0aW5nc19zZXJ2aWNlLnYxLkNoZWNrQXBwVmVyc2lvblJlcGx5EnIKEENyZWF0ZUFwcFZlcnNpb24SLy5rd19zZXR0aW5nc19zZXJ2aWNlLnYxLkNyZWF0ZUFwcFZlcnNpb25SZXF1ZXN0Gi0ua3dfc2V0dGluZ3Nfc2VydmljZS52MS5DcmVhdGVBcHBWZXJzaW9uUmVwbHkSbwoPTGlzdEFwcFZlcnNpb25zEi4ua3dfc2V0dGluZ3Nfc2VydmljZS52MS5MaXN0QXBwVmVyc2lvbnNSZXF1ZXN0Giwua3dfc2V0dGluZ3Nfc2VydmljZS52MS5MaXN0QXBwVmVyc2lvbnNSZXBseRJpCg1HZXRBcHBWZXJzaW9uEiwua3dfc2V0dGluZ3Nfc2VydmljZS52MS5HZXRBcHBWZXJzaW9uUmVxdWVzdBoqLmt3X3NldHRpbmdzX3NlcnZpY2UudjEuR2V0QXBwVmVyc2lvblJlcGx5EnIKEFVwZGF0ZUFwcFZlcnNpb24SLy5rd19zZXR0aW5nc19zZXJ2aWNlLnYxLlVwZGF0ZUFwcFZlcnNpb25SZXF1ZXN0Gi0ua3dfc2V0dGluZ3Nfc2VydmljZS52MS5VcGRhdGVBcHBWZXJzaW9uUmVwbHkScgoQRGVsZXRlQXBwVmVyc2lvbhIvLmt3X3NldHRpbmdzX3NlcnZpY2UudjEuRGVsZXRlQXBwVmVyc2lvblJlcXVlc3QaLS5rd19zZXR0aW5nc19zZXJ2aWNlLnYxLkRlbGV0ZUFwcFZlcnNpb25SZXBseRJ1ChBHZXRUZW5hbnRCeUFwcElkEi8ua3dfc2V0dGluZ3Nfc2VydmljZS52MS5HZXRUZW5hbnRCeUFwcElkUmVxdWVzdBowLmt3X3NldHRpbmdzX3NlcnZpY2UudjEuR2V0VGVuYW50QnlBcHBJZFJlc3BvbnNlEnUKEEdldEFsbEFwcFRlbmFudHMSLy5rd19zZXR0aW5nc19zZXJ2aWNlLnYxLkdldEFsbEFwcFRlbmFudHNSZXF1ZXN0GjAua3dfc2V0dGluZ3Nfc2VydmljZS52MS5HZXRBbGxBcHBUZW5hbnRzUmVzcG9uc2USXAoOTGFuZUNoYWluQ2hlY2sSJS5kZW1vX2NvbW1vbi52MS5MYW5lQ2hhaW5DaGVja1JlcXVlc3QaIy5kZW1vX2NvbW1vbi52MS5MYW5lQ2hhaW5DaGVja1JlcGx5QjZaNGFnbmVzL3Byb3RvL2dlbi9nby9rd19zZXR0aW5nc19zZXJ2aWNlL3YxO3NldHRpbmdzdjFiBnByb3RvMw", [file_demo_common_v1_demo_common]);
 
 /**
  * @generated from message kw_settings_service.v1.CheckAppVersionRequest
@@ -106,6 +106,346 @@ export const CheckAppVersionReplySchema: GenMessage<CheckAppVersionReply> = /*@_
   messageDesc(file_kw_settings_service_v1_kw_settings_service, 2);
 
 /**
+ * @generated from message kw_settings_service.v1.AppVersionItem
+ */
+export type AppVersionItem = Message<"kw_settings_service.v1.AppVersionItem"> & {
+  /**
+   * @generated from field: int64 id = 1;
+   */
+  id: bigint;
+
+  /**
+   * @generated from field: string app_id = 2;
+   */
+  appId: string;
+
+  /**
+   * @generated from field: string platform = 3;
+   */
+  platform: string;
+
+  /**
+   * @generated from field: string version_name = 4;
+   */
+  versionName: string;
+
+  /**
+   * @generated from field: int32 version_code = 5;
+   */
+  versionCode: number;
+
+  /**
+   * @generated from field: bool is_force_update = 6;
+   */
+  isForceUpdate: boolean;
+
+  /**
+   * @generated from field: string status = 7;
+   */
+  status: string;
+
+  /**
+   * @generated from field: string download_url = 8;
+   */
+  downloadUrl: string;
+
+  /**
+   * @generated from field: string release_notes = 9;
+   */
+  releaseNotes: string;
+
+  /**
+   * @generated from field: string created_at = 10;
+   */
+  createdAt: string;
+
+  /**
+   * @generated from field: string updated_at = 11;
+   */
+  updatedAt: string;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.AppVersionItem.
+ * Use `create(AppVersionItemSchema)` to create a new message.
+ */
+export const AppVersionItemSchema: GenMessage<AppVersionItem> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 3);
+
+/**
+ * @generated from message kw_settings_service.v1.CreateAppVersionRequest
+ */
+export type CreateAppVersionRequest = Message<"kw_settings_service.v1.CreateAppVersionRequest"> & {
+  /**
+   * ios / android
+   *
+   * @generated from field: string platform = 1;
+   */
+  platform: string;
+
+  /**
+   * @generated from field: string version_name = 2;
+   */
+  versionName: string;
+
+  /**
+   * @generated from field: int32 version_code = 3;
+   */
+  versionCode: number;
+
+  /**
+   * @generated from field: bool is_force_update = 4;
+   */
+  isForceUpdate: boolean;
+
+  /**
+   * published / revoked，空值默认 published
+   *
+   * @generated from field: string status = 5;
+   */
+  status: string;
+
+  /**
+   * @generated from field: string download_url = 6;
+   */
+  downloadUrl: string;
+
+  /**
+   * @generated from field: string release_notes = 7;
+   */
+  releaseNotes: string;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.CreateAppVersionRequest.
+ * Use `create(CreateAppVersionRequestSchema)` to create a new message.
+ */
+export const CreateAppVersionRequestSchema: GenMessage<CreateAppVersionRequest> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 4);
+
+/**
+ * @generated from message kw_settings_service.v1.CreateAppVersionReply
+ */
+export type CreateAppVersionReply = Message<"kw_settings_service.v1.CreateAppVersionReply"> & {
+  /**
+   * @generated from field: kw_settings_service.v1.AppVersionItem item = 1;
+   */
+  item?: AppVersionItem;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.CreateAppVersionReply.
+ * Use `create(CreateAppVersionReplySchema)` to create a new message.
+ */
+export const CreateAppVersionReplySchema: GenMessage<CreateAppVersionReply> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 5);
+
+/**
+ * @generated from message kw_settings_service.v1.ListAppVersionsRequest
+ */
+export type ListAppVersionsRequest = Message<"kw_settings_service.v1.ListAppVersionsRequest"> & {
+  /**
+   * 可选
+   *
+   * @generated from field: string platform = 1;
+   */
+  platform: string;
+
+  /**
+   * 可选：published / revoked
+   *
+   * @generated from field: string status = 2;
+   */
+  status: string;
+
+  /**
+   * 从 1 开始
+   *
+   * @generated from field: int32 page = 3;
+   */
+  page: number;
+
+  /**
+   * 默认 20
+   *
+   * @generated from field: int32 page_size = 4;
+   */
+  pageSize: number;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.ListAppVersionsRequest.
+ * Use `create(ListAppVersionsRequestSchema)` to create a new message.
+ */
+export const ListAppVersionsRequestSchema: GenMessage<ListAppVersionsRequest> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 6);
+
+/**
+ * @generated from message kw_settings_service.v1.ListAppVersionsReply
+ */
+export type ListAppVersionsReply = Message<"kw_settings_service.v1.ListAppVersionsReply"> & {
+  /**
+   * @generated from field: repeated kw_settings_service.v1.AppVersionItem items = 1;
+   */
+  items: AppVersionItem[];
+
+  /**
+   * @generated from field: int32 total = 2;
+   */
+  total: number;
+
+  /**
+   * @generated from field: int32 page = 3;
+   */
+  page: number;
+
+  /**
+   * @generated from field: int32 page_size = 4;
+   */
+  pageSize: number;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.ListAppVersionsReply.
+ * Use `create(ListAppVersionsReplySchema)` to create a new message.
+ */
+export const ListAppVersionsReplySchema: GenMessage<ListAppVersionsReply> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 7);
+
+/**
+ * @generated from message kw_settings_service.v1.GetAppVersionRequest
+ */
+export type GetAppVersionRequest = Message<"kw_settings_service.v1.GetAppVersionRequest"> & {
+  /**
+   * @generated from field: int64 id = 1;
+   */
+  id: bigint;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.GetAppVersionRequest.
+ * Use `create(GetAppVersionRequestSchema)` to create a new message.
+ */
+export const GetAppVersionRequestSchema: GenMessage<GetAppVersionRequest> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 8);
+
+/**
+ * @generated from message kw_settings_service.v1.GetAppVersionReply
+ */
+export type GetAppVersionReply = Message<"kw_settings_service.v1.GetAppVersionReply"> & {
+  /**
+   * @generated from field: kw_settings_service.v1.AppVersionItem item = 1;
+   */
+  item?: AppVersionItem;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.GetAppVersionReply.
+ * Use `create(GetAppVersionReplySchema)` to create a new message.
+ */
+export const GetAppVersionReplySchema: GenMessage<GetAppVersionReply> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 9);
+
+/**
+ * @generated from message kw_settings_service.v1.UpdateAppVersionRequest
+ */
+export type UpdateAppVersionRequest = Message<"kw_settings_service.v1.UpdateAppVersionRequest"> & {
+  /**
+   * @generated from field: int64 id = 1;
+   */
+  id: bigint;
+
+  /**
+   * @generated from field: optional string platform = 2;
+   */
+  platform?: string;
+
+  /**
+   * @generated from field: optional string version_name = 3;
+   */
+  versionName?: string;
+
+  /**
+   * @generated from field: optional int32 version_code = 4;
+   */
+  versionCode?: number;
+
+  /**
+   * @generated from field: optional bool is_force_update = 5;
+   */
+  isForceUpdate?: boolean;
+
+  /**
+   * @generated from field: optional string status = 6;
+   */
+  status?: string;
+
+  /**
+   * @generated from field: optional string download_url = 7;
+   */
+  downloadUrl?: string;
+
+  /**
+   * @generated from field: optional string release_notes = 8;
+   */
+  releaseNotes?: string;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.UpdateAppVersionRequest.
+ * Use `create(UpdateAppVersionRequestSchema)` to create a new message.
+ */
+export const UpdateAppVersionRequestSchema: GenMessage<UpdateAppVersionRequest> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 10);
+
+/**
+ * @generated from message kw_settings_service.v1.UpdateAppVersionReply
+ */
+export type UpdateAppVersionReply = Message<"kw_settings_service.v1.UpdateAppVersionReply"> & {
+  /**
+   * @generated from field: kw_settings_service.v1.AppVersionItem item = 1;
+   */
+  item?: AppVersionItem;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.UpdateAppVersionReply.
+ * Use `create(UpdateAppVersionReplySchema)` to create a new message.
+ */
+export const UpdateAppVersionReplySchema: GenMessage<UpdateAppVersionReply> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 11);
+
+/**
+ * @generated from message kw_settings_service.v1.DeleteAppVersionRequest
+ */
+export type DeleteAppVersionRequest = Message<"kw_settings_service.v1.DeleteAppVersionRequest"> & {
+  /**
+   * @generated from field: int64 id = 1;
+   */
+  id: bigint;
+};
+
+/**
+ * Describes the message kw_settings_service.v1.DeleteAppVersionRequest.
+ * Use `create(DeleteAppVersionRequestSchema)` to create a new message.
+ */
+export const DeleteAppVersionRequestSchema: GenMessage<DeleteAppVersionRequest> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 12);
+
+/**
+ * @generated from message kw_settings_service.v1.DeleteAppVersionReply
+ */
+export type DeleteAppVersionReply = Message<"kw_settings_service.v1.DeleteAppVersionReply"> & {
+};
+
+/**
+ * Describes the message kw_settings_service.v1.DeleteAppVersionReply.
+ * Use `create(DeleteAppVersionReplySchema)` to create a new message.
+ */
+export const DeleteAppVersionReplySchema: GenMessage<DeleteAppVersionReply> = /*@__PURE__*/
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 13);
+
+/**
  * @generated from message kw_settings_service.v1.GetTenantByAppIdRequest
  */
 export type GetTenantByAppIdRequest = Message<"kw_settings_service.v1.GetTenantByAppIdRequest"> & {
@@ -122,7 +462,7 @@ export type GetTenantByAppIdRequest = Message<"kw_settings_service.v1.GetTenantB
  * Use `create(GetTenantByAppIdRequestSchema)` to create a new message.
  */
 export const GetTenantByAppIdRequestSchema: GenMessage<GetTenantByAppIdRequest> = /*@__PURE__*/
-  messageDesc(file_kw_settings_service_v1_kw_settings_service, 3);
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 14);
 
 /**
  * @generated from message kw_settings_service.v1.GetTenantByAppIdResponse
@@ -155,7 +495,7 @@ export type GetTenantByAppIdResponse = Message<"kw_settings_service.v1.GetTenant
  * Use `create(GetTenantByAppIdResponseSchema)` to create a new message.
  */
 export const GetTenantByAppIdResponseSchema: GenMessage<GetTenantByAppIdResponse> = /*@__PURE__*/
-  messageDesc(file_kw_settings_service_v1_kw_settings_service, 4);
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 15);
 
 /**
  * @generated from message kw_settings_service.v1.GetAllAppTenantsRequest
@@ -168,7 +508,7 @@ export type GetAllAppTenantsRequest = Message<"kw_settings_service.v1.GetAllAppT
  * Use `create(GetAllAppTenantsRequestSchema)` to create a new message.
  */
 export const GetAllAppTenantsRequestSchema: GenMessage<GetAllAppTenantsRequest> = /*@__PURE__*/
-  messageDesc(file_kw_settings_service_v1_kw_settings_service, 5);
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 16);
 
 /**
  * @generated from message kw_settings_service.v1.AppTenantItem
@@ -201,7 +541,7 @@ export type AppTenantItem = Message<"kw_settings_service.v1.AppTenantItem"> & {
  * Use `create(AppTenantItemSchema)` to create a new message.
  */
 export const AppTenantItemSchema: GenMessage<AppTenantItem> = /*@__PURE__*/
-  messageDesc(file_kw_settings_service_v1_kw_settings_service, 6);
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 17);
 
 /**
  * @generated from message kw_settings_service.v1.GetAllAppTenantsResponse
@@ -220,7 +560,7 @@ export type GetAllAppTenantsResponse = Message<"kw_settings_service.v1.GetAllApp
  * Use `create(GetAllAppTenantsResponseSchema)` to create a new message.
  */
 export const GetAllAppTenantsResponseSchema: GenMessage<GetAllAppTenantsResponse> = /*@__PURE__*/
-  messageDesc(file_kw_settings_service_v1_kw_settings_service, 7);
+  messageDesc(file_kw_settings_service_v1_kw_settings_service, 18);
 
 /**
  * PlatformAdminService - 平台管理服务，供管理后台及杂项业务使用
@@ -241,6 +581,48 @@ export const PlatformAdminService: GenService<{
     methodKind: "unary";
     input: typeof CheckAppVersionRequestSchema;
     output: typeof CheckAppVersionReplySchema;
+  },
+  /**
+   * AppVersion CRUD（后台管理）：app_id 从 gRPC metadata x-app-id 透传并强制隔离
+   *
+   * @generated from rpc kw_settings_service.v1.PlatformAdminService.CreateAppVersion
+   */
+  createAppVersion: {
+    methodKind: "unary";
+    input: typeof CreateAppVersionRequestSchema;
+    output: typeof CreateAppVersionReplySchema;
+  },
+  /**
+   * @generated from rpc kw_settings_service.v1.PlatformAdminService.ListAppVersions
+   */
+  listAppVersions: {
+    methodKind: "unary";
+    input: typeof ListAppVersionsRequestSchema;
+    output: typeof ListAppVersionsReplySchema;
+  },
+  /**
+   * @generated from rpc kw_settings_service.v1.PlatformAdminService.GetAppVersion
+   */
+  getAppVersion: {
+    methodKind: "unary";
+    input: typeof GetAppVersionRequestSchema;
+    output: typeof GetAppVersionReplySchema;
+  },
+  /**
+   * @generated from rpc kw_settings_service.v1.PlatformAdminService.UpdateAppVersion
+   */
+  updateAppVersion: {
+    methodKind: "unary";
+    input: typeof UpdateAppVersionRequestSchema;
+    output: typeof UpdateAppVersionReplySchema;
+  },
+  /**
+   * @generated from rpc kw_settings_service.v1.PlatformAdminService.DeleteAppVersion
+   */
+  deleteAppVersion: {
+    methodKind: "unary";
+    input: typeof DeleteAppVersionRequestSchema;
+    output: typeof DeleteAppVersionReplySchema;
   },
   /**
    * ---- App Tenant 域 ----

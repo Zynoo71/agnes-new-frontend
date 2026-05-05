@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import type { ToolRenderProps } from "../registry";
 import { ExpandableInput } from "../ExpandableInput";
+import { HtmlPreviewFrame } from "@/components/HtmlPreviewFrame";
+import { buildSandboxPreviewFileUrl } from "@/api/sandboxPreview";
+import { useConversationStore } from "@/stores/conversationStore";
 
 const AUTO_COLLAPSE_MS = 2000;
 
@@ -167,7 +171,7 @@ function CodeContent({ content, label }: { content: string; label: string }) {
   );
 }
 
-function PreviewableContent({ content, label }: { content: string; label: string }) {
+function PreviewableContent({ content, label, previewUrl }: { content: string; label: string; previewUrl?: string }) {
   const [tab, setTab] = useState<"preview" | "code">("preview");
   return (
     <div className="mt-2">
@@ -193,9 +197,11 @@ function PreviewableContent({ content, label }: { content: string; label: string
         <span className="text-[10px] font-medium text-text-tertiary uppercase tracking-wider">{label}</span>
       </div>
       {tab === "preview" ? (
-        <iframe
-          srcDoc={content}
-          sandbox=""
+        <HtmlPreviewFrame
+          src={previewUrl}
+          srcDoc={previewUrl ? undefined : content}
+          sandbox="allow-scripts allow-popups allow-downloads"
+          title={label}
           className="w-full border border-border-light rounded-lg bg-white"
           style={{ height: "300px" }}
         />
@@ -208,18 +214,39 @@ function PreviewableContent({ content, label }: { content: string; label: string
   );
 }
 
+function OpenByDefaultDetails({ summary, children }: { summary: string; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <details className="mt-2" open={open} onToggle={(event) => setOpen((event.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
+        {summary}
+      </summary>
+      {children}
+    </details>
+  );
+}
+
+function buildPreviewUrl(conversationId: string | null, filePath: string): string | undefined {
+  const trimmedConversationId = conversationId?.trim();
+  const trimmedPath = filePath.trim();
+  if (!trimmedConversationId || !trimmedPath) {
+    return undefined;
+  }
+  return buildSandboxPreviewFileUrl(trimmedConversationId, trimmedPath);
+}
+
 function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolName: string; toolInput: Record<string, unknown>; toolResult: Record<string, unknown>; autoCollapse?: boolean }) {
+  const conversationId = useConversationStore((s) => s.conversationId);
+
   switch (toolName) {
     case "read_file": {
       const content = toolResult.content as string | undefined;
       if (!content) return null;
       return (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
-            View Content
-          </summary>
+        <OpenByDefaultDetails summary="View Content">
           <CodeContent content={content} label="File Content" />
-        </details>
+        </OpenByDefaultDetails>
       );
     }
     case "write_file": {
@@ -227,17 +254,15 @@ function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolNa
       if (!content) return null;
       const filePath = (toolInput.path as string) ?? "";
       const isPreviewable = /\.(svg|html?)$/i.test(filePath);
+      const previewUrl = isPreviewable ? buildPreviewUrl(conversationId, filePath) : undefined;
       return (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
-            View Content
-          </summary>
+        <OpenByDefaultDetails summary="View Content">
           {isPreviewable ? (
-            <PreviewableContent content={content} label="Written Content" />
+            <PreviewableContent content={content} label="Written Content" previewUrl={previewUrl} />
           ) : (
             <CodeContent content={content} label="Written Content" />
           )}
-        </details>
+        </OpenByDefaultDetails>
       );
     }
     case "edit_file":
@@ -246,28 +271,22 @@ function FileDetails({ toolName, toolInput, toolResult, autoCollapse }: { toolNa
       const items = toolResult.items as string[] | undefined;
       if (!items?.length) return null;
       return (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
-            Files
-          </summary>
+        <OpenByDefaultDetails summary="Files">
           <pre className="mt-1.5 text-[11px] font-mono bg-background rounded-lg p-2.5 whitespace-pre-wrap leading-relaxed border border-border-light text-text-secondary max-h-40 overflow-y-auto">
             {items.join("\n")}
           </pre>
-        </details>
+        </OpenByDefaultDetails>
       );
     }
     case "glob": {
       const matches = toolResult.matches as string[] | undefined;
       if (!matches?.length) return null;
       return (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors select-none">
-            Matches
-          </summary>
+        <OpenByDefaultDetails summary="Matches">
           <pre className="mt-1.5 text-[11px] font-mono bg-background rounded-lg p-2.5 whitespace-pre-wrap leading-relaxed border border-border-light text-text-secondary max-h-40 overflow-y-auto">
             {matches.join("\n")}
           </pre>
-        </details>
+        </OpenByDefaultDetails>
       );
     }
     default:
@@ -308,4 +327,3 @@ export function FileToolRenderer(props: ToolRenderProps) {
     </div>
   );
 }
-

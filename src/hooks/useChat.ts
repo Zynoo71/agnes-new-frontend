@@ -1,13 +1,36 @@
 import { useCallback } from "react";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { agentClient } from "@/grpc/client";
 import { createAgnesConversation } from "@/api/agnesConversation";
-import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType } from "@/stores/conversationStore";
+import { useConversationStore, type AgentTask, type ContentBlock, type Message, type RawEvent, type ReviewState, rebuildTasksFromHistory, getLatestSeq, resetLatestSeq, applyWorkerContentBlock, normalizeWorkerBlockType, extractUserBlockMessageId, userMessageIdFromBackend, parseHitlResumeBlock, resolveReviewsByHitlBlocks, parseGenerationArtifact } from "@/stores/conversationStore";
 import type { SourceCitation, SheetArtifactData, SheetPlanDimension, WorkerState } from "@/stores/conversationStore";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import { useConversationListStore } from "@/stores/conversationListStore";
+import { useModelStore } from "@/stores/modelStore";
+import { PENDING_SKILLS_CONV_ID, useChatSelectedSkillsStore } from "@/stores/chatSelectedSkillsStore";
+import { hydrateConversationSkillsFromServer, persistConversationSkillSelections } from "@/lib/conversationSkillSync";
+import { syncExtraContextDisallowedSkills } from "@/config/agentAdditionalDisallowedSkills";
 import type { AgentStreamEvent } from "@/gen/common/v1/agent_stream_pb";
 
+function resolveAliasForConv(convId: string | null): string {
+  if (!convId) return useModelStore.getState().selectedAlias;
+  const conv = useConversationListStore
+    .getState()
+    .conversations.find((c) => c.id === convId);
+  return conv?.llmAlias ?? useModelStore.getState().selectedAlias;
+}
+
 const getState = () => useConversationStore.getState();
+
+/**
+ * 当前 conversation 在 chatSelectedSkillsStore 中的选用 → proto SelectedSkill。
+ * 后端会校验/过滤，此处全量上送，不在前端做权限判断。
+ */
+function pickSelectedSkillsForRequest(convId: string): { skillId: string; version: string }[] {
+  const list = useChatSelectedSkillsStore.getState().get(convId);
+  return list.filter((it) => it.skillId).map((it) => ({ skillId: it.skillId, version: it.version || "" }));
+}
+
 // ── Module-level singleton abort management ──
 // Shared across all useChat() call sites — fixes the multi-instance bug.
 
@@ -23,23 +46,62 @@ function beginStream(convId: string): AbortSignal {
   return ac.signal;
 }
 
-// Reset per-turn seq tracker before initiating a new turn
-// (ChatStream / EditResend / Regenerate / HitlResume-modify).
-// Note: HitlResume-approve keeps seq since the backend reuses the request_id.
+// Reset per-turn seq tracker before initiating a new turn. Per spec §8.9,
+// HitlResume actions (approve / modify / reject) all open new turns now —
+// the legacy "approve reuses request_id" path was removed backend-side.
 function beginNewTurn(convId: string): AbortSignal {
   resetLatestSeq(convId);
   return beginStream(convId);
 }
 
-function isAlreadyExists(err: unknown): boolean {
+// §6.6 AGENT_STREAM_BUSY envelope code — 同会话已有活跃流，前端必须改走 ResumeStream。
+const AGENT_STREAM_BUSY_CODE = "070301";
+
+// Pull business error_code out of ConnectError.details without importing the generated
+// schema (src/gen/common/v1/error_pb.ts contains a plain `enum` incompatible with
+// erasableSyntaxOnly). Fall back to JSON debug; both snake_case and camelCase observed.
+function getEnvelopeCode(err: unknown): string | null {
+  if (!(err instanceof ConnectError)) return null;
+  for (const d of err.details) {
+    if (!("type" in d) || d.type !== "common.v1.ErrorDetail") continue;
+    const debug = (d as { debug?: unknown }).debug;
+    if (!debug || typeof debug !== "object") continue;
+    const code =
+      (debug as { error_code?: unknown }).error_code ??
+      (debug as { errorCode?: unknown }).errorCode;
+    if (typeof code === "string") return code;
+  }
+  return null;
+}
+
+// "服务端已有活跃流"信号：gRPC code = AlreadyExists 或业务 envelope code = 070301。
+// 保留字符串兜底以防网关透传失真。
+function isStreamBusy(err: unknown): boolean {
+  if (err instanceof ConnectError) {
+    if (err.code === Code.AlreadyExists) return true;
+    if (getEnvelopeCode(err) === AGENT_STREAM_BUSY_CODE) return true;
+  }
   const msg = err instanceof Error ? err.message : String(err);
-  return msg.includes("already_exists") || msg.includes("ALREADY_EXISTS");
+  return msg.includes("ALREADY_EXISTS") || msg.includes("already_exists");
+}
+
+// 网络/传输层断线，适合用 from_seq=latestSeq 重连续播（spec §6.5）。
+// 不含 Canceled（通常是自己 abort 的），不含业务错（AgentError 走事件帧，不进 catch）。
+function isRetriableDisconnect(err: unknown): boolean {
+  if (!(err instanceof ConnectError)) return false;
+  return err.code === Code.Unavailable || err.code === Code.Unknown;
+}
+
+function describeErr(err: unknown): string {
+  if (err instanceof ConnectError) return `code=${Code[err.code]}`;
+  return err instanceof Error ? err.message : String(err);
 }
 
 async function runStream(
   iter: AsyncIterable<AgentStreamEvent>,
   signal: AbortSignal,
   convId: string,
+  isResumeRetry = false,
 ) {
   try {
     for await (const event of iter) {
@@ -48,23 +110,33 @@ async function runStream(
     }
   } catch (err) {
     if (signal.aborted) return;
-    // Backend has an active stream for this conversation (spec §6.6) —
-    // don't retry ChatStream, fall back to ResumeStream(from_seq=0) to
-    // pick up the existing stream from the beginning.
-    if (isAlreadyExists(err)) {
-      console.warn(`Active stream exists for conv ${convId}, falling back to resumeStream(from_seq=0)`);
+
+    // §6.6 冲突路径：from_seq=0 从头回放 Redis buffer + 续实时。
+    if (isStreamBusy(err)) {
+      console.warn(`[useChat] stream busy for conv ${convId}, pivoting to resumeStream(from_seq=0)`);
       const resumeIter = agentClient.resumeStream(
         { conversationId: BigInt(convId), fromSeq: 0n },
         { signal },
       );
-      // Tail-call: delegate cleanup to the resumed runStream invocation.
-      await runStream(resumeIter, signal, convId);
+      await runStream(resumeIter, signal, convId, true);
       return;
     }
-    const msg = err instanceof Error ? err.message : String(err);
+
+    // §6.5 中途断线：用 latestSeq 只拉增量；已是 resume 重试则不再嵌套避免死循环。
+    if (!isResumeRetry && isRetriableDisconnect(err)) {
+      const fromSeq = getLatestSeq(convId);
+      console.warn(`[useChat] stream dropped for conv ${convId} (${describeErr(err)}), resuming from seq=${fromSeq}`);
+      const resumeIter = agentClient.resumeStream(
+        { conversationId: BigInt(convId), fromSeq },
+        { signal },
+      );
+      await runStream(resumeIter, signal, convId, true);
+      return;
+    }
+
     console.error("Stream error:", err);
     if (getState().conversationId === convId) {
-      getState().setError(msg);
+      getState().setError(describeErr(err));
     }
   } finally {
     // Only clean up if our controller is still the active one
@@ -122,10 +194,27 @@ function rebuildTasksFromTurns(turns: { user: unknown[]; assistant: unknown[] }[
   return tasks;
 }
 
-function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): Message[] {
+// §8.9: ConversationTurn.status → HumanReview card state. Card defaults to
+// `decided` for unknown/empty status (history default = the agent ran past it).
+// `pending` (from `interrupted`) is the only state where decision buttons render.
+function turnStatusToReviewState(status: string | undefined): ReviewState {
+  switch (status) {
+    case "interrupted": return "pending";
+    case "ignored":     return "ignored";
+    case "cancelled":   return "cancelled";
+    case "completed":
+    case "failed":
+    case "exhausted":
+    default:            return "decided";
+  }
+}
+
+function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[]; status?: string }[]): Message[] {
   const messages: Message[] = [];
+  const hitlBlocksAll: ContentBlock[] = [];
   for (const turn of turns) {
-    const userBlocks = turn.user as { type: string; data: unknown }[];
+    const reviewState = turnStatusToReviewState(turn.status);
+    const userBlocks = turn.user as Array<Record<string, unknown> & { type: string; data: unknown }>;
     const userTextBlocks = userBlocks
       .filter((b) => b.type === "Message")
       .map((b) => ({ type: "Message", content: ((b.data as Record<string, unknown>)?.content as string) ?? JSON.stringify(b.data) }) as ContentBlock);
@@ -140,8 +229,18 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
         return { type: "File", data: { filename, mimeType, url } } as ContentBlock;
       })
       .filter((b): b is ContentBlock => b !== null);
-    if (userTextBlocks.length > 0 || fileBlocks.length > 0) {
-      messages.push({ id: nextHistoryId(), role: "user", blocks: [...userTextBlocks, ...fileBlocks], nodes: [], workers: {}, sources: [] });
+    // §8.9: history `turn.user[]` may carry HitlResume blocks alongside Message/File.
+    const hitlBlocks: ContentBlock[] = userBlocks
+      .filter((b) => b.type === "HitlResume")
+      .map((b) => parseHitlResumeBlock((b.data ?? {}) as Record<string, unknown>))
+      .filter((b): b is ContentBlock => b !== null);
+    hitlBlocksAll.push(...hitlBlocks);
+    if (userTextBlocks.length > 0 || fileBlocks.length > 0 || hitlBlocks.length > 0) {
+      // Derive the user message id from the backend message_id so a later Resume
+      // HumanInput replay can be deduplicated against this bubble.
+      const backendMsgId = extractUserBlockMessageId(userBlocks);
+      const userId = backendMsgId ? userMessageIdFromBackend(backendMsgId) : nextHistoryId();
+      messages.push({ id: userId, role: "user", blocks: [...userTextBlocks, ...fileBlocks, ...hitlBlocks], nodes: [], workers: {}, sources: [] });
     }
     const assistantBlocks: ContentBlock[] = [];
     const turnSources: SourceCitation[] = [];
@@ -166,9 +265,13 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
         });
       } else if (block.type === "HumanReview") {
         const data = (block.data ?? {}) as Record<string, unknown>;
+        const blockRec = block as Record<string, unknown>;
+        const eventId = typeof blockRec.event_id === "string" ? blockRec.event_id
+          : typeof blockRec.eventId === "string" ? blockRec.eventId
+          : undefined;
         assistantBlocks.push({
           type: "human_review",
-          data: { payload: data, resolved: true },
+          data: { payload: data, state: reviewState, event_id: eventId },
         });
       } else if (block.type === "SourcesCited") {
         const data = (block.data ?? {}) as Record<string, unknown>;
@@ -207,6 +310,30 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
             data: { field, content },
           });
         }
+      } else if (block.type === "PromptEnhanced") {
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        assistantBlocks.push({
+          type: "PromptEnhanced",
+          data: {
+            originalPrompt: (data.original_prompt as string) ?? "",
+            enhancedPrompt: (data.enhanced_prompt as string) ?? "",
+            message: data.message as string | undefined,
+            mediaType: data.media_type as string | undefined,
+            style: data.style as string | undefined,
+          },
+        });
+      } else if (block.type === "GenerationArtifact") {
+        // History replay — agent_artifact rows are union'd back into the turn
+        // stream and surface as the same wire shape as live SSE.
+        const data = (block.data ?? {}) as Record<string, unknown>;
+        const blockRec = block as Record<string, unknown>;
+        // history blocks carry event_id at the envelope level; rebuild a
+        // synthetic envelope so parseGenerationArtifact can read it uniformly.
+        const eventId = typeof blockRec.event_id === "string" ? blockRec.event_id
+          : typeof blockRec.eventId === "string" ? blockRec.eventId
+          : "";
+        const parsed = parseGenerationArtifact({ event_id: eventId }, data);
+        if (parsed) assistantBlocks.push({ type: "GenerationArtifact", data: parsed });
       } else if (block.type === "ArtifactCreated") {
         const data = (block.data ?? {}) as Record<string, unknown>;
         const artifactId = (data.artifact_id as string) ?? "";
@@ -339,7 +466,10 @@ function parseHistoryTurns(turns: { user: unknown[]; assistant: unknown[] }[]): 
       messages.push({ id: nextHistoryId(), role: "assistant", blocks: assistantBlocks, nodes: [], workers, sources: turnSources });
     }
   }
-  return messages;
+  // §8.9 #4: link HitlResume blocks back to their HumanReview cards via event_id.
+  // (History HumanReview is already resolved=true; this is a no-op today but keeps
+  // the pipeline consistent should that default ever change.)
+  return resolveReviewsByHitlBlocks(messages, hitlBlocksAll);
 }
 
 // ── Hook ──
@@ -348,16 +478,17 @@ export function useChat() {
   const loadHistory = async (id: string) => {
     const resp = await agentClient.getConversationHistory({ conversationId: BigInt(id) });
     const messages = parseHistoryTurns(resp.turns);
-    // If there's a pending review, mark the last HumanReview as unresolved
-    // ONLY if it's the very last block in the last message (no subsequent content
-    // means the agent hasn't continued after the review).
+    // §8.9: turn.status="interrupted" already maps to state="pending" inside
+    // parseHistoryTurns. The legacy `resp.pendingReview` flag is a fallback for
+    // older backends that don't populate turn.status — only flip the very last
+    // HumanReview to pending if no turn.status told us so.
     if (resp.pendingReview && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       const lastBlock = lastMsg.blocks[lastMsg.blocks.length - 1];
-      if (lastBlock?.type === "human_review") {
+      if (lastBlock?.type === "human_review" && lastBlock.data.state === "decided") {
         lastMsg.blocks[lastMsg.blocks.length - 1] = {
           type: "human_review",
-          data: { ...lastBlock.data, resolved: false },
+          data: { ...lastBlock.data, state: "pending" },
         };
       }
     }
@@ -377,7 +508,18 @@ export function useChat() {
     getState().reset();
     const id = await createAgnesConversation();
     getState().setConversationId(id);
-    useConversationListStore.getState().add(id, getState().agentType, getState().systemPromptId ?? undefined);
+    useConversationListStore.getState().add(
+      id,
+      getState().agentType,
+      getState().systemPromptId ?? undefined,
+      useModelStore.getState().selectedAlias,
+    );
+    const skillsStore = useChatSelectedSkillsStore.getState();
+    const pending = skillsStore.get(PENDING_SKILLS_CONV_ID);
+    if (pending.length > 0) {
+      skillsStore.setForConv(id, pending);
+      skillsStore.clear(PENDING_SKILLS_CONV_ID);
+    }
     return id;
   }, []);
 
@@ -388,6 +530,11 @@ export function useChat() {
     const isFirstMessage = s.messages.every((m) => m.role !== "user");
     const requestStartedAt = Date.now();
 
+    // §8.9 IGNORED: if a HumanReview was pending, the backend will mark the old
+    // turn as `ignored` once this ChatStream lands. Optimistically grey out the
+    // card so the UI flips immediately instead of waiting for the next history
+    // refresh.
+    s.dismissPendingHumanReviews();
     s.addUserMessage(query, files);
     s.startAssistantMessage(requestStartedAt);
     const signal = beginNewTurn(convId);
@@ -398,7 +545,17 @@ export function useChat() {
       useConversationListStore.getState().update(convId, { title });
     }
 
+    try {
+      await persistConversationSkillSelections(convId);
+    } catch (e) {
+      console.warn("[useChat] persist conversation skills before ChatStream failed", e);
+    }
+
     const extraContext = Object.keys(s.extraContext).length > 0 ? s.extraContext : undefined;
+    // Local toggle for hitting the real GrpcReservationClient (credits 扣费).
+    // VITE_BILLING_ENABLED=true → backend `billing_enabled=true` →
+    // _build_subscription_quota_client(); anything else → null (no-op).
+    const billingEnabled = import.meta.env.VITE_BILLING_ENABLED === "true" ? true : undefined;
     const stream = agentClient.chatStream(
       {
         conversationId: BigInt(convId),
@@ -412,31 +569,39 @@ export function useChat() {
         })),
         systemPromptId: s.systemPromptId ? BigInt(s.systemPromptId) : 0n,
         extraContext,
+        selectedSkills: pickSelectedSkillsForRequest(convId),
+        billingEnabled,
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );
     await runStream(stream, signal, convId);
   }, []);
 
-  const hitlResume = useCallback(async (action: "approve" | "modify", feedback?: string) => {
+  const hitlResume = useCallback(async (
+    action: "approve" | "modify",
+    feedback?: string,
+    data?: Record<string, unknown>,
+  ) => {
     const s = getState();
     if (!s.conversationId) return;
     const convId = s.conversationId;
     const requestStartedAt = Date.now();
 
-    s.resolveHumanReview();
+    s.resolveHumanReview(action, feedback);
     s.startAssistantMessage(requestStartedAt);
-    // `modify` starts a new turn (new request_id, seq resets to 1 on backend).
-    // `approve` continues the current turn (same request_id), so keep seq.
-    const signal = action === "modify" ? beginNewTurn(convId) : beginStream(convId);
+    // §8.9: approve / modify / reject 一律开新 turn，新 request_id，seq 重置为 1。
+    const signal = beginNewTurn(convId);
 
     const resumePayload: Record<string, unknown> = { action };
     if (action === "modify" && feedback) resumePayload.feedback = feedback;
+    if (action === "modify" && data) resumePayload.data = data;
 
     const stream = agentClient.hitlResumeStream(
       {
         conversationId: BigInt(convId),
         resumeData: new TextEncoder().encode(JSON.stringify(resumePayload)),
+        llmAlias: resolveAliasForConv(convId),
       },
       { signal },
     );
@@ -454,8 +619,19 @@ export function useChat() {
     s.startAssistantMessage(requestStartedAt);
     const signal = beginNewTurn(convId);
 
+    try {
+      await persistConversationSkillSelections(convId);
+    } catch (e) {
+      console.warn("[useChat] persist conversation skills before EditResend failed", e);
+    }
+
     const stream = agentClient.editResendStream(
-      { conversationId: BigInt(convId), query: newQuery },
+      {
+        conversationId: BigInt(convId),
+        query: newQuery,
+        selectedSkills: pickSelectedSkillsForRequest(convId),
+        llmAlias: resolveAliasForConv(convId),
+      },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -471,8 +647,18 @@ export function useChat() {
     s.startAssistantMessage(requestStartedAt);
     const signal = beginNewTurn(convId);
 
+    try {
+      await persistConversationSkillSelections(convId);
+    } catch (e) {
+      console.warn("[useChat] persist conversation skills before Regenerate failed", e);
+    }
+
     const stream = agentClient.regenerateStream(
-      { conversationId: BigInt(convId) },
+      {
+        conversationId: BigInt(convId),
+        selectedSkills: pickSelectedSkillsForRequest(convId),
+        llmAlias: resolveAliasForConv(convId),
+      },
       { signal },
     );
     await runStream(stream, signal, convId);
@@ -496,6 +682,8 @@ export function useChat() {
     const s = getState();
     if (s.conversationId === id) return;
 
+    useChatSelectedSkillsStore.getState().clear(PENDING_SKILLS_CONV_ID);
+
     // Abort any existing resume stream for the target
     abortMap.get(id)?.abort();
     abortMap.delete(id);
@@ -509,6 +697,8 @@ export function useChat() {
     if (conv) {
       s.setAgentType(conv.agentType);
       s.setSystemPromptId(conv.systemPromptId ?? null);
+      const ec = getState().extraContext;
+      getState().setExtraContext(syncExtraContextDisallowedSkills(ec, conv.agentType));
     }
 
     let resp;
@@ -522,17 +712,20 @@ export function useChat() {
     }
 
     getState().setLoadingHistory(false);
+    void hydrateConversationSkillsFromServer(id);
 
     const shouldResume = s.streamingConvIds.has(id) || resp.isRunning;
 
     if (shouldResume) {
       getState().startAssistantMessage();
-      // Preserve seq across selectConversation so resume picks up where we left off.
-      // 0n means we never received an event with seq (or legacy server) → full replay.
-      const fromSeq = getLatestSeq(id);
+      // loadHistory already wiped per-conv UI state; the right thing is a full
+      // Redis replay of the current turn (from_seq=0), not picking up from a
+      // latestSeq that was tracked by a previous visit to this conv. Reset the
+      // counter so subsequent in-stream disconnects measure from this resume.
+      resetLatestSeq(id);
       const signal = beginStream(id);
       const stream = agentClient.resumeStream(
-        { conversationId: BigInt(id), fromSeq },
+        { conversationId: BigInt(id), fromSeq: 0n },
         { signal },
       );
       runStream(stream, signal, id);
