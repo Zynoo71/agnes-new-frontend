@@ -67,9 +67,34 @@ export interface NodeData {
   status: "running" | "done";
 }
 
+// §8.9: HumanReview card lifecycle. Sourced from `turn.status` on history,
+// or set by client-side actions for the live turn.
+//   pending   — INTERRUPTED, awaiting user decision (decision buttons shown)
+//   decided   — user clicked approve/modify/reject (or normal completion)
+//   cancelled — user explicitly cancelled the stream
+//   ignored   — user bypassed the card by sending a new ChatStream
+export type ReviewState = "pending" | "decided" | "cancelled" | "ignored";
+
 export interface HumanReviewData {
   payload: Record<string, unknown>;
-  resolved: boolean;
+  state: ReviewState;
+  // EmitEvent envelope event_id (e.g. "evt_..."). Used as the match key for
+  // HitlResume.resolves_event_id (spec §8.9). Optional for legacy data.
+  event_id?: string;
+  // §8.9: when this review is resolved by a HitlResume block, the action and
+  // optional feedback are merged here so the card itself can render the
+  // decision (no separate user-side chip).
+  resumeAction?: HitlAction;
+  resumeFeedback?: string;
+}
+
+export type HitlAction = "approve" | "modify" | "reject";
+
+export interface HitlResumeData {
+  action: HitlAction;
+  resolves_event_id: string;
+  feedback?: string;
+  modify_data?: Record<string, unknown> | null;
 }
 
 export type WorkerItem =
@@ -282,6 +307,14 @@ export interface MemoryUpdateData {
   content: string;
 }
 
+export interface PromptEnhancedData {
+  originalPrompt: string;
+  enhancedPrompt: string;
+  message?: string;
+  mediaType?: string;
+  style?: string;
+}
+
 export interface SheetArtifactData {
   artifactId: string;
   artifactType: string;            // CHART / TABLE / REPORT / DASHBOARD / EXPORT / TEXT / DATASET
@@ -307,17 +340,175 @@ export interface SheetPlanData {
 
 export type FileData = ChatAttachment;
 
+// GenerationArtifact: spec §"write_report 工具 → 报告卡片". Single wire type
+// "GenerationArtifact" with `kind` discriminator (report | image | video).
+// Decoupled from tool_call_id — front-end pairs by toolName + temporal locality.
+export type ArtifactKind = "report" | "image" | "video" | "slide";
+
+export interface ImageArtifactResult {
+  url: string;
+  originalUrl?: string;
+  thumbnailUrl?: string;
+  ratio?: string;
+  mimetype?: string;
+  width?: number;
+  height?: number;
+}
+
+export interface VideoArtifactResult {
+  url: string;
+  originalUrl?: string;
+  firstFrameUrl?: string;
+  coverUrl?: string;
+  webpUrl?: string;
+  ratio?: string;
+  resolution?: string;
+  duration?: number; // seconds
+  width?: number;
+  height?: number;
+  fps?: number;
+  webpDuration?: number;
+}
+
+export interface SlideArtifactData {
+  eventId: string;
+  kind: "slide";
+  title: string;
+  html: string;
+  cover: string;
+  pageCount: number;
+  slideUrls: string[];
+  outlinePath: string;
+  previewPath: string;
+}
+
+export type GenerationArtifactData =
+  | { eventId: string; kind: "report"; title: string; content: string; durationMs: number }
+  | {
+      eventId: string;
+      kind: "image";
+      title: string;
+      prompt: string;
+      modelCode: string;
+      results: ImageArtifactResult[];
+      taskId: string;
+      traceId: string;
+    }
+  | {
+      eventId: string;
+      kind: "video";
+      title: string;
+      prompt: string;
+      modelCode: string;
+      results: VideoArtifactResult[];
+      taskId: string;
+      traceId: string;
+    }
+  | SlideArtifactData;
+
+// kind → ToolCallStart.toolName that emits this artifact. Used to find the
+// matching skeleton in `updated.blocks` for in-place replacement.
+const KIND_TO_TOOL_NAME: Record<ArtifactKind, string> = {
+  report: "write_report",
+  image: "generate_image",
+  video: "generate_video",
+  slide: "delegate_to_slide_agent",
+};
+
+function parseGenerationArtifact(
+  rawPayload: Record<string, unknown>,
+  payload: Record<string, unknown>,
+): GenerationArtifactData | null {
+  const eventId = typeof rawPayload.event_id === "string" ? rawPayload.event_id : "";
+  const kind = (payload.kind as string) ?? "";
+  const title = (payload.title as string) ?? "";
+  if (kind === "report") {
+    return {
+      eventId,
+      kind: "report",
+      title,
+      content: (payload.content as string) ?? "",
+      durationMs: typeof payload.duration_ms === "number" ? payload.duration_ms : 0,
+    };
+  }
+  if (kind === "slide") {
+    return {
+      eventId,
+      kind: "slide",
+      title,
+      html: (payload.html as string) ?? "",
+      cover: (payload.cover as string) ?? "",
+      pageCount: typeof payload.page_count === "number" ? payload.page_count : 0,
+      slideUrls: Array.isArray(payload.slide_urls) ? (payload.slide_urls as string[]) : [],
+      outlinePath: (payload.outline_path as string) ?? "",
+      previewPath: (payload.preview_path as string) ?? "",
+    };
+  }
+  if (kind === "image" || kind === "video") {
+    const rawResults = Array.isArray(payload.results) ? (payload.results as Record<string, unknown>[]) : [];
+    const prompt = (payload.prompt as string) ?? "";
+    const modelCode = (payload.model_code as string) ?? "";
+    const taskId = (payload.task_id as string) ?? "";
+    const traceId = (payload.trace_id as string) ?? "";
+    if (kind === "image") {
+      const results: ImageArtifactResult[] = rawResults
+        .map((r): ImageArtifactResult | null => {
+          const url = typeof r.url === "string" ? r.url : "";
+          if (!url) return null;
+          return {
+            url,
+            originalUrl: typeof r.original_url === "string" ? r.original_url : undefined,
+            thumbnailUrl: typeof r.thumbnail_url === "string" ? r.thumbnail_url : undefined,
+            ratio: typeof r.ratio === "string" ? r.ratio : undefined,
+            mimetype: typeof r.mimetype === "string" ? r.mimetype : undefined,
+            width: typeof r.width === "number" ? r.width : undefined,
+            height: typeof r.height === "number" ? r.height : undefined,
+          };
+        })
+        .filter((r): r is ImageArtifactResult => r !== null);
+      return { eventId, kind: "image", title, prompt, modelCode, results, taskId, traceId };
+    }
+    const results: VideoArtifactResult[] = rawResults
+      .map((r): VideoArtifactResult | null => {
+        const url = typeof r.url === "string" ? r.url : "";
+        if (!url) return null;
+        return {
+          url,
+          originalUrl: typeof r.original_url === "string" ? r.original_url : undefined,
+          firstFrameUrl: typeof r.first_frame_url === "string" ? r.first_frame_url : undefined,
+          coverUrl: typeof r.cover_url === "string" ? r.cover_url : undefined,
+          webpUrl: typeof r.webp_url === "string" ? r.webp_url : undefined,
+          ratio: typeof r.ratio === "string" ? r.ratio : undefined,
+          resolution: typeof r.resolution === "string" ? r.resolution : undefined,
+          duration: typeof r.duration === "number" ? r.duration : undefined,
+          width: typeof r.width === "number" ? r.width : undefined,
+          height: typeof r.height === "number" ? r.height : undefined,
+          fps: typeof r.fps === "number" ? r.fps : undefined,
+          webpDuration: typeof r.webp_duration === "number" ? r.webp_duration : undefined,
+        };
+      })
+      .filter((r): r is VideoArtifactResult => r !== null);
+    return { eventId, kind: "video", title, prompt, modelCode, results, taskId, traceId };
+  }
+  return null;
+}
+
+export { parseGenerationArtifact, KIND_TO_TOOL_NAME };
+
 export type ContentBlock =
   | { type: "Message"; content: string }
   | { type: "File"; data: FileData }
   | { type: "Reasoning"; content: string }
   | { type: "ToolCallStart"; data: ToolCallData }
   | { type: "human_review"; data: HumanReviewData }
+  | { type: "HitlResume"; data: HitlResumeData }
   | { type: "TaskList" }
   | { type: "ContextCompacting"; done: boolean }
   | { type: "SlideOutline"; data: SlideOutlineData }
   | { type: "SlideDesignSystem"; data: SlideDesignSystemData }
   | { type: "MemoryUpdate"; data: MemoryUpdateData }
+  | { type: "PromptEnhanced"; data: PromptEnhancedData }
+  | { type: "GenerationArtifact"; data: GenerationArtifactData }
   | { type: "SheetArtifact"; data: SheetArtifactData }
   | { type: "SheetPlan"; data: SheetPlanData }
   | { type: "AgentThinking"; phase?: string; hint?: string; items?: string[] };
@@ -472,6 +663,18 @@ function ensureAgentThinking(blocks: ContentBlock[], phase?: string, hint?: stri
   return [...blocks, { type: "AgentThinking", phase, hint, items: [] }];
 }
 
+function isSlideGenerationTurn(blocks: ContentBlock[]): boolean {
+  return blocks.some((b) => b.type === "SlideOutline" || b.type === "SlideDesignSystem");
+}
+
+function ensureSlideWorkersAllocating(blocks: ContentBlock[]): ContentBlock[] {
+  return ensureAgentThinking(
+    blocks,
+    "slide_workers_allocating",
+    "正在启用页面制作 Sub-Agent\n正在拆解页面任务并启动并行创作",
+  );
+}
+
 // R20-F: 按 matcher（key 函数）upsert —— 已存在匹配项则替换，否则追加。
 // 用于 DataUploaded/DataProfiled 等同 asset_id 重复事件的去重。
 function upsertAgentThinkingItem(
@@ -509,41 +712,193 @@ function setTtftIfNeeded(message: Message, eventTimestamp: number): Message {
   };
 }
 
+// Extract the LangChain message_id shared by all blocks of a single HumanInput /
+// ConversationHistory user turn. Accepts both snake_case (JSON payload from
+// backend) and camelCase (protobuf-ts field mapping) keys.
+export function extractUserBlockMessageId(blocks: Array<Record<string, unknown>>): string | undefined {
+  for (const b of blocks) {
+    const mid =
+      (b.message_id as string | undefined) ??
+      (b.messageId as string | undefined);
+    if (typeof mid === "string" && mid.length > 0) return mid;
+  }
+  return undefined;
+}
+
+// Stable id for user messages derived from backend message_id so that
+// HumanInput replays can be matched against already-rendered history.
+export function userMessageIdFromBackend(backendMessageId: string): string {
+  return `user-${backendMessageId}`;
+}
+
+// §8.9: parse a HitlResume block payload from `HumanInput.blocks[]` or `turn.user[]`.
+export function parseHitlResumeBlock(d: Record<string, unknown>): ContentBlock | null {
+  const action = d.action;
+  if (action !== "approve" && action !== "modify" && action !== "reject") return null;
+  const resolvesEventId = typeof d.resolves_event_id === "string" ? d.resolves_event_id : "";
+  const feedback = typeof d.feedback === "string" && d.feedback.length > 0 ? d.feedback : undefined;
+  const modifyData = d.modify_data && typeof d.modify_data === "object" && !Array.isArray(d.modify_data)
+    ? (d.modify_data as Record<string, unknown>)
+    : null;
+  return {
+    type: "HitlResume",
+    data: { action, resolves_event_id: resolvesEventId, feedback, modify_data: modifyData },
+  };
+}
+
+// Apply HitlResume.modify_data onto the matching HumanReview's payload so the
+// existing renderer (e.g. MaterialSupplementRenderer) reflects the user's
+// decision automatically. The merge strategy is **review_type-dependent** per
+// spec §8.9 — naive shallow merge would corrupt material_supplement (drops
+// candidates), so each type is handled explicitly.
+function applyModifyDataToPayload(
+  payload: Record<string, unknown>,
+  modifyData: Record<string, unknown>,
+): Record<string, unknown> {
+  const reviewType = typeof payload.review_type === "string" ? payload.review_type : "";
+  const dataKey = payload.details !== undefined ? "details" : "data";
+  const inner = (payload[dataKey] ?? {}) as Record<string, unknown>;
+
+  // material_supplement: modify_data only carries `slots[i].selected_index`;
+  // candidates live exclusively on the original review (per spec — avoids
+  // duplicating url data). Per-slot overwrite preserves candidates so the
+  // existing image-picker renderer naturally highlights the user's choice.
+  if (reviewType === "material_supplement") {
+    const modSlots = Array.isArray(modifyData.slots) ? modifyData.slots as Array<Record<string, unknown>> : null;
+    if (!modSlots) return payload;
+    const origSlots = Array.isArray(inner.slots) ? inner.slots as Array<Record<string, unknown>> : [];
+    const mergedSlots = origSlots.map((slot, i) => {
+      const upd = modSlots[i];
+      if (!upd || typeof upd.selected_index !== "number") return slot;
+      return { ...slot, selected_index: upd.selected_index };
+    });
+    return { ...payload, [dataKey]: { ...inner, slots: mergedSlots } };
+  }
+
+  // research_plan / batch_generation_plan: modify_data ships full top-level
+  // replacement structures (e.g. `{tasks: [...]}` or `{items: [...]}` already
+  // contain complete records), so shallow merge is correct here.
+  return { ...payload, [dataKey]: { ...inner, ...modifyData } };
+}
+
+// §8.9 #4: scan all messages, flip `human_review` blocks whose event_id
+// matches any `HitlResume.resolves_event_id` in the new user turn AND merge
+// action / feedback / (review-type-aware) modify_data onto the card so its
+// renderer shows the decision inline (no separate user-side chip).
+export function resolveReviewsByHitlBlocks(messages: Message[], hitlBlocks: ContentBlock[]): Message[] {
+  const byEventId = new Map<string, HitlResumeData>();
+  for (const b of hitlBlocks) {
+    if (b.type === "HitlResume" && b.data.resolves_event_id) {
+      byEventId.set(b.data.resolves_event_id, b.data);
+    }
+  }
+  if (byEventId.size === 0) return messages;
+  let touched = false;
+  const next = messages.map((m) => {
+    let blockChanged = false;
+    const blocks = m.blocks.map((b) => {
+      if (b.type !== "human_review") return b;
+      const eid = b.data.event_id;
+      if (!eid) return b;
+      const hitl = byEventId.get(eid);
+      if (!hitl) return b;
+      if (b.data.state === "decided" && b.data.resumeAction === hitl.action && b.data.resumeFeedback === hitl.feedback) return b;
+      blockChanged = true;
+      const mergedPayload = hitl.modify_data
+        ? applyModifyDataToPayload(b.data.payload, hitl.modify_data)
+        : b.data.payload;
+      return {
+        type: "human_review",
+        data: {
+          ...b.data,
+          payload: mergedPayload,
+          state: "decided",
+          resumeAction: hitl.action,
+          resumeFeedback: hitl.feedback,
+        },
+      } as ContentBlock;
+    });
+    if (!blockChanged) return m;
+    touched = true;
+    return { ...m, blocks };
+  });
+  return touched ? next : messages;
+}
+
 export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, eventTimestamp = Date.now()): Message[] {
   const msgs = [...messages];
 
-  // HumanInput: insert user message before the trailing assistant message (ResumeStream replay)
+  // HumanInput: inserted as the first frame of every Resume (spec §6.5). Duplicates
+  // are expected on mid-stream reconnects and on refreshes where the turn was
+  // already DB-persisted, so the handler is idempotent by backend message_id.
   if (event.event.case === "custom") {
     const custom = event.event.value;
     if (custom.type === "HumanInput") {
       const payload = asRecord(tryDecodeJson(custom.payload));
-      const blocks = (payload.blocks as { type: string; data: unknown }[]) ?? [];
-      const userText = blocks
+      const rawBlocks = (payload.blocks as Array<Record<string, unknown>>) ?? [];
+      const backendMsgId = extractUserBlockMessageId(rawBlocks);
+      const userMsgId = backendMsgId ? userMessageIdFromBackend(backendMsgId) : nextMessageId();
+
+      // Case 1 — message already in the list under the backend-derived id
+      // (came from parseHistoryTurns after a refresh, or from an earlier
+      // Resume retry). Replay is equivalent; skip the duplicate.
+      if (backendMsgId && msgs.some((m) => m.role === "user" && m.id === userMsgId)) {
+        return msgs;
+      }
+
+      const userText = rawBlocks
         .filter((b) => b.type === "Message")
-        .map((b) => ((b.data as Record<string, unknown>)?.content as string) ?? "")
+        .map((b) => ((asRecord(b.data).content as string) ?? ""))
         .join("\n");
-      const fileBlocks = blocks
+      const fileBlocks = rawBlocks
         .filter((b) => b.type === "File")
         .map((b) => asFileData(b.data))
         .filter((b): b is FileData => b !== null)
         .map((data) => ({ type: "File", data }) as ContentBlock);
-      if (userText || fileBlocks.length > 0) {
-        const userMsg: Message = {
-          id: nextMessageId(), role: "user",
-          blocks: [
-            ...(userText ? [{ type: "Message", content: userText } as ContentBlock] : []),
-            ...fileBlocks,
-          ],
-          nodes: [], workers: {}, sources: [],
-        };
-        const lastIdx = msgs.length - 1;
-        if (msgs[lastIdx]?.role === "assistant") {
-          msgs.splice(lastIdx, 0, userMsg);
-        } else {
-          msgs.push(userMsg);
-        }
+      // §8.9: HitlResumeStream 首帧的 user blocks[0] = HitlResume(action, resolves_event_id, ...)
+      const hitlBlocks: ContentBlock[] = rawBlocks
+        .filter((b) => b.type === "HitlResume")
+        .map((b) => parseHitlResumeBlock(asRecord(b.data)))
+        .filter((b): b is ContentBlock => b !== null);
+      if (!userText && fileBlocks.length === 0 && hitlBlocks.length === 0) return msgs;
+
+      const lastIdx = msgs.length - 1;
+      const trailingAssistantIdx = msgs[lastIdx]?.role === "assistant" ? lastIdx : -1;
+      const candidateIdx = trailingAssistantIdx >= 0 ? trailingAssistantIdx - 1 : lastIdx;
+      const candidate = msgs[candidateIdx];
+
+      // Case 2 — mid-stream reconnect: addUserMessage pushed a user bubble with
+      // a local id (e.g. "msg-…") before the disconnect, and that message is
+      // still the one immediately before the trailing assistant. Adopt the
+      // backend id so future replays hit Case 1 instead of duplicating.
+      if (
+        backendMsgId &&
+        candidate &&
+        candidate.role === "user" &&
+        !candidate.id.startsWith("user-")
+      ) {
+        msgs[candidateIdx] = { ...candidate, id: userMsgId };
+        return msgs;
       }
-      return msgs;
+
+      // Case 3 — genuinely new; insert before the trailing assistant or at the end.
+      const userMsg: Message = {
+        id: userMsgId,
+        role: "user",
+        blocks: [
+          ...(userText ? [{ type: "Message", content: userText } as ContentBlock] : []),
+          ...fileBlocks,
+          ...hitlBlocks,
+        ],
+        nodes: [], workers: {}, sources: [],
+      };
+      if (trailingAssistantIdx >= 0) {
+        msgs.splice(trailingAssistantIdx, 0, userMsg);
+      } else {
+        msgs.push(userMsg);
+      }
+      // §8.9 #4: flip matching HumanReview cards via resolves_event_id reverse-link.
+      return resolveReviewsByHitlBlocks(msgs, hitlBlocks);
     }
   }
 
@@ -591,11 +946,15 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       const tc = event.event.value;
       const input = asRecord(tryDecodeJson(tc.toolInput));
       const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+      const shouldShowSlideWorkerHint = tc.toolName === "spawn_worker" && isSlideGenerationTurn(updated.blocks);
       updated.blocks = removeAgentThinking(updated.blocks);
       updated.blocks.push({
         type: "ToolCallStart",
         data: { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
       });
+      if (shouldShowSlideWorkerHint) {
+        updated.blocks = ensureSlideWorkersAllocating(updated.blocks);
+      }
       updated.ttftMs = ttftUpdated.ttftMs;
       break;
     }
@@ -648,7 +1007,8 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
     }
     case "custom": {
       const custom = event.event.value;
-      const payload = unwrapEmitEvent(asRecord(tryDecodeJson(custom.payload)));
+      const rawPayload = asRecord(tryDecodeJson(custom.payload));
+      const payload = unwrapEmitEvent(rawPayload);
 
       // ── Sub-agent typed event passthrough ──
       // SuperAgent 把 SheetAgent 的 planner 流式事件用 custom 通道转发出来,
@@ -679,11 +1039,15 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
           typeof rawInput === "string" ? tryDecodeJson(rawInput) : rawInput,
         );
         const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+        const shouldShowSlideWorkerHint = toolName === "spawn_worker" && isSlideGenerationTurn(updated.blocks);
         updated.blocks = removeAgentThinking(updated.blocks);
         updated.blocks.push({
           type: "ToolCallStart",
           data: { toolCallId, toolName, toolInput: input },
         });
+        if (shouldShowSlideWorkerHint) {
+          updated.blocks = ensureSlideWorkersAllocating(updated.blocks);
+        }
         updated.ttftMs = ttftUpdated.ttftMs;
         break;
       }
@@ -735,9 +1099,12 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       }
 
       if (custom.type === "HumanReview") {
+        // §8.9: capture envelope event_id so a downstream HitlResume block
+        // (with `resolves_event_id`) can flip this card's state.
+        const eventId = typeof rawPayload.event_id === "string" ? rawPayload.event_id : undefined;
         updated.blocks.push({
           type: "human_review",
-          data: { payload, resolved: false },
+          data: { payload, state: "pending", event_id: eventId },
         });
         break;
       }
@@ -767,6 +1134,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       }
 
       if (custom.type === "OutlineGenerated") {
+        updated.blocks = removeAgentThinking(updated.blocks);
         updated.blocks.push({
           type: "SlideOutline",
           data: { outline: (payload.outline as Record<string, unknown>) ?? {} },
@@ -775,6 +1143,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       }
 
       if (custom.type === "DesignSystemGenerated") {
+        updated.blocks = removeAgentThinking(updated.blocks);
         updated.blocks.push({
           type: "SlideDesignSystem",
           data: { summary: (payload.summary as string) ?? "" },
@@ -791,6 +1160,47 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
             data: { field: field as "soul" | "identity", content },
           });
         }
+        break;
+      }
+
+      if (custom.type === "PromptEnhanced") {
+        updated.blocks.push({
+          type: "PromptEnhanced",
+          data: {
+            originalPrompt: (payload.original_prompt as string) ?? "",
+            enhancedPrompt: (payload.enhanced_prompt as string) ?? "",
+            message: payload.message as string | undefined,
+            mediaType: payload.media_type as string | undefined,
+            style: payload.style as string | undefined,
+          },
+        });
+        break;
+      }
+
+      // GenerationArtifact carries the final card payload; envelope event_id is
+      // the global handle. wire_type fixed to "GenerationArtifact"; `kind`
+      // discriminates report/image/video. We replace the matching tool's
+      // ToolCallStart skeleton in-place so the chat shows one card, not
+      // skeleton + final.
+      if (custom.type === "GenerationArtifact") {
+        const data = parseGenerationArtifact(rawPayload, payload);
+        if (!data) break;
+        const block: ContentBlock = { type: "GenerationArtifact", data };
+        const targetToolName = KIND_TO_TOOL_NAME[data.kind];
+        let replaced = false;
+        for (let i = updated.blocks.length - 1; i >= 0; i--) {
+          const b = updated.blocks[i];
+          if (b.type === "ToolCallStart" && b.data.toolName === targetToolName) {
+            updated.blocks = [
+              ...updated.blocks.slice(0, i),
+              block,
+              ...updated.blocks.slice(i + 1),
+            ];
+            replaced = true;
+            break;
+          }
+        }
+        if (!replaced) updated.blocks.push(block);
         break;
       }
 
@@ -815,10 +1225,14 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
           : [];
         const phaseHint: Record<string, string> = {
           ingesting_uploads: "正在为您接收上传的文件",
+          slide_outline_generating: "正在生成 PPT 大纲\n正在分析主题、受众、页数与章节结构",
+          slide_design_generating: "正在启动风格设计\n正在制定版式、配色与视觉规范",
+          slide_workers_allocating: "正在启用页面制作 Sub-Agent\n正在拆解页面任务并启动并行创作",
         };
         const hint = phaseHint[phase] ?? "";
         if (!hint) break;  // 未知 phase 不打扰
-        const toolsSuffix = visibleTools.length > 0
+        const shouldShowTools = phase === "ingesting_uploads";
+        const toolsSuffix = shouldShowTools && visibleTools.length > 0
           ? `（${visibleTools.slice(0, 3).join("、")}${visibleTools.length > 3 ? " 等" : ""}）`
           : "";
         updated.blocks = ensureAgentThinking(updated.blocks, phase, hint + toolsSuffix);
@@ -1085,7 +1499,8 @@ interface ConversationStore {
   setError: (err: string | null) => void;
   addUserMessage: (content: string, files?: ChatAttachment[]) => void;
   startAssistantMessage: (requestStartedAt?: number) => void;
-  resolveHumanReview: () => void;
+  resolveHumanReview: (action: HitlAction, feedback?: string) => void;
+  dismissPendingHumanReviews: () => void;
   removeLastRound: () => void;
   removeLastAssistantMessage: () => void;
   setMessages: (messages: Message[]) => void;
@@ -1316,7 +1731,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
       set({ messages: msgs, pendingTextQueue: newQueue });
     },
 
-    resolveHumanReview: () =>
+    resolveHumanReview: (action, feedback) =>
       set((s) => {
         const messages = [...s.messages];
         const last = messages[messages.length - 1];
@@ -1324,13 +1739,39 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         const blocks = [...last.blocks];
         for (let i = blocks.length - 1; i >= 0; i--) {
           const block = blocks[i];
-          if (block.type === "human_review" && !block.data.resolved) {
-            blocks[i] = { type: "human_review", data: { ...block.data, resolved: true } };
+          if (block.type === "human_review" && block.data.state === "pending") {
+            blocks[i] = {
+              type: "human_review",
+              data: { ...block.data, state: "decided", resumeAction: action, resumeFeedback: feedback },
+            };
             break;
           }
         }
         messages[messages.length - 1] = { ...last, blocks };
         return { messages };
+      }),
+
+    // §8.9 IGNORED: user sent a normal ChatStream while a HumanReview was
+    // pending — backend will mark the old turn `ignored`. Optimistically grey
+    // out any pending cards locally so the UI flips immediately.
+    dismissPendingHumanReviews: () =>
+      set((s) => {
+        let touched = false;
+        const messages = s.messages.map((m) => {
+          let blockChanged = false;
+          const blocks = m.blocks.map((b) => {
+            if (b.type !== "human_review" || b.data.state !== "pending") return b;
+            blockChanged = true;
+            return {
+              type: "human_review",
+              data: { ...b.data, state: "ignored" },
+            } as ContentBlock;
+          });
+          if (!blockChanged) return m;
+          touched = true;
+          return { ...m, blocks };
+        });
+        return touched ? { messages } : s;
       }),
 
     removeLastRound: () =>

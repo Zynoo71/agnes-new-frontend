@@ -1,16 +1,13 @@
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-const LOCAL_SLIDE_WORKSPACE_ROOT =
-  process.env.AGNES_LOCAL_SLIDE_WORKSPACE_ROOT ??
-  path.resolve(__dirname, "../agnes_core/services/kw-agent-service/.super_agent/workspace");
-const LOCAL_SLIDE_PREFIX = "/__local_slide_workspace/";
 const DEV_CREATE_CONVERSATION_PROXY_PATH = "/__dev_agnes_conversation";
+const DEV_SANDBOX_PREVIEW_PROXY_PATH = "/__dev_agnes_sandbox_file/";
 const DEV_PRESIGN_PROXY_PATH = "/__dev_chat_attachment_presign";
-const DEV_UPLOAD_PROXY_PATH = "/__dev_upload_proxy";
+const UPLOAD_PROXY_PATH = "/__upload_proxy";
+const DEFAULT_BFF_BASE_URL = "https://api-agnes-dev.kiwiar.com";
 // Local browser upload debugging should not require agents to mint short-lived JWTs by hand.
 // When the page runs on localhost/127.0.0.1, the Vite dev server logs into the remote dev BFF
 // on demand and proxies /file/presigned-url plus the subsequent object PUT upload.
@@ -31,70 +28,12 @@ function getDevLane(req: { headers: Record<string, unknown> }): string {
   return DEV_LANE;
 }
 
-function contentTypeFor(filePath: string): string {
-  const ext = path.extname(filePath).toLowerCase();
-  switch (ext) {
-    case ".html":
-      return "text/html; charset=utf-8";
-    case ".json":
-      return "application/json; charset=utf-8";
-    case ".txt":
-      return "text/plain; charset=utf-8";
-    case ".js":
-      return "application/javascript; charset=utf-8";
-    case ".css":
-      return "text/css; charset=utf-8";
-    case ".svg":
-      return "image/svg+xml";
-    case ".png":
-      return "image/png";
-    case ".jpg":
-    case ".jpeg":
-      return "image/jpeg";
-    case ".webp":
-      return "image/webp";
-    case ".gif":
-      return "image/gif";
-    default:
-      return "application/octet-stream";
+function getAppTimezone(req: { headers: Record<string, unknown> }): string {
+  const tz = req.headers["x-app-timezone"];
+  if (typeof tz === "string" && tz.trim()) {
+    return tz.trim();
   }
-}
-
-function localSlideWorkspacePlugin(): Plugin {
-  const workspaceRoot = path.resolve(LOCAL_SLIDE_WORKSPACE_ROOT);
-
-  return {
-    name: "local-slide-workspace",
-    configureServer(server) {
-      server.middlewares.use(async (req, res, next) => {
-        const rawUrl = req.url ? req.url.split("?")[0] : "";
-        if (!rawUrl.startsWith(LOCAL_SLIDE_PREFIX)) {
-          next();
-          return;
-        }
-
-        const relativePath = decodeURIComponent(rawUrl.slice(LOCAL_SLIDE_PREFIX.length));
-        const filePath = path.resolve(workspaceRoot, relativePath);
-        const allowedPrefix = `${workspaceRoot}${path.sep}`;
-        if (filePath !== workspaceRoot && !filePath.startsWith(allowedPrefix)) {
-          res.statusCode = 403;
-          res.end("Forbidden");
-          return;
-        }
-
-        try {
-          const content = await readFile(filePath);
-          res.statusCode = 200;
-          res.setHeader("Content-Type", contentTypeFor(filePath));
-          res.setHeader("Cache-Control", "no-store");
-          res.end(content);
-        } catch {
-          res.statusCode = 404;
-          res.end("Not found");
-        }
-      });
-    },
-  };
+  return "";
 }
 
 function parseJwtExpiry(token: string): number {
@@ -176,6 +115,7 @@ function devPresignProxyPlugin(): Plugin {
         try {
           const token = await getDevBffToken();
           const devLane = getDevLane(req);
+          const timezone = getAppTimezone(req);
           const upstream = await fetch(`${DEV_BFF_BASE_URL}/api/v1/file/presigned-url`, {
             method: "POST",
             headers: {
@@ -184,6 +124,7 @@ function devPresignProxyPlugin(): Plugin {
               Accept: "application/json",
               "X-App": DEV_BFF_APP_ID,
               ...(devLane ? { "x-dev-lane": devLane } : {}),
+              ...(timezone ? { "x-app-timezone": timezone } : {}),
             },
             body: Buffer.concat(chunks),
           });
@@ -230,6 +171,7 @@ function devCreateConversationProxyPlugin(): Plugin {
         try {
           const token = await getDevBffToken();
           const devLane = getDevLane(req);
+          const timezone = getAppTimezone(req);
           const upstream = await fetch(`${DEV_BFF_BASE_URL}/api/v1/agnes/conversation`, {
             method: "POST",
             headers: {
@@ -238,6 +180,7 @@ function devCreateConversationProxyPlugin(): Plugin {
               Accept: "application/json",
               "X-App": DEV_BFF_APP_ID,
               ...(devLane ? { "x-dev-lane": devLane } : {}),
+              ...(timezone ? { "x-app-timezone": timezone } : {}),
             },
             body: Buffer.concat(chunks),
           });
@@ -260,13 +203,61 @@ function devCreateConversationProxyPlugin(): Plugin {
   };
 }
 
+function devSandboxPreviewProxyPlugin(): Plugin {
+  return {
+    name: "dev-sandbox-preview-proxy",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const rawUrl = req.url ? req.url.split("?")[0] : "";
+        if (!rawUrl.startsWith(DEV_SANDBOX_PREVIEW_PROXY_PATH)) {
+          next();
+          return;
+        }
+        if (req.method !== "GET") {
+          res.statusCode = 405;
+          res.end("Method Not Allowed");
+          return;
+        }
+
+        try {
+          const devLane = getDevLane(req);
+          const upstream = await fetch(
+            `${process.env.VITE_BFF_BASE_URL || DEFAULT_BFF_BASE_URL}/api/v1/agnes/conversation/sandbox-file/${rawUrl.slice(DEV_SANDBOX_PREVIEW_PROXY_PATH.length)}`,
+            {
+              method: "GET",
+              headers: {
+                Accept: "*/*",
+                "X-App": process.env.VITE_APP_ID || DEV_BFF_APP_ID,
+                ...(devLane ? { "x-dev-lane": devLane } : {}),
+              },
+            },
+          );
+          const responseBody = Buffer.from(await upstream.arrayBuffer());
+          res.statusCode = upstream.status;
+          upstream.headers.forEach((value, key) => {
+            if (key.toLowerCase() === "content-length") {
+              return;
+            }
+            res.setHeader(key, value);
+          });
+          res.end(responseBody);
+        } catch (error) {
+          res.statusCode = 502;
+          res.setHeader("Content-Type", "text/plain; charset=utf-8");
+          res.end(error instanceof Error ? error.message : "Sandbox preview proxy failed");
+        }
+      });
+    },
+  };
+}
+
 function devUploadProxyPlugin(): Plugin {
   return {
     name: "dev-upload-proxy",
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const rawUrl = req.url ? req.url.split("?")[0] : "";
-        if (rawUrl !== DEV_UPLOAD_PROXY_PATH) {
+        if (rawUrl !== UPLOAD_PROXY_PATH) {
           next();
           return;
         }
@@ -342,8 +333,8 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    localSlideWorkspacePlugin(),
     devCreateConversationProxyPlugin(),
+    devSandboxPreviewProxyPlugin(),
     devPresignProxyPlugin(),
     devUploadProxyPlugin(),
   ],
@@ -355,13 +346,13 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
     proxy: {
-      "/api/v1/file": {
-        target: "https://api-agnes-dev.kiwiar.com",
+      "/api/v1/agnes": {
+        target: process.env.VITE_BFF_BASE_URL || DEV_BFF_BASE_URL,
         changeOrigin: true,
         secure: true,
       },
-      "/kw_agent_service": {
-        target: process.env.VITE_API_BASE_URL || "https://agnesx-dev-sg.kiwiar.com",
+      "/api/v1/file": {
+        target: "https://api-agnes-dev.kiwiar.com",
         changeOrigin: true,
         secure: true,
       },

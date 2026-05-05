@@ -26,12 +26,28 @@ export function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
     return () => clearTimeout(timer);
   }, [isHistory, toolResult, userToggled]);
 
+  const toggleExpanded = () => {
+    if (!toolResult) return;
+    setUserToggled(true);
+    setManualExpanded(!expanded);
+  };
+
+  const handleHeaderKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!toolResult) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    toggleExpanded();
+  };
+
   const resultCount = Array.isArray(toolResult?.results) ? toolResult.results.length : 0;
 
   return (
     <div className="rounded-xl border border-border-light bg-surface-alt p-3.5 text-sm shadow-sm">
-      <button
-        onClick={() => { if (toolResult) { setUserToggled(true); setManualExpanded(!expanded); } }}
+      <div
+        role={toolResult ? "button" : undefined}
+        tabIndex={toolResult ? 0 : undefined}
+        onClick={toggleExpanded}
+        onKeyDown={handleHeaderKeyDown}
         className="flex items-center gap-2 w-full text-left"
       >
         <div className="w-5 h-5 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
@@ -55,7 +71,7 @@ export function WebSearchRenderer({ toolInput, toolResult }: ToolRenderProps) {
             </svg>
           </span>
         )}
-      </button>
+      </div>
 
       {expanded && toolResult && Array.isArray(toolResult.results) && (
         <div className="mt-2 space-y-1.5">

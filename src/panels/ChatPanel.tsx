@@ -5,12 +5,18 @@ import { useChat } from "@/hooks/useChat";
 import { useHealthCheck, type HealthInfo } from "@/hooks/useHealthCheck";
 import { uploadChatAttachment } from "@/api/chatAttachment";
 import { MessageBubble } from "@/components/MessageBubble";
+import { ArtifactsBar } from "@/components/ArtifactsBar";
 import { EventStream } from "@/components/EventStream";
 import { SystemPromptSelector } from "@/components/SystemPromptSelector";
+import { ModelSelector } from "@/components/ModelSelector";
+import { useModelStore } from "@/stores/modelStore";
+import { ChatSkillsPicker } from "@/components/ChatSkillsPicker";
+import { hydrateConversationSkillsFromServer } from "@/lib/conversationSkillSync";
+import { syncExtraContextDisallowedSkills } from "@/config/agentAdditionalDisallowedSkills";
 import type { ChatAttachment } from "@/types/chatAttachment";
 import type { AgentTask, ContentBlock, Message, SourceCitation, WorkerState } from "@/stores/conversationStore";
 
-const AGENT_TYPES = ["super", "search", "research", "slide", "design", "sheet", "pixa"] as const;
+const AGENT_TYPES = ["super", "search", "research", "slide", "design", "sheet"] as const;
 
 const SCROLL_HINTS_ROW1 = [
   "Search the latest AI news",
@@ -38,19 +44,6 @@ const HEALTH_CONFIG = {
   error: { dot: "bg-red-500", color: "#ef4444", label: "Disconnected" },
   checking: { dot: "bg-yellow-500", color: "#eab308", label: "Connecting" },
 } as const;
-
-type QueuedMessage = {
-  id: string;
-  text: string;
-  files: ChatAttachment[];
-};
-
-let queuedMessageCounter = 0;
-
-function nextQueuedMessageId() {
-  queuedMessageCounter += 1;
-  return `queued-${Date.now()}-${queuedMessageCounter}`;
-}
 
 function stringifyForExport(value: unknown): string {
   if (typeof value === "string") return value;
@@ -194,7 +187,7 @@ function renderHtmlBlock(block: ContentBlock, tasks: AgentTask[]): string {
       return `
         <section class="section-block">
           <h4>Human Review</h4>
-          <div class="meta-grid">${renderHtmlDataList([{ label: "resolved", value: block.data.resolved ? "yes" : "no" }])}</div>
+          <div class="meta-grid">${renderHtmlDataList([{ label: "state", value: block.data.state }])}</div>
           <div class="mini-block"><div class="mini-label">Payload</div>${renderHtmlCodeBlock(stringifyForExport(block.data.payload), "json")}</div>
         </section>
       `;
@@ -660,7 +653,6 @@ export function ChatPanel() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<ChatAttachment[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
-  const [queuedMessages, setQueuedMessages] = useState<QueuedMessage[]>([]);
   const [isExportingHtml, setIsExportingHtml] = useState(false);
   const [exportedHtmlUrl, setExportedHtmlUrl] = useState<string | null>(null);
   const [copiedExportUrl, setCopiedExportUrl] = useState(false);
@@ -668,22 +660,30 @@ export function ChatPanel() {
   const pendingScrollRef = useRef(false);
   const lastAutoScrollRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isDrainingQueueRef = useRef(false);
 
   const health = useHealthCheck();
 
-  const hasPendingReview = messages.some(
-    (m) => m.blocks.some((b) => b.type === "human_review" && !b.data.resolved)
-  );
-
   const isEmpty = messages.length === 0;
   const hasUserMessages = messages.some((m) => m.role === "user");
+
+  const lastPickAlias = useModelStore((s) => s.selectedAlias);
+  const conversations = useConversationListStore((s) => s.conversations);
+  const lockedAlias = conversationId
+    ? conversations.find((c) => c.id === conversationId)?.llmAlias ?? null
+    : null;
+  const displayAlias = lockedAlias ?? lastPickAlias;
 
   // Reset scroll state when conversation changes — force next scroll to bottom.
   useEffect(() => {
     isNearBottomRef.current = true;
     pendingScrollRef.current = true;
     setShowScrollBtn(false);
+  }, [conversationId]);
+
+  // 恢复本会话已持久化的 hub skill 选用（刷新 / 切换会话 / 新建会话后与 DB 对齐）
+  useEffect(() => {
+    if (!conversationId) return;
+    void hydrateConversationSkillsFromServer(conversationId);
   }, [conversationId]);
 
   // Auto-scroll via ResizeObserver: fires whenever the content div changes
@@ -727,17 +727,9 @@ export function ChatPanel() {
 
   const isComposingRef = useRef(false);
 
-  const enqueueMessage = useCallback((text: string, files: ChatAttachment[]) => {
-    setQueuedMessages((prev) => [...prev, { id: nextQueuedMessageId(), text, files }]);
-  }, []);
-
   const sendNow = useCallback(async (text: string, files: ChatAttachment[]) => {
     const trimmed = text.trim();
     if (!trimmed && files.length === 0) return;
-    if (hasPendingReview && files.length > 0) {
-      setError("Attachments are not supported while replying to a human review step.");
-      return;
-    }
 
     isNearBottomRef.current = true;
 
@@ -745,48 +737,22 @@ export function ChatPanel() {
       await createConversation();
     }
 
-    if (hasPendingReview) {
-      await hitlResume("modify", trimmed);
-      return;
-    }
-
+    // §8.9 IGNORED: typing in the chat input while a HumanReview is pending now
+    // bypasses the card — backend will mark the old turn `ignored`. The card
+    // itself owns approve/modify (see HumanReviewBlock). useChat.sendMessage
+    // optimistically greys out any pending review locally.
     await sendMessage(trimmed, files);
-  }, [conversationId, createConversation, hasPendingReview, hitlResume, sendMessage, setError]);
+  }, [conversationId, createConversation, sendMessage]);
 
   const handleSend = async (text?: string) => {
     const trimmed = (text ?? input).trim();
-    if ((!trimmed && pendingFiles.length === 0) || isUploadingFiles) return;
+    if ((!trimmed && pendingFiles.length === 0) || isUploadingFiles || isStreaming) return;
     const filesToSend = pendingFiles;
     setInput("");
     setPendingFiles([]);
-    if (isStreaming) {
-      enqueueMessage(trimmed, filesToSend);
-      return;
-    }
-
     await sendNow(trimmed, filesToSend);
     // ResizeObserver handles the scroll when content appears.
   };
-
-  useEffect(() => {
-    if (isStreaming || isUploadingFiles || queuedMessages.length === 0 || isDrainingQueueRef.current) {
-      return;
-    }
-
-    const [nextQueued] = queuedMessages;
-    if (!nextQueued) return;
-
-    isDrainingQueueRef.current = true;
-    setQueuedMessages((prev) => prev.slice(1));
-
-    void (async () => {
-      try {
-        await sendNow(nextQueued.text, nextQueued.files);
-      } finally {
-        isDrainingQueueRef.current = false;
-      }
-    })();
-  }, [isStreaming, isUploadingFiles, queuedMessages, sendNow]);
 
   const handleSelectFiles = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -817,38 +783,6 @@ export function ChatPanel() {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleRemoveQueuedMessage = useCallback((id: string) => {
-    setQueuedMessages((prev) => prev.filter((item) => item.id !== id));
-  }, []);
-
-  const handleEditQueuedMessage = useCallback((id: string) => {
-    setQueuedMessages((prev) => {
-      const index = prev.findIndex((item) => item.id === id);
-      if (index < 0) return prev;
-
-      const queued = prev[index];
-      const currentDraft = { text: input, files: pendingFiles };
-      const hasCurrentDraft = currentDraft.text.trim().length > 0 || currentDraft.files.length > 0;
-
-      setInput(queued.text);
-      setPendingFiles(queued.files);
-      requestAnimationFrame(() => textareaRef.current?.focus());
-
-      if (!hasCurrentDraft) {
-        return prev.filter((item) => item.id !== id);
-      }
-
-      return prev.map((item, itemIndex) => {
-        if (itemIndex !== index) return item;
-        return {
-          id: nextQueuedMessageId(),
-          text: currentDraft.text,
-          files: currentDraft.files,
-        };
-      });
-    });
-  }, [input, pendingFiles]);
-
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Check both standard isComposing and our ref for broader compatibility
     const isComposing = e.nativeEvent.isComposing || isComposingRef.current;
@@ -859,7 +793,7 @@ export function ChatPanel() {
   };
 
   const hasInput = input.trim().length > 0;
-  const canSend = (hasInput || pendingFiles.length > 0) && !isUploadingFiles;
+  const canSend = (hasInput || pendingFiles.length > 0) && !isUploadingFiles && !isStreaming;
 
   const handleExportHtml = useCallback(async () => {
     if (messages.length === 0 || isExportingHtml) return;
@@ -910,6 +844,8 @@ export function ChatPanel() {
               key={t}
               onClick={() => {
                 setAgentType(t);
+                const prevEc = useConversationStore.getState().extraContext;
+                useConversationStore.getState().setExtraContext(syncExtraContextDisallowedSkills(prevEc, t));
                 if (conversationId) useConversationListStore.getState().update(conversationId, { agentType: t });
               }}
               className={`px-2.5 py-1 text-xs font-medium rounded-full transition-all capitalize ${
@@ -933,58 +869,6 @@ export function ChatPanel() {
           disabled={hasUserMessages}
         />
       </div>
-      {queuedMessages.length > 0 && (
-        <div className="px-3 pt-2">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-2.5">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-amber-800/80">
-                Queue {queuedMessages.length}
-              </div>
-              <div className="text-[11px] text-amber-700/80">
-                Auto-send after current response finishes
-              </div>
-            </div>
-            <div className="space-y-2">
-              {queuedMessages.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-white/70 px-3 py-2"
-                >
-                  <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-100 text-[10px] font-semibold text-amber-900">
-                    {index + 1}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm text-text-primary">
-                      {item.text || "(attachments only)"}
-                    </div>
-                    {item.files.length > 0 && (
-                      <div className="mt-1 truncate text-[11px] text-amber-800/80">
-                        {item.files.map((file) => file.filename).join(", ")}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleEditQueuedMessage(item.id)}
-                      className="rounded-full px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveQueuedMessage(item.id)}
-                      className="rounded-full px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
       {pendingFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 px-3 pt-2">
           {pendingFiles.map((file, index) => (
@@ -1023,7 +907,7 @@ export function ChatPanel() {
           onKeyDown={handleKeyDown}
           onCompositionStart={() => { isComposingRef.current = true; }}
           onCompositionEnd={() => { isComposingRef.current = false; }}
-          placeholder={hasPendingReview ? "Type feedback to modify..." : isUploadingFiles ? "Uploading attachment..." : "Ask Agnes anything..."}
+          placeholder={isUploadingFiles ? "Uploading attachment..." : "Ask Agnes anything..."}
           rows={1}
           className="flex-1 resize-none bg-transparent py-2.5 px-4 text-sm
                      focus:outline-none disabled:opacity-40 placeholder:text-text-tertiary"
@@ -1037,7 +921,7 @@ export function ChatPanel() {
                 ? "bg-accent text-white hover:bg-accent-hover"
                 : "bg-text-tertiary/20 text-text-tertiary/50"
               }`}
-            title={isStreaming ? "Queue message" : "Send message"}
+            title="Send message"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
@@ -1061,13 +945,13 @@ export function ChatPanel() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={isStreaming || isUploadingFiles || hasPendingReview}
+          disabled={isStreaming || isUploadingFiles}
           className={`flex items-center gap-1 px-2 py-1 text-[11px] rounded-full transition-all ${
             pendingFiles.length > 0
               ? "bg-accent/10 text-accent"
               : "text-text-tertiary hover:text-text-secondary hover:bg-surface-hover"
           } disabled:cursor-not-allowed disabled:opacity-40`}
-          title={hasPendingReview ? "Attachments are unavailable during review replies" : "Upload file"}
+          title="Upload file"
         >
           {isUploadingFiles ? (
             <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -1099,6 +983,13 @@ export function ChatPanel() {
             : <span>Location</span>
           }
         </button>
+        {agentType === "super" && (
+          <ChatSkillsPicker
+            conversationId={conversationId}
+            disabled={isStreaming}
+            toolbar
+          />
+        )}
         {showLocation && (
           <LocationPopover
             city={(extraContext.city as string) ?? ""}
@@ -1130,6 +1021,16 @@ export function ChatPanel() {
           )}
 
           <div className="ml-auto flex items-center gap-2">
+            <ModelSelector
+              selectedAlias={displayAlias}
+              onChange={(alias) => {
+                useModelStore.getState().setAlias(alias);
+                if (conversationId) {
+                  useConversationListStore.getState().update(conversationId, { llmAlias: alias });
+                }
+              }}
+              disabled={hasUserMessages}
+            />
             <button
               onClick={() => void handleExportHtml()}
               disabled={isEmpty || isExportingHtml}
@@ -1225,9 +1126,9 @@ export function ChatPanel() {
           {showScrollBtn && !isEmpty && (
             <button
               onClick={scrollToBottom}
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-surface border border-border
-                         shadow-md flex items-center justify-center text-text-secondary hover:text-text-primary
-                         hover:shadow-lg transition-all animate-message-in"
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-surface/90 backdrop-blur border border-border
+                         shadow-lg flex items-center justify-center text-text-secondary hover:text-text-primary
+                         hover:shadow-xl transition-all animate-message-in"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
@@ -1238,6 +1139,7 @@ export function ChatPanel() {
 
         <div className="shrink-0 px-5 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
           <div className="max-w-2xl mx-auto">
+            <ArtifactsBar />
             {inputArea}
           </div>
         </div>
