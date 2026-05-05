@@ -663,6 +663,18 @@ function ensureAgentThinking(blocks: ContentBlock[], phase?: string, hint?: stri
   return [...blocks, { type: "AgentThinking", phase, hint, items: [] }];
 }
 
+function isSlideGenerationTurn(blocks: ContentBlock[]): boolean {
+  return blocks.some((b) => b.type === "SlideOutline" || b.type === "SlideDesignSystem");
+}
+
+function ensureSlideWorkersAllocating(blocks: ContentBlock[]): ContentBlock[] {
+  return ensureAgentThinking(
+    blocks,
+    "slide_workers_allocating",
+    "正在启用页面制作 Sub-Agent\n正在拆解页面任务并启动并行创作",
+  );
+}
+
 // R20-F: 按 matcher（key 函数）upsert —— 已存在匹配项则替换，否则追加。
 // 用于 DataUploaded/DataProfiled 等同 asset_id 重复事件的去重。
 function upsertAgentThinkingItem(
@@ -934,11 +946,15 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       const tc = event.event.value;
       const input = asRecord(tryDecodeJson(tc.toolInput));
       const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+      const shouldShowSlideWorkerHint = tc.toolName === "spawn_worker" && isSlideGenerationTurn(updated.blocks);
       updated.blocks = removeAgentThinking(updated.blocks);
       updated.blocks.push({
         type: "ToolCallStart",
         data: { toolCallId: tc.toolCallId, toolName: tc.toolName, toolInput: input },
       });
+      if (shouldShowSlideWorkerHint) {
+        updated.blocks = ensureSlideWorkersAllocating(updated.blocks);
+      }
       updated.ttftMs = ttftUpdated.ttftMs;
       break;
     }
@@ -1023,11 +1039,15 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
           typeof rawInput === "string" ? tryDecodeJson(rawInput) : rawInput,
         );
         const ttftUpdated = setTtftIfNeeded(updated, eventTimestamp);
+        const shouldShowSlideWorkerHint = toolName === "spawn_worker" && isSlideGenerationTurn(updated.blocks);
         updated.blocks = removeAgentThinking(updated.blocks);
         updated.blocks.push({
           type: "ToolCallStart",
           data: { toolCallId, toolName, toolInput: input },
         });
+        if (shouldShowSlideWorkerHint) {
+          updated.blocks = ensureSlideWorkersAllocating(updated.blocks);
+        }
         updated.ttftMs = ttftUpdated.ttftMs;
         break;
       }
@@ -1114,6 +1134,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       }
 
       if (custom.type === "OutlineGenerated") {
+        updated.blocks = removeAgentThinking(updated.blocks);
         updated.blocks.push({
           type: "SlideOutline",
           data: { outline: (payload.outline as Record<string, unknown>) ?? {} },
@@ -1122,6 +1143,7 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
       }
 
       if (custom.type === "DesignSystemGenerated") {
+        updated.blocks = removeAgentThinking(updated.blocks);
         updated.blocks.push({
           type: "SlideDesignSystem",
           data: { summary: (payload.summary as string) ?? "" },
@@ -1203,10 +1225,14 @@ export function applyStreamEvent(messages: Message[], event: AgentStreamEvent, e
           : [];
         const phaseHint: Record<string, string> = {
           ingesting_uploads: "正在为您接收上传的文件",
+          slide_outline_generating: "正在生成 PPT 大纲\n正在分析主题、受众、页数与章节结构",
+          slide_design_generating: "正在启动风格设计\n正在制定版式、配色与视觉规范",
+          slide_workers_allocating: "正在启用页面制作 Sub-Agent\n正在拆解页面任务并启动并行创作",
         };
         const hint = phaseHint[phase] ?? "";
         if (!hint) break;  // 未知 phase 不打扰
-        const toolsSuffix = visibleTools.length > 0
+        const shouldShowTools = phase === "ingesting_uploads";
+        const toolsSuffix = shouldShowTools && visibleTools.length > 0
           ? `（${visibleTools.slice(0, 3).join("、")}${visibleTools.length > 3 ? " 等" : ""}）`
           : "";
         updated.blocks = ensureAgentThinking(updated.blocks, phase, hint + toolsSuffix);

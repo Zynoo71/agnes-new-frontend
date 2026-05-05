@@ -627,6 +627,9 @@ const PHASE_COLOR: Record<string, string> = {
   profiling: "text-sky-500",
   executing: "text-emerald-500",
   delivering: "text-rose-500",
+  slide_outline_generating: "text-teal-500",
+  slide_design_generating: "text-violet-500",
+  slide_workers_allocating: "text-orange-500",
 };
 
 function AgentThinkingBlock({
@@ -642,6 +645,8 @@ function AgentThinkingBlock({
   const colorCls = PHASE_COLOR[phase ?? "thinking"] ?? "text-amber-500";
   const dotColor = colorCls.replace("text-", "bg-");
   const currentText = hint || (list.length === 0 ? "" : "");
+  const [currentTitle, ...currentDetailParts] = currentText.split("\n");
+  const currentDetail = currentDetailParts.join("\n");
 
   // R20-F: 超 5 行折叠（默认收起，留最后 3 行 + 折叠提示）
   const COLLAPSE_THRESHOLD = 5;
@@ -684,7 +689,12 @@ function AgentThinkingBlock({
       {currentText && (
         <div className="flex items-start gap-2 leading-5">
           <span className={`mt-[7px] inline-block w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0 animate-pulse`} />
-          <span className={colorCls}>{currentText}</span>
+          <span className="flex min-w-0 flex-col">
+            <span className={colorCls}>{currentTitle}</span>
+            {currentDetail && (
+              <span className="text-text-tertiary whitespace-pre-line">{currentDetail}</span>
+            )}
+          </span>
         </div>
       )}
     </div>
