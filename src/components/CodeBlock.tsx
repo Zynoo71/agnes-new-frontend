@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Highlighter } from "shiki";
+import { HtmlPreviewFrame } from "@/components/HtmlPreviewFrame";
 
 let highlighterPromise: Promise<Highlighter> | null = null;
 const loadedLangs = new Set<string>();
@@ -126,9 +127,10 @@ export function CodeBlock({ language, children }: { language?: string; children:
       </div>
 
       {isHtml && tab === "preview" ? (
-        <iframe
+        <HtmlPreviewFrame
           srcDoc={children}
           sandbox="allow-scripts"
+          title="HTML preview"
           className="w-full border-0 bg-white"
           style={{ height: "60vh" }}
         />

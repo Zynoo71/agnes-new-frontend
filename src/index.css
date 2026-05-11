@@ -82,8 +82,9 @@ button, select, input, textarea {
   transition: all 0.15s ease;
 }
 
-/* Textarea auto-grow helper */
-textarea {
+/* Textarea auto-grow helper —— 只对没加 .fixed-size 的 textarea 生效，
+   AgnesHelp 这种"大输入框"必须用固定高度，否则会被 max-height: 200px 顶死。 */
+textarea:not(.fixed-size) {
   field-sizing: content;
   min-height: 44px;
   max-height: 200px;
@@ -243,6 +244,87 @@ textarea {
 .prose-agent th, .prose-agent td { border: 1px solid var(--color-border-light); padding: 0.4em 0.6em; text-align: left; }
 .prose-agent th { background: var(--color-surface-hover); font-weight: 600; }
 
+
+/* Rainbow flowing border — used by "Agnes Help" CTA in the skill editor.
+   做法：外层用渐变背景 + 大尺寸 background-size 做横向漂移；
+   再用 padding 留出"边框"，里层放白底按钮，盖住中间形成"环"。 */
+@keyframes rainbow-border-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.rainbow-border {
+  background: linear-gradient(
+    90deg,
+    #ff5f6d, #ffc371, #47e890, #38bdf8, #a855f7, #ec4899, #ff5f6d
+  );
+  background-size: 200% 100%;
+  animation: rainbow-border-flow 3s linear infinite;
+}
+
+/* Rainbow scrollbar — 配套 .rainbow-border 的滚动条；与外框同色系，垂直渐变 + 缓慢
+   流动，让"Agnes 的特殊能力"从边到滚动条都贯穿一致。仅 WebKit/Chromium 内核生效，
+   Firefox 用 scrollbar-color 兜底为 thin + 紫色。 */
+@keyframes rainbow-scrollbar-flow {
+  0% { background-position: 50% 0%; }
+  100% { background-position: 50% 200%; }
+}
+.rainbow-scrollbar {
+  scrollbar-color: #a855f7 transparent;
+  scrollbar-width: thin;
+}
+.rainbow-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.rainbow-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+.rainbow-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #ff5f6d, #ffc371, #47e890, #38bdf8, #a855f7, #ec4899, #ff5f6d
+  );
+  background-size: 100% 200%;
+  animation: rainbow-scrollbar-flow 4s linear infinite;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-surface, #ffffff);
+}
+.rainbow-scrollbar::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.08) saturate(1.1);
+}
+.rainbow-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 低调滚动条 —— 颜色与 border 同色，仅滚动时可见，给"普通输入框"用，
+   与 .rainbow-scrollbar（强调"特殊能力"场景）形成对比。 */
+.subtle-scrollbar {
+  scrollbar-color: var(--color-border, #e5e7eb) transparent;
+  scrollbar-width: thin;
+}
+.subtle-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.subtle-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+.subtle-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-border, #e5e7eb);
+  border-radius: 999px;
+  border: 1.5px solid var(--color-surface, #ffffff);
+}
+.subtle-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-light, #d1d5db);
+}
+.subtle-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 已通过上方 `textarea:not(.fixed-size)` 直接排除全局自动尺寸规则，
+   .fixed-size 自身不再需要任何额外样式 —— 浏览器默认 field-sizing 就是 fixed。 */
 
 /* Reasoning-specific overrides (tighter spacing) */
 .prose-reasoning { & p { margin: 0.3em 0; } }
