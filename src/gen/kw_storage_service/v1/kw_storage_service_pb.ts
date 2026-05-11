@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file kw_storage_service/v1/kw_storage_service.proto.
  */
 export const file_kw_storage_service_v1_kw_storage_service: GenFile = /*@__PURE__*/
-  fileDesc("Ci5rd19zdG9yYWdlX3NlcnZpY2UvdjEva3dfc3RvcmFnZV9zZXJ2aWNlLnByb3RvEhVrd19zdG9yYWdlX3NlcnZpY2UudjEi5AEKEFB1dE9iamVjdFJlcXVlc3QSDgoGYnVja2V0GAEgASgJEgsKA2tleRgCIAEoCRIMCgRkYXRhGAMgASgMEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRJHCghtZXRhZGF0YRgFIAMoCzI1Lmt3X3N0b3JhZ2Vfc2VydmljZS52MS5QdXRPYmplY3RSZXF1ZXN0Lk1ldGFkYXRhRW50cnkSFQoNcHJvdmlkZXJfaGludBgGIAEoCRovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiQgoRUHV0T2JqZWN0UmVzcG9uc2USDgoGYnVja2V0GAEgASgJEgsKA2tleRgCIAEoCRIQCghwcm92aWRlchgDIAEoCSIvChBHZXRPYmplY3RSZXF1ZXN0Eg4KBmJ1Y2tldBgBIAEoCRILCgNrZXkYAiABKAkivQEKFUdldE9iamVjdEJ5VVJMUmVxdWVzdBILCgN1cmwYASABKAkSGAoQZmFsbGJhY2tfdG9faHR0cBgCIAEoCBJMCghtZXRhZGF0YRgDIAMoCzI6Lmt3X3N0b3JhZ2Vfc2VydmljZS52MS5HZXRPYmplY3RCeVVSTFJlcXVlc3QuTWV0YWRhdGFFbnRyeRovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIQoRR2V0T2JqZWN0UmVzcG9uc2USDAoEZGF0YRgBIAEoDCKHAQoXR2V0T2JqZWN0QmFzZTY0UmVzcG9uc2USCwoDa2V5GAEgASgJEg8KB2NvbnRlbnQYAiABKAkSFAoMY29udGVudF90eXBlGAMgASgJEhoKEmRldGVjdGVkX21pbWVfdHlwZRgEIAEoCRIMCgRzaXplGAUgASgDEg4KBnNvdXJjZRgGIAEoCSIZChdHZXREZWZhdWx0QnVja2V0UmVxdWVzdCIqChhHZXREZWZhdWx0QnVja2V0UmVzcG9uc2USDgoGYnVja2V0GAEgASgJIi0KG0dldFByb3ZpZGVyRm9yQnVja2V0UmVxdWVzdBIOCgZidWNrZXQYASABKAkiRAocR2V0UHJvdmlkZXJGb3JCdWNrZXRSZXNwb25zZRIQCghwcm92aWRlchgBIAEoCRISCgphcHBfZG9tYWluGAIgASgJIn0KHENyZWF0ZVByZXNpZ25lZFB1dFVSTFJlcXVlc3QSDgoGYnVja2V0GAEgASgJEgsKA2tleRgCIAEoCRIUCgxjb250ZW50X3R5cGUYAyABKAkSEwoLZXhwaXJlc19zZWMYBCABKAUSFQoNcHJvdmlkZXJfaGludBgFIAEoCSKKAQodQ3JlYXRlUHJlc2lnbmVkUHV0VVJMUmVzcG9uc2USEgoKdXBsb2FkX3VybBgBIAEoCRIOCgZidWNrZXQYAiABKAkSCwoDa2V5GAMgASgJEhAKCHByb3ZpZGVyGAQgASgJEhIKCmV4cGlyZXNfaW4YBSABKAUSEgoKcHVibGljX3VybBgGIAEoCTKmBgoOU3RvcmFnZVNlcnZpY2USXgoJUHV0T2JqZWN0Eicua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLlB1dE9iamVjdFJlcXVlc3QaKC5rd19zdG9yYWdlX3NlcnZpY2UudjEuUHV0T2JqZWN0UmVzcG9uc2USXgoJR2V0T2JqZWN0Eicua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkdldE9iamVjdFJlcXVlc3QaKC5rd19zdG9yYWdlX3NlcnZpY2UudjEuR2V0T2JqZWN0UmVzcG9uc2USaAoOR2V0T2JqZWN0QnlVUkwSLC5rd19zdG9yYWdlX3NlcnZpY2UudjEuR2V0T2JqZWN0QnlVUkxSZXF1ZXN0Gigua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkdldE9iamVjdFJlc3BvbnNlEm8KD0dldE9iamVjdEJhc2U2NBIsLmt3X3N0b3JhZ2Vfc2VydmljZS52MS5HZXRPYmplY3RCeVVSTFJlcXVlc3QaLi5rd19zdG9yYWdlX3NlcnZpY2UudjEuR2V0T2JqZWN0QmFzZTY0UmVzcG9uc2UScwoQR2V0RGVmYXVsdEJ1Y2tldBIuLmt3X3N0b3JhZ2Vfc2VydmljZS52MS5HZXREZWZhdWx0QnVja2V0UmVxdWVzdBovLmt3X3N0b3JhZ2Vfc2VydmljZS52MS5HZXREZWZhdWx0QnVja2V0UmVzcG9uc2USfwoUR2V0UHJvdmlkZXJGb3JCdWNrZXQSMi5rd19zdG9yYWdlX3NlcnZpY2UudjEuR2V0UHJvdmlkZXJGb3JCdWNrZXRSZXF1ZXN0GjMua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkdldFByb3ZpZGVyRm9yQnVja2V0UmVzcG9uc2USggEKFUNyZWF0ZVByZXNpZ25lZFB1dFVSTBIzLmt3X3N0b3JhZ2Vfc2VydmljZS52MS5DcmVhdGVQcmVzaWduZWRQdXRVUkxSZXF1ZXN0GjQua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkNyZWF0ZVByZXNpZ25lZFB1dFVSTFJlc3BvbnNlQjRaMmFnbmVzL3Byb3RvL2dlbi9nby9rd19zdG9yYWdlX3NlcnZpY2UvdjE7c3RvcmFnZXYxYgZwcm90bzM");
+  fileDesc("Ci5rd19zdG9yYWdlX3NlcnZpY2UvdjEva3dfc3RvcmFnZV9zZXJ2aWNlLnByb3RvEhVrd19zdG9yYWdlX3NlcnZpY2UudjEi5AEKEFB1dE9iamVjdFJlcXVlc3QSDgoGYnVja2V0GAEgASgJEgsKA2tleRgCIAEoCRIMCgRkYXRhGAMgASgMEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRJHCghtZXRhZGF0YRgFIAMoCzI1Lmt3X3N0b3JhZ2Vfc2VydmljZS52MS5QdXRPYmplY3RSZXF1ZXN0Lk1ldGFkYXRhRW50cnkSFQoNcHJvdmlkZXJfaGludBgGIAEoCRovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiQgoRUHV0T2JqZWN0UmVzcG9uc2USDgoGYnVja2V0GAEgASgJEgsKA2tleRgCIAEoCRIQCghwcm92aWRlchgDIAEoCSIvChBHZXRPYmplY3RSZXF1ZXN0Eg4KBmJ1Y2tldBgBIAEoCRILCgNrZXkYAiABKAkivQEKFUdldE9iamVjdEJ5VVJMUmVxdWVzdBILCgN1cmwYASABKAkSGAoQZmFsbGJhY2tfdG9faHR0cBgCIAEoCBJMCghtZXRhZGF0YRgDIAMoCzI6Lmt3X3N0b3JhZ2Vfc2VydmljZS52MS5HZXRPYmplY3RCeVVSTFJlcXVlc3QuTWV0YWRhdGFFbnRyeRovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIQoRR2V0T2JqZWN0UmVzcG9uc2USDAoEZGF0YRgBIAEoDCKHAQoXR2V0T2JqZWN0QmFzZTY0UmVzcG9uc2USCwoDa2V5GAEgASgJEg8KB2NvbnRlbnQYAiABKAkSFAoMY29udGVudF90eXBlGAMgASgJEhoKEmRldGVjdGVkX21pbWVfdHlwZRgEIAEoCRIMCgRzaXplGAUgASgDEg4KBnNvdXJjZRgGIAEoCSIZChdHZXREZWZhdWx0QnVja2V0UmVxdWVzdCIqChhHZXREZWZhdWx0QnVja2V0UmVzcG9uc2USDgoGYnVja2V0GAEgASgJIi0KG0dldFByb3ZpZGVyRm9yQnVja2V0UmVxdWVzdBIOCgZidWNrZXQYASABKAkiRAocR2V0UHJvdmlkZXJGb3JCdWNrZXRSZXNwb25zZRIQCghwcm92aWRlchgBIAEoCRISCgphcHBfZG9tYWluGAIgASgJIn0KHENyZWF0ZVByZXNpZ25lZFB1dFVSTFJlcXVlc3QSDgoGYnVja2V0GAEgASgJEgsKA2tleRgCIAEoCRIUCgxjb250ZW50X3R5cGUYAyABKAkSEwoLZXhwaXJlc19zZWMYBCABKAUSFQoNcHJvdmlkZXJfaGludBgFIAEoCSKKAQodQ3JlYXRlUHJlc2lnbmVkUHV0VVJMUmVzcG9uc2USEgoKdXBsb2FkX3VybBgBIAEoCRIOCgZidWNrZXQYAiABKAkSCwoDa2V5GAMgASgJEhAKCHByb3ZpZGVyGAQgASgJEhIKCmV4cGlyZXNfaW4YBSABKAUSEgoKcHVibGljX3VybBgGIAEoCSKSAQocQ3JlYXRlTXVsdGlwYXJ0VXBsb2FkUmVxdWVzdBIOCgZidWNrZXQYASABKAkSCwoDa2V5GAIgASgJEhQKDGNvbnRlbnRfdHlwZRgDIAEoCRITCgt0b3RhbF9wYXJ0cxgEIAEoBRITCgtleHBpcmVzX3NlYxgFIAEoBRIVCg1wcm92aWRlcl9oaW50GAYgASgJIjgKDVByZXNpZ25lZFBhcnQSEwoLcGFydF9udW1iZXIYASABKAUSEgoKdXBsb2FkX3VybBgCIAEoCSK+AQodQ3JlYXRlTXVsdGlwYXJ0VXBsb2FkUmVzcG9uc2USEQoJdXBsb2FkX2lkGAEgASgJEg4KBmJ1Y2tldBgCIAEoCRILCgNrZXkYAyABKAkSEAoIcHJvdmlkZXIYBCABKAkSEgoKcHVibGljX3VybBgFIAEoCRIzCgVwYXJ0cxgGIAMoCzIkLmt3X3N0b3JhZ2Vfc2VydmljZS52MS5QcmVzaWduZWRQYXJ0EhIKCmV4cGlyZXNfaW4YByABKAUiMgoNQ29tcGxldGVkUGFydBITCgtwYXJ0X251bWJlchgBIAEoBRIMCgRldGFnGAIgASgJIpwBCh5Db21wbGV0ZU11bHRpcGFydFVwbG9hZFJlcXVlc3QSDgoGYnVja2V0GAEgASgJEgsKA2tleRgCIAEoCRIRCgl1cGxvYWRfaWQYAyABKAkSMwoFcGFydHMYBCADKAsyJC5rd19zdG9yYWdlX3NlcnZpY2UudjEuQ29tcGxldGVkUGFydBIVCg1wcm92aWRlcl9oaW50GAUgASgJImAKH0NvbXBsZXRlTXVsdGlwYXJ0VXBsb2FkUmVzcG9uc2USDgoGYnVja2V0GAEgASgJEgsKA2tleRgCIAEoCRIMCgRldGFnGAMgASgJEhIKCnB1YmxpY191cmwYBCABKAkiZAobQWJvcnRNdWx0aXBhcnRVcGxvYWRSZXF1ZXN0Eg4KBmJ1Y2tldBgBIAEoCRILCgNrZXkYAiABKAkSEQoJdXBsb2FkX2lkGAMgASgJEhUKDXByb3ZpZGVyX2hpbnQYBCABKAkiHgocQWJvcnRNdWx0aXBhcnRVcGxvYWRSZXNwb25zZTK3CQoOU3RvcmFnZVNlcnZpY2USXgoJUHV0T2JqZWN0Eicua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLlB1dE9iamVjdFJlcXVlc3QaKC5rd19zdG9yYWdlX3NlcnZpY2UudjEuUHV0T2JqZWN0UmVzcG9uc2USXgoJR2V0T2JqZWN0Eicua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkdldE9iamVjdFJlcXVlc3QaKC5rd19zdG9yYWdlX3NlcnZpY2UudjEuR2V0T2JqZWN0UmVzcG9uc2USaAoOR2V0T2JqZWN0QnlVUkwSLC5rd19zdG9yYWdlX3NlcnZpY2UudjEuR2V0T2JqZWN0QnlVUkxSZXF1ZXN0Gigua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkdldE9iamVjdFJlc3BvbnNlEm8KD0dldE9iamVjdEJhc2U2NBIsLmt3X3N0b3JhZ2Vfc2VydmljZS52MS5HZXRPYmplY3RCeVVSTFJlcXVlc3QaLi5rd19zdG9yYWdlX3NlcnZpY2UudjEuR2V0T2JqZWN0QmFzZTY0UmVzcG9uc2UScwoQR2V0RGVmYXVsdEJ1Y2tldBIuLmt3X3N0b3JhZ2Vfc2VydmljZS52MS5HZXREZWZhdWx0QnVja2V0UmVxdWVzdBovLmt3X3N0b3JhZ2Vfc2VydmljZS52MS5HZXREZWZhdWx0QnVja2V0UmVzcG9uc2USfwoUR2V0UHJvdmlkZXJGb3JCdWNrZXQSMi5rd19zdG9yYWdlX3NlcnZpY2UudjEuR2V0UHJvdmlkZXJGb3JCdWNrZXRSZXF1ZXN0GjMua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkdldFByb3ZpZGVyRm9yQnVja2V0UmVzcG9uc2USggEKFUNyZWF0ZVByZXNpZ25lZFB1dFVSTBIzLmt3X3N0b3JhZ2Vfc2VydmljZS52MS5DcmVhdGVQcmVzaWduZWRQdXRVUkxSZXF1ZXN0GjQua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkNyZWF0ZVByZXNpZ25lZFB1dFVSTFJlc3BvbnNlEoIBChVDcmVhdGVNdWx0aXBhcnRVcGxvYWQSMy5rd19zdG9yYWdlX3NlcnZpY2UudjEuQ3JlYXRlTXVsdGlwYXJ0VXBsb2FkUmVxdWVzdBo0Lmt3X3N0b3JhZ2Vfc2VydmljZS52MS5DcmVhdGVNdWx0aXBhcnRVcGxvYWRSZXNwb25zZRKIAQoXQ29tcGxldGVNdWx0aXBhcnRVcGxvYWQSNS5rd19zdG9yYWdlX3NlcnZpY2UudjEuQ29tcGxldGVNdWx0aXBhcnRVcGxvYWRSZXF1ZXN0GjYua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkNvbXBsZXRlTXVsdGlwYXJ0VXBsb2FkUmVzcG9uc2USfwoUQWJvcnRNdWx0aXBhcnRVcGxvYWQSMi5rd19zdG9yYWdlX3NlcnZpY2UudjEuQWJvcnRNdWx0aXBhcnRVcGxvYWRSZXF1ZXN0GjMua3dfc3RvcmFnZV9zZXJ2aWNlLnYxLkFib3J0TXVsdGlwYXJ0VXBsb2FkUmVzcG9uc2VCNFoyYWduZXMvcHJvdG8vZ2VuL2dvL2t3X3N0b3JhZ2Vfc2VydmljZS92MTtzdG9yYWdldjFiBnByb3RvMw");
 
 /**
  * @generated from message kw_storage_service.v1.PutObjectRequest
@@ -361,6 +361,257 @@ export const CreatePresignedPutURLResponseSchema: GenMessage<CreatePresignedPutU
   messageDesc(file_kw_storage_service_v1_kw_storage_service, 11);
 
 /**
+ * @generated from message kw_storage_service.v1.CreateMultipartUploadRequest
+ */
+export type CreateMultipartUploadRequest = Message<"kw_storage_service.v1.CreateMultipartUploadRequest"> & {
+  /**
+   * @generated from field: string bucket = 1;
+   */
+  bucket: string;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key: string;
+
+  /**
+   * @generated from field: string content_type = 3;
+   */
+  contentType: string;
+
+  /**
+   * 分片总数（由 BFF 根据 file_size / part_size 计算后传入）
+   *
+   * @generated from field: int32 total_parts = 4;
+   */
+  totalParts: number;
+
+  /**
+   * 每个分片预签名 URL 的有效期（秒），建议 60～3600
+   *
+   * @generated from field: int32 expires_sec = 5;
+   */
+  expiresSec: number;
+
+  /**
+   * @generated from field: string provider_hint = 6;
+   */
+  providerHint: string;
+};
+
+/**
+ * Describes the message kw_storage_service.v1.CreateMultipartUploadRequest.
+ * Use `create(CreateMultipartUploadRequestSchema)` to create a new message.
+ */
+export const CreateMultipartUploadRequestSchema: GenMessage<CreateMultipartUploadRequest> = /*@__PURE__*/
+  messageDesc(file_kw_storage_service_v1_kw_storage_service, 12);
+
+/**
+ * @generated from message kw_storage_service.v1.PresignedPart
+ */
+export type PresignedPart = Message<"kw_storage_service.v1.PresignedPart"> & {
+  /**
+   * @generated from field: int32 part_number = 1;
+   */
+  partNumber: number;
+
+  /**
+   * @generated from field: string upload_url = 2;
+   */
+  uploadUrl: string;
+};
+
+/**
+ * Describes the message kw_storage_service.v1.PresignedPart.
+ * Use `create(PresignedPartSchema)` to create a new message.
+ */
+export const PresignedPartSchema: GenMessage<PresignedPart> = /*@__PURE__*/
+  messageDesc(file_kw_storage_service_v1_kw_storage_service, 13);
+
+/**
+ * @generated from message kw_storage_service.v1.CreateMultipartUploadResponse
+ */
+export type CreateMultipartUploadResponse = Message<"kw_storage_service.v1.CreateMultipartUploadResponse"> & {
+  /**
+   * @generated from field: string upload_id = 1;
+   */
+  uploadId: string;
+
+  /**
+   * @generated from field: string bucket = 2;
+   */
+  bucket: string;
+
+  /**
+   * @generated from field: string key = 3;
+   */
+  key: string;
+
+  /**
+   * @generated from field: string provider = 4;
+   */
+  provider: string;
+
+  /**
+   * @generated from field: string public_url = 5;
+   */
+  publicUrl: string;
+
+  /**
+   * @generated from field: repeated kw_storage_service.v1.PresignedPart parts = 6;
+   */
+  parts: PresignedPart[];
+
+  /**
+   * @generated from field: int32 expires_in = 7;
+   */
+  expiresIn: number;
+};
+
+/**
+ * Describes the message kw_storage_service.v1.CreateMultipartUploadResponse.
+ * Use `create(CreateMultipartUploadResponseSchema)` to create a new message.
+ */
+export const CreateMultipartUploadResponseSchema: GenMessage<CreateMultipartUploadResponse> = /*@__PURE__*/
+  messageDesc(file_kw_storage_service_v1_kw_storage_service, 14);
+
+/**
+ * @generated from message kw_storage_service.v1.CompletedPart
+ */
+export type CompletedPart = Message<"kw_storage_service.v1.CompletedPart"> & {
+  /**
+   * @generated from field: int32 part_number = 1;
+   */
+  partNumber: number;
+
+  /**
+   * @generated from field: string etag = 2;
+   */
+  etag: string;
+};
+
+/**
+ * Describes the message kw_storage_service.v1.CompletedPart.
+ * Use `create(CompletedPartSchema)` to create a new message.
+ */
+export const CompletedPartSchema: GenMessage<CompletedPart> = /*@__PURE__*/
+  messageDesc(file_kw_storage_service_v1_kw_storage_service, 15);
+
+/**
+ * @generated from message kw_storage_service.v1.CompleteMultipartUploadRequest
+ */
+export type CompleteMultipartUploadRequest = Message<"kw_storage_service.v1.CompleteMultipartUploadRequest"> & {
+  /**
+   * @generated from field: string bucket = 1;
+   */
+  bucket: string;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key: string;
+
+  /**
+   * @generated from field: string upload_id = 3;
+   */
+  uploadId: string;
+
+  /**
+   * @generated from field: repeated kw_storage_service.v1.CompletedPart parts = 4;
+   */
+  parts: CompletedPart[];
+
+  /**
+   * @generated from field: string provider_hint = 5;
+   */
+  providerHint: string;
+};
+
+/**
+ * Describes the message kw_storage_service.v1.CompleteMultipartUploadRequest.
+ * Use `create(CompleteMultipartUploadRequestSchema)` to create a new message.
+ */
+export const CompleteMultipartUploadRequestSchema: GenMessage<CompleteMultipartUploadRequest> = /*@__PURE__*/
+  messageDesc(file_kw_storage_service_v1_kw_storage_service, 16);
+
+/**
+ * @generated from message kw_storage_service.v1.CompleteMultipartUploadResponse
+ */
+export type CompleteMultipartUploadResponse = Message<"kw_storage_service.v1.CompleteMultipartUploadResponse"> & {
+  /**
+   * @generated from field: string bucket = 1;
+   */
+  bucket: string;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key: string;
+
+  /**
+   * @generated from field: string etag = 3;
+   */
+  etag: string;
+
+  /**
+   * @generated from field: string public_url = 4;
+   */
+  publicUrl: string;
+};
+
+/**
+ * Describes the message kw_storage_service.v1.CompleteMultipartUploadResponse.
+ * Use `create(CompleteMultipartUploadResponseSchema)` to create a new message.
+ */
+export const CompleteMultipartUploadResponseSchema: GenMessage<CompleteMultipartUploadResponse> = /*@__PURE__*/
+  messageDesc(file_kw_storage_service_v1_kw_storage_service, 17);
+
+/**
+ * @generated from message kw_storage_service.v1.AbortMultipartUploadRequest
+ */
+export type AbortMultipartUploadRequest = Message<"kw_storage_service.v1.AbortMultipartUploadRequest"> & {
+  /**
+   * @generated from field: string bucket = 1;
+   */
+  bucket: string;
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key: string;
+
+  /**
+   * @generated from field: string upload_id = 3;
+   */
+  uploadId: string;
+
+  /**
+   * @generated from field: string provider_hint = 4;
+   */
+  providerHint: string;
+};
+
+/**
+ * Describes the message kw_storage_service.v1.AbortMultipartUploadRequest.
+ * Use `create(AbortMultipartUploadRequestSchema)` to create a new message.
+ */
+export const AbortMultipartUploadRequestSchema: GenMessage<AbortMultipartUploadRequest> = /*@__PURE__*/
+  messageDesc(file_kw_storage_service_v1_kw_storage_service, 18);
+
+/**
+ * @generated from message kw_storage_service.v1.AbortMultipartUploadResponse
+ */
+export type AbortMultipartUploadResponse = Message<"kw_storage_service.v1.AbortMultipartUploadResponse"> & {
+};
+
+/**
+ * Describes the message kw_storage_service.v1.AbortMultipartUploadResponse.
+ * Use `create(AbortMultipartUploadResponseSchema)` to create a new message.
+ */
+export const AbortMultipartUploadResponseSchema: GenMessage<AbortMultipartUploadResponse> = /*@__PURE__*/
+  messageDesc(file_kw_storage_service_v1_kw_storage_service, 19);
+
+/**
  * StorageService 提供统一的对象存储能力，供 Python/Go 服务通过 gRPC 访问。
  *
  * @generated from service kw_storage_service.v1.StorageService
@@ -436,6 +687,36 @@ export const StorageService: GenService<{
     methodKind: "unary";
     input: typeof CreatePresignedPutURLRequestSchema;
     output: typeof CreatePresignedPutURLResponseSchema;
+  },
+  /**
+   * CreateMultipartUpload 初始化分片上传并批量签发各分片的预签名 URL
+   *
+   * @generated from rpc kw_storage_service.v1.StorageService.CreateMultipartUpload
+   */
+  createMultipartUpload: {
+    methodKind: "unary";
+    input: typeof CreateMultipartUploadRequestSchema;
+    output: typeof CreateMultipartUploadResponseSchema;
+  },
+  /**
+   * CompleteMultipartUpload 合并已上传的分片，完成大文件上传
+   *
+   * @generated from rpc kw_storage_service.v1.StorageService.CompleteMultipartUpload
+   */
+  completeMultipartUpload: {
+    methodKind: "unary";
+    input: typeof CompleteMultipartUploadRequestSchema;
+    output: typeof CompleteMultipartUploadResponseSchema;
+  },
+  /**
+   * AbortMultipartUpload 取消分片上传，释放已上传的碎片
+   *
+   * @generated from rpc kw_storage_service.v1.StorageService.AbortMultipartUpload
+   */
+  abortMultipartUpload: {
+    methodKind: "unary";
+    input: typeof AbortMultipartUploadRequestSchema;
+    output: typeof AbortMultipartUploadResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_kw_storage_service_v1_kw_storage_service, 0);
